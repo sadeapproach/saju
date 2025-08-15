@@ -1,146 +1,128 @@
-// api/geo-timezone.js
-// 도시명 → (위도/경도) → 타임존
-// 1) 지오코딩: Nominatim(OSM) → 실패 시 Open‑Meteo
-// 2) 타임존: timeapi.io → 실패 시 Open‑Meteo
-// * 키 불필요, CORS 및 OPTIONS 처리 포함, 디버그 정보(provider/url) 포함
+// api/geo-timezone.js (stable)
+// City -> (lat,lng) -> tzId
+// Geocoding: Open-Meteo -> maps.co(Nominatim mirror) -> Nominatim
+// Timezone: timeapi.io -> Open-Meteo
+// 추가: 6초 타임아웃, 2회 재시도, 상세 에러 리포트, CORS/OPTIONS
 
 function setCORS(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*'); // 필요 시 특정 도메인으로 제한
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 }
 
-async function fetchText(url, headers = {}) {
-  const r = await fetch(url, { headers });
-  const text = await r.text();
-  return { ok: r.ok, status: r.status, text };
-}
-function safeJSON(str) {
-  try { return JSON.parse(str); } catch { return null; }
-}
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
-/* ---------- Geocoding: 1) Nominatim (OpenStreetMap) ---------- */
-async function geocodeNominatim(query) {
-  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&addressdetails=1`;
-  const headers = { 'User-Agent': 'saju-eight/1.0 (contact: hello@saju-eight.example)' }; // UA 권장
-  const r = await fetchText(url, headers);
-  const data = safeJSON(r.text);
-  if (!r.ok || !Array.isArray(data) || data.length === 0) {
-    return { ok: false, provider: 'nominatim', url, status: r.status, raw: r.text };
-  }
-  const first = data[0];
-  return {
-    ok: true,
-    provider: 'nominatim',
-    url,
-    name: first.display_name,
-    lat: parseFloat(first.lat),
-    lng: parseFloat(first.lon),
-    country: first.address?.country || null,
-  };
-}
-
-/* ---------- Geocoding: 2) Open‑Meteo (fallback) ---------- */
-async function geocodeOpenMeteo(query) {
-  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&language=en&format=json`;
-  const r = await fetchText(url);
-  const data = safeJSON(r.text);
-  const first = data?.results?.[0];
-  if (!r.ok || !first) {
-    return { ok: false, provider: 'open-meteo-geocoding', url, status: r.status, raw: r.text };
-  }
-  return {
-    ok: true,
-    provider: 'open-meteo-geocoding',
-    url,
-    name: `${first.name}${first.country ? ', ' + first.country : ''}`,
-    lat: first.latitude,
-    lng: first.longitude,
-    country: first.country || null,
-  };
-}
-
-/* ---------- Timezone: 1) timeapi.io → 2) open‑meteo fallback ---------- */
-async function lookupTimezone(lat, lng) {
-  // 1) timeapi.io (키 불필요)
-  {
-    const url = `https://timeapi.io/api/TimeZone/coordinate?latitude=${lat}&longitude=${lng}`;
-    const r = await fetchText(url);
-    const data = safeJSON(r.text);
-    if (r.ok && data?.timeZone) {
-      return { ok: true, provider: 'timeapi.io', url, timezone: data.timeZone };
-    }
-  }
-  // 2) open‑meteo (폴백)
-  {
-    const url = `https://api.open-meteo.com/v1/timezone?latitude=${lat}&longitude=${lng}`;
-    const r = await fetchText(url);
-    const data = safeJSON(r.text);
-    if (r.ok && data?.timezone) {
-      return { ok: true, provider: 'open-meteo-timezone', url, timezone: data.timezone };
-    }
-    return { ok: false, provider: 'open-meteo-timezone', url, status: r.status, raw: r.text };
+async function fetchTextWithTimeout(url, { headers={}, timeoutMs=6000 } = {}) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const r = await fetch(url, { headers, signal: ctrl.signal });
+    const text = await r.text();
+    return { ok: r.ok, status: r.status, text };
+  } catch (e) {
+    return { ok: false, status: 0, text: `NETWORK_ERROR: ${e?.name || ''} ${e?.message || ''}` };
+  } finally {
+    clearTimeout(t);
   }
 }
+const J = (s)=>{ try { return JSON.parse(s); } catch { return null; } };
 
-/* ---------- Handler ---------- */
+// ---- helpers
+function normalizeCity(raw){
+  let s = (raw||'').trim().replace(/\s+/g,' ');
+  s = s.split(',').map(p=>p.trim()).join(', ');
+  if (/^new york$/i.test(s)) s = 'New York City, USA';
+  if (/^seoul$/i.test(s)) s = 'Seoul, South Korea';
+  return s;
+}
+
+// ---- Geocoders (3개 체인)
+async function geoOpenMeteo(q){
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1&language=en&format=json`;
+  const r = await fetchTextWithTimeout(url, {});
+  const d = J(r.text);
+  const f = d?.results?.[0];
+  if (!r.ok || !f) return { ok:false, provider:'open-meteo-geocoding', url, status:r.status, raw:r.text };
+  return { ok:true, provider:'open-meteo-geocoding', url, name:`${f.name}${f.country?', '+f.country:''}`, lat:f.latitude, lng:f.longitude, country:f.country||null };
+}
+async function geoMapsCo(q){
+  // maps.co는 nominatim mirror (무료, UA 요구 적음)
+  const url = `https://geocode.maps.co/search?q=${encodeURIComponent(q)}&api_key=free`;
+  const r = await fetchTextWithTimeout(url, {});
+  const d = J(r.text);
+  const f = Array.isArray(d) ? d[0] : null;
+  if (!r.ok || !f) return { ok:false, provider:'maps.co', url, status:r.status, raw:r.text };
+  return { ok:true, provider:'maps.co', url, name:f.display_name, lat:parseFloat(f.lat), lng:parseFloat(f.lon), country:null };
+}
+async function geoNominatim(q){
+  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1&addressdetails=1`;
+  const r = await fetchTextWithTimeout(url, { headers: { 'User-Agent':'saju-eight/1.0 (contact: hello@saju-eight.example)' } });
+  const d = J(r.text);
+  const f = Array.isArray(d) ? d[0] : null;
+  if (!r.ok || !f) return { ok:false, provider:'nominatim', url, status:r.status, raw:r.text };
+  return { ok:true, provider:'nominatim', url, name:f.display_name, lat:parseFloat(f.lat), lng:parseFloat(f.lon), country:f.address?.country||null };
+}
+
+// ---- Timezone (2개 체인)
+async function tzTimeapi(lat,lng){
+  const url = `https://timeapi.io/api/TimeZone/coordinate?latitude=${lat}&longitude=${lng}`;
+  const r = await fetchTextWithTimeout(url, {});
+  const d = J(r.text);
+  if (r.ok && d?.timeZone) return { ok:true, provider:'timeapi.io', url, timezone:d.timeZone };
+  return { ok:false, provider:'timeapi.io', url, status:r.status, raw:r.text };
+}
+async function tzOpenMeteo(lat,lng){
+  const url = `https://api.open-meteo.com/v1/timezone?latitude=${lat}&longitude=${lng}`;
+  const r = await fetchTextWithTimeout(url, {});
+  const d = J(r.text);
+  if (r.ok && d?.timezone) return { ok:true, provider:'open-meteo-timezone', url, timezone:d.timezone };
+  return { ok:false, provider:'open-meteo-timezone', url, status:r.status, raw:r.text };
+}
+
 module.exports = async (req, res) => {
   setCORS(res);
-
   if (req.method === 'OPTIONS') return res.status(204).end();
-  if (req.method !== 'GET') {
-    res.setHeader('Allow', 'GET, OPTIONS');
-    return res.status(405).json({ ok: false, error: 'Use GET' });
-  }
+  if (req.method !== 'GET') { res.setHeader('Allow','GET, OPTIONS'); return res.status(405).json({ ok:false, error:'Use GET' }); }
 
-  const rawCity = (req.query.city || '').toString().trim();
-  if (!rawCity) return res.status(400).json({ ok: false, error: 'Missing ?city=' });
+  const raw = (req.query.city||'').toString();
+  if (!raw.trim()) return res.status(400).json({ ok:false, error:'Missing ?city=' });
 
-  // 후보 문자열: + 를 공백으로 치환한 버전도 시도
-  const candidates = [rawCity, rawCity.replace(/\+/g, ' ')];
+  const candidates = [ normalizeCity(raw), raw.replace(/\+/g,' ') ];
 
   try {
-    // 1) Geocoding 시도 (Nominatim → Open‑Meteo 폴백)
-    let geo = null;
+    // --- Geocoding with retry & providers
     const attempts = [];
+    let geo = null;
 
     for (const q of candidates) {
-      const r1 = await geocodeNominatim(q);
-      attempts.push(r1);
-      if (r1.ok) { geo = r1; break; }
-    }
-    if (!geo) {
-      for (const q of candidates) {
-        const r2 = await geocodeOpenMeteo(q);
-        attempts.push(r2);
-        if (r2.ok) { geo = r2; break; }
+      // 각 공급자 2회까지 재시도 (간단 backoff)
+      for (const provider of [geoOpenMeteo, geoMapsCo, geoNominatim]) {
+        for (let i=0;i<2;i++){
+          const r = await provider(q);
+          attempts.push(r);
+          if (r.ok) { geo = r; break; }
+          await sleep(250); // 짧은 백오프
+        }
+        if (geo) break;
       }
+      if (geo) break;
     }
-    if (!geo) {
-      return res.status(404).json({ ok: false, error: 'City not found', attempts });
-    }
+    if (!geo) return res.status(502).json({ ok:false, error:'Geocoding failed', attempts });
 
-    // 2) Timezone 조회 (timeapi.io → open‑meteo 폴백)
-    const tz = await lookupTimezone(geo.lat, geo.lng);
-    if (!tz.ok) {
-      return res.status(502).json({ ok: false, error: 'Timezone lookup failed', geo, tz });
-    }
+    // --- Timezone lookup
+    let tz = await tzTimeapi(geo.lat, geo.lng);
+    if (!tz.ok) tz = await tzOpenMeteo(geo.lat, geo.lng);
+    if (!tz.ok) return res.status(502).json({ ok:false, error:'Timezone lookup failed', geo, tz });
 
-    // 3) 결과
     return res.status(200).json({
-      ok: true,
-      input: { city: rawCity },
-      provider: geo.provider,            // 어떤 지오코더를 썼는지
-      location: {
-        name: geo.name,
-        country: geo.country,
-        lat: geo.lat,
-        lng: geo.lng,
-      },
+      ok:true,
+      input:{ city: raw },
+      provider: geo.provider,
+      location:{ name: geo.name, country: geo.country, lat: geo.lat, lng: geo.lng },
       timezone: tz.timezone,
-      debug: { geo_url: geo.url, tz_url: tz.url }, // 디버그용
+      debug:{ geo_url: geo.url, tz_url: tz.url }
     });
   } catch (e) {
-    return res.status(500).json({ ok: false, error: e?.message || 'unknown_error' });
+    return res.status(500).json({ ok:false, error: e?.message || 'unknown_error' });
   }
 };
