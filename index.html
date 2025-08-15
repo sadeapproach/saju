@@ -139,7 +139,7 @@ const runBtn = el('#runBtn');
 const STEM_ELEM = {甲:"wood",乙:"wood",丙:"fire",丁:"fire",戊:"earth",己:"earth",庚:"metal",辛:"metal",壬:"water",癸:"water"};
 const BRANCH_ELEM = {子:"water",丑:"earth",寅:"wood",卯:"wood",辰:"earth",巳:"fire",午:"fire",未:"earth",申:"metal",酉:"metal",戌:"earth",亥:"water"};
 
-// ✅ Bilingual titles
+// ✅ Bilingual pillar titles
 const TITLES = {
   hour:  "Hour Pillar (시주)",
   day:   "Day Pillar (일주)",
@@ -147,24 +147,75 @@ const TITLES = {
   year:  "Year Pillar (년주)"
 };
 
+// ✅ 섹션 제목(영/한 병기) & HTML escape
+const SECTION_TITLES = {
+  corePersonality:     "Core Traits & Disposition (기본 성향·기질)",
+  fiveElementsBalance: "Five‑Element Balance (오행 균형·보완)",
+  tenGodsThemes:       "Ten Gods — Money/Career/Relationships (십신 경향)",
+  luckSummary:         "Luck Cycles — Now & Next (대운·세운 요약)",
+  healthLifestyle:     "Health & Lifestyle Tips (건강·생활 조언)",
+  overallSummary:      "Keywords & Summary (전반 요약)"
+};
+const esc = (s='') => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
+// Colors
 const COLOR_CLASS = {wood:"wood",fire:"fire",earth:"earth",metal:"metal",water:"water"};
 
 function setStatus(msg, type=''){ statusEl.innerHTML = msg; statusEl.className = 'muted '+(type||''); }
 async function fetchJSON(url, opts={}){ const r=await fetch(url,opts); const t=await r.text(); try{return{ok:r.ok,status:r.status,data:JSON.parse(t),raw:t}}catch{return{ok:r.ok,status:r.status,data:null,raw:t}} }
 
-// 기본 읽기 카드 (섹션 확장은 필요 시 별도 함수로 교체 가능)
-function renderReading(output, meta={}){
+// ✅ 장문 섹션 6개 렌더
+function renderReading(output, meta={}) {
   const { badge, share } = output.cards || {};
-  const pill = meta.fallback ? `<span class="pill">Fallback</span>` : meta.mocked ? `<span class="pill">Mock</span>` : `<span class="pill ok">Live</span>`;
+  const pill = meta.fallback ? `<span class="pill">Fallback</span>`
+             : meta.mocked  ? `<span class="pill">Mock</span>`
+             : `<span class="pill ok">Live</span>`;
+
+  const sections = output.sections || {};
+  const order = [
+    "corePersonality",
+    "fiveElementsBalance",
+    "tenGodsThemes",
+    "luckSummary",
+    "healthLifestyle",
+    "overallSummary"
+  ];
+
+  const sectionCards = order
+    .filter(key => sections[key])
+    .map(key => {
+      const title = SECTION_TITLES[key] || key;
+      const paras = String(sections[key]).split(/\n+/).map(p => `<p style="margin:8px 0 0">${esc(p)}</p>`).join("");
+      return `
+        <div class="card" style="margin-top:12px">
+          <div class="kicker">SECTION</div>
+          <h3 class="headline" style="margin-top:0">${esc(title)}</h3>
+          ${paras}
+        </div>`;
+    }).join("");
+
   resultEl.innerHTML = `
     <div class="card">
       <div class="row" style="justify-content:space-between"><div class="kicker">READING</div><div>${pill}</div></div>
-      <h3 class="headline">${output.title || 'Your Saju Reading'}</h3>
-      ${Array.isArray(output.bullets)&&output.bullets.length?`<ul>${output.bullets.map(b=>`<li>${b}</li>`).join('')}</ul>`:''}
-      ${output.forecastOneLiner?`<div class="one">${output.forecastOneLiner}</div>`:''}
-      ${Array.isArray(output.actions)&&output.actions[0]?`<div class="callout"><strong>Try:</strong> ${output.actions[0]}</div>`:''}
-      ${(badge||(share?.headline))?`<div class="row" style="margin-top:10px">${badge?`<span class="pill">${badge}</span>`:''}${share?.headline?`<span class="muted">${share.headline} — ${share.sub||''}</span>`:''}</div>`:''}
-    </div>`;
+      <h3 class="headline">${esc(output.title || 'Your Saju Reading')}</h3>
+
+      ${Array.isArray(output.bullets)&&output.bullets.length
+        ? `<ul>${output.bullets.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>` : ''}
+
+      ${output.forecastOneLiner ? `<div class="one">${esc(output.forecastOneLiner)}</div>` : ''}
+
+      ${Array.isArray(output.actions)&&output.actions[0]
+        ? `<div class="callout"><strong>Try:</strong> ${esc(output.actions[0])}</div>` : ''}
+
+      ${(badge||(share?.headline))
+        ? `<div class="row" style="margin-top:10px">
+             ${badge?`<span class="pill">${esc(badge)}</span>`:''}
+             ${share?.headline?`<span class="muted">${esc(share.headline)} — ${esc(share.sub||'')}</span>`:''}
+           </div>` : ''}
+    </div>
+
+    ${sectionCards}
+  `;
 }
 
 function renderPillars(root, pillars, elements, tenGods, hiddenStems){
@@ -274,7 +325,6 @@ runBtn.addEventListener('click', async () => {
     runBtn.disabled=false; return;
   }
 
-  // ✅ 강화된 에러/폴백 처리
   const info = read.data;
   if (!info.ok && (info.error || info.reason)) {
     setStatus(`Failed on Step 3 (reading): ${info.error || info.reason}`, 'err');
