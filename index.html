@@ -152,6 +152,7 @@ const COLOR_CLASS = {wood:"wood",fire:"fire",earth:"earth",metal:"metal",water:"
 function setStatus(msg, type=''){ statusEl.innerHTML = msg; statusEl.className = 'muted '+(type||''); }
 async function fetchJSON(url, opts={}){ const r=await fetch(url,opts); const t=await r.text(); try{return{ok:r.ok,status:r.status,data:JSON.parse(t),raw:t}}catch{return{ok:r.ok,status:r.status,data:null,raw:t}} }
 
+// 기본 읽기 카드 (섹션 확장은 필요 시 별도 함수로 교체 가능)
 function renderReading(output, meta={}){
   const { badge, share } = output.cards || {};
   const pill = meta.fallback ? `<span class="pill">Fallback</span>` : meta.mocked ? `<span class="pill">Mock</span>` : `<span class="pill ok">Live</span>`;
@@ -159,10 +160,10 @@ function renderReading(output, meta={}){
     <div class="card">
       <div class="row" style="justify-content:space-between"><div class="kicker">READING</div><div>${pill}</div></div>
       <h3 class="headline">${output.title || 'Your Saju Reading'}</h3>
-      <ul>${(output.bullets||[]).map(b=>`<li>${b}</li>`).join('')}</ul>
-      <div class="one">${output.forecastOneLiner || ''}</div>
+      ${Array.isArray(output.bullets)&&output.bullets.length?`<ul>${output.bullets.map(b=>`<li>${b}</li>`).join('')}</ul>`:''}
+      ${output.forecastOneLiner?`<div class="one">${output.forecastOneLiner}</div>`:''}
       ${Array.isArray(output.actions)&&output.actions[0]?`<div class="callout"><strong>Try:</strong> ${output.actions[0]}</div>`:''}
-      ${badge||(share?.headline)?`<div class="row" style="margin-top:10px">${badge?`<span class="pill">${badge}</span>`:''}${share?.headline?`<span class="muted">${share.headline} — ${share.sub||''}</span>`:''}</div>`:''}
+      ${(badge||(share?.headline))?`<div class="row" style="margin-top:10px">${badge?`<span class="pill">${badge}</span>`:''}${share?.headline?`<span class="muted">${share.headline} — ${share.sub||''}</span>`:''}</div>`:''}
     </div>`;
 }
 
@@ -234,14 +235,24 @@ runBtn.addEventListener('click', async () => {
   runBtn.disabled = true;
   setStatus('Step 1/3: Resolving city → timezone…');
 
+  // Step 1
   const geo = await fetchJSON(`/api/geo-timezone?city=${encodeURIComponent(city)}`);
-  if (!geo.ok || !geo.data?.timezone) { setStatus('Failed on Step 1 (geo-timezone).', 'err'); runBtn.disabled=false; return; }
+  if (!geo.ok || !geo.data?.timezone) {
+    const reason = geo.data?.error || geo.data?.reason || '';
+    setStatus(`Failed on Step 1 (geo-timezone)${reason ? `: ${reason}` : ''}`, 'err');
+    runBtn.disabled=false; return;
+  }
   const { lat, lng } = geo.data.location; const tzId = geo.data.timezone;
 
+  // Step 2
   setStatus('Step 2/3: Calculating pillars/elements…');
   const calcPayload = { birthDateISO, birthTime: birthTime || null, lat, lng, tzId, timeAccuracy };
   const calc = await fetchJSON('/api/calc', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(calcPayload) });
-  if (!calc.ok || !calc.data?.data) { setStatus('Failed on Step 2 (calc).', 'err'); runBtn.disabled=false; return; }
+  if (!calc.ok || !calc.data?.data) {
+    const reason = calc.data?.error || calc.data?.reason || '';
+    setStatus(`Failed on Step 2 (calc)${reason ? `: ${reason}` : ''}`, 'err');
+    runBtn.disabled=false; return;
+  }
 
   const d = calc.data.data || {};
   const { pillars, elements, tenGods, hiddenStems, interactions, luck } = d;
@@ -250,16 +261,31 @@ runBtn.addEventListener('click', async () => {
   renderInteractions(document.getElementById('interactions-root'), interactions);
   renderLuck(document.getElementById('luck-root'), luck, birthDateISO);
 
+  // Step 3
   setStatus('Step 3/3: Generating English reading…');
   const read = await fetchJSON('/api/reading-generate', {
-    method:'POST', headers:{'Content-Type':'application/json'},
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ pillars, elements, tenGods, interactions, type:'summary', locale:'en-US', length:'long', maxBullets:6 })
   });
-  if (!read.ok || !read.data) { setStatus('Failed on Step 3 (reading).', 'err'); runBtn.disabled=false; return; }
-  renderReading(read.data.output || read.data.output, { fallback: read.data.fallback, mocked: read.data.mocked });
 
-  setStatus(`Done • tz: ${tzId} • lat:${lat.toFixed(4)}, lng:${lng.toFixed(4)}`, 'ok');
+  if (!read.ok || !read.data) {
+    setStatus('Failed on Step 3 (reading).', 'err'); 
+    runBtn.disabled=false; return;
+  }
 
+  // ✅ 강화된 에러/폴백 처리
+  const info = read.data;
+  if (!info.ok && (info.error || info.reason)) {
+    setStatus(`Failed on Step 3 (reading): ${info.error || info.reason}`, 'err');
+    runBtn.disabled=false; return;
+  }
+
+  const tag = info.fallback ? ' • (fallback)' : info.mocked ? ' • (mock)' : '';
+  renderReading(info.output || {}, { fallback: info.fallback, mocked: info.mocked });
+  setStatus(`Done${tag} • tz: ${tzId} • lat:${lat.toFixed(4)}, lng:${lng.toFixed(4)}`, 'ok');
+
+  // Debug JSON
   resultEl.insertAdjacentHTML('beforeend', `
     <details class="card" style="margin-top:12px">
       <summary>Debug JSON (geo/calc/reading)</summary>
