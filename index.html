@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Saju‑Eight • Playground</title>
+  <title>Saju-Eight • Playground (Extended)</title>
   <style>
     :root { --bg:#0b1220; --panel:#121a2a; --muted:#6b7a90; --txt:#e9f0ff; --accent:#66b3ff; --ok:#49d39a; --err:#ff7a7a; }
     * { box-sizing: border-box; }
@@ -36,17 +36,50 @@
     .callout { margin-top: 10px; padding: 10px 12px; background: rgba(73,211,154,.09); border: 1px solid rgba(73,211,154,.25); border-radius: 12px; }
     details { margin-top: 12px; }
     pre { background: #081123; border:1px solid rgba(255,255,255,.08); padding: 12px; border-radius: 12px; overflow:auto; }
+
+    /* -------- Pillars UI -------- */
+    .pillars-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
+    @media (min-width:768px){.pillars-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+    .pillar-card{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);border-radius:16px;padding:12px;color:var(--txt)}
+    .pillar-title{font-size:12px;opacity:.8;text-align:center;margin-bottom:6px}
+    .pillar-sub{font-size:11px;color:#7dd3fc;text-align:center;margin-bottom:6px}
+    .box{height:84px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:44px;
+         font-weight:700;letter-spacing:.02em;border:1px solid #0003}
+    .subline{font-size:11px;text-align:center;color:#c8d6f8;margin-top:6px}
+    .chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:6px}
+    .chip{font-size:11px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}
+    .wood{background:#16a34a;color:#fff}.fire{background:#ef4444;color:#fff}
+    .earth{background:#f59e0b;color:#111}.metal{background:#e5e7eb;color:#111;border-color:#cbd5e1}
+    .water{background:#06b6d4;color:#fff}
+    .gauge{display:flex;height:10px;overflow:hidden;border-radius:10px;border:1px solid #2a2a2a;margin-top:12px}
+    .gauge>div{height:100%}
+
+    /* -------- Interactions / Badges -------- */
+    .badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+    .badge{padding:6px 10px;border-radius:999px;font-size:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05)}
+    .badge.warn{border-color:#f59e0b66;color:#f8d48b;background:#f59e0b20}
+    .badge.info{border-color:#66b3ff66;color:#bfe0ff;background:#66b3ff1a}
+
+    /* -------- Big Luck Timeline -------- */
+    .luck{margin-top:16px}
+    .luck-bar{display:flex;gap:8px}
+    .luck-seg{flex:1;min-width:64px;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px;background:rgba(255,255,255,.05)}
+    .luck-title{font-size:12px;opacity:.85;margin-bottom:4px}
+    .luck-ganji{font-size:16px;font-weight:800}
+    .luck-god{font-size:11px;color:#cfe4ff;margin-top:2px}
+    .luck-age{font-size:11px;color:#9fb3d6;margin-top:6px}
+    .luck-now{outline:2px solid #66b3ff; box-shadow:0 0 0 4px rgba(102,179,255,.2)}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="title">Saju‑Eight • End‑to‑End Playground</div>
-    <div class="sub">Enter birth info and city → we’ll resolve timezone, compute pillars, and generate an English reading.</div>
+    <div class="title">Saju-Eight • End-to-End Playground (Extended)</div>
+    <div class="sub">Enter birth info and city → timezone → pillars → English reading, plus pillars UI • ten gods • hidden stems • interactions • big luck.</div>
 
     <div class="card" id="formCard">
       <div class="grid">
         <div>
-          <label>Birth date (YYYY‑MM‑DD)</label>
+          <label>Birth date (YYYY-MM-DD)</label>
           <input id="birthDate" placeholder="1992-06-02" />
         </div>
         <div>
@@ -79,33 +112,40 @@
         <summary class="muted">What happens under the hood?</summary>
         <ul class="muted">
           <li>Step 1: GET <code>/api/geo-timezone?city=...</code> → latitude/longitude + <em>tzId</em></li>
-          <li>Step 2: POST <code>/api/calc</code> → pillars & elements (mock for now)</li>
-          <li>Step 3: POST <code>/api/reading-generate</code> → short English reading JSON</li>
+          <li>Step 2: POST <code>/api/calc</code> → pillars, elements, (optional: tenGods, hiddenStems, interactions, luck)</li>
+          <li>Step 3: POST <code>/api/reading-generate</code> → English reading JSON</li>
         </ul>
       </details>
     </div>
+
+    <!-- Pillars UI & extras -->
+    <div id="pillars-root"></div>
+
+    <!-- Interactions badges -->
+    <div id="interactions-root"></div>
+
+    <!-- Big Luck timeline -->
+    <div id="luck-root"></div>
 
     <div class="result" id="result"></div>
   </div>
 
 <script>
+/* ---------- helpers / state ---------- */
 const el = (q) => document.querySelector(q);
 const statusEl = el('#status');
 const resultEl = el('#result');
 const runBtn = el('#runBtn');
 
-el('#fillExample').addEventListener('click', () => {
-  el('#birthDate').value = '1992-06-02';
-  el('#birthTime').value = '09:00';
-  el('#city').value = 'New York';
-  el('#accuracy').value = 'exact';
-});
+const STEM_ELEM = {甲:"wood",乙:"wood",丙:"fire",丁:"fire",戊:"earth",己:"earth",庚:"metal",辛:"metal",壬:"water",癸:"water"};
+const BRANCH_ELEM = {子:"water",丑:"earth",寅:"wood",卯:"wood",辰:"earth",巳:"fire",午:"fire",未:"earth",申:"metal",酉:"metal",戌:"earth",亥:"water"};
+const COLOR_CLASS = {wood:"wood",fire:"fire",earth:"earth",metal:"metal",water:"water"};
+const TITLES = {hour:"시주", day:"일주", month:"월주", year:"년주"};
 
 function setStatus(msg, type='') {
   statusEl.innerHTML = msg;
   statusEl.className = 'muted ' + (type || '');
 }
-
 async function fetchJSON(url, opts={}) {
   const r = await fetch(url, opts);
   const text = await r.text();
@@ -113,6 +153,7 @@ async function fetchJSON(url, opts={}) {
   catch { return { ok:r.ok, status:r.status, data: null, raw:text }; }
 }
 
+/* ---------- UI: Reading ---------- */
 function renderReading(output, meta={}) {
   const { badge, share } = output.cards || {};
   const isFallback = meta.fallback || false;
@@ -126,9 +167,7 @@ function renderReading(output, meta={}) {
         <div>${pill}</div>
       </div>
       <h3 class="headline">${output.title || 'Your Saju Reading'}</h3>
-      <ul>
-        ${(output.bullets || []).map(b => `<li>${b}</li>`).join('')}
-      </ul>
+      <ul>${(output.bullets || []).map(b => `<li>${b}</li>`).join('')}</ul>
       <div class="one">${output.forecastOneLiner || ''}</div>
       ${Array.isArray(output.actions) && output.actions[0] ? `<div class="callout"><strong>Try:</strong> ${output.actions[0]}</div>` : ''}
       ${badge || (share?.headline) ? `
@@ -140,6 +179,111 @@ function renderReading(output, meta={}) {
   `;
 }
 
+/* ---------- UI: Pillars (with tenGod, hidden stems) ---------- */
+function renderPillars(root, pillars, elements, tenGods, hiddenStems){
+  root.innerHTML = `
+    <div class="card">
+      <div class="kicker">FOUR PILLARS</div>
+      <div class="pillars-grid">
+        ${["hour","day","month","year"].map(k=>{
+          const p = pillars?.[k]; if(!p) return "";
+          const stemClass = COLOR_CLASS[STEM_ELEM[p.stem]] || "wood";
+          const branchClass = COLOR_CLASS[BRANCH_ELEM[p.branch]] || "earth";
+          const tg = tenGods?.byPillar?.[k] || tenGods?.[k] || tenGods?.[`${k}Stem`] || ""; // 유연 매핑
+          const hs = hiddenStems?.[p.branch] || hiddenStems?.byBranch?.[p.branch] || [];
+          return `
+            <div class="pillar-card">
+              <div class="pillar-title">${TITLES[k]}</div>
+              ${k==="day"?'<div class="pillar-sub">일간(나)</div>':""}
+              <div class="box ${stemClass}">${p.stem}</div>
+              <div class="box ${branchClass}" style="margin-top:8px">${p.branch}</div>
+              ${tg ? `<div class="subline">${tg}</div>` : ``}
+              ${Array.isArray(hs) && hs.length ? `
+                <div class="chips">${hs.map(h => `<span class="chip">${h}</span>`).join('')}</div>` : ``}
+            </div>`;
+        }).join("")}
+      </div>
+
+      ${elements ? `
+      <div class="gauge">
+        ${["wood","fire","earth","metal","water"].map(e=>{
+          const pct = Math.max(2, Math.round((elements[e]||0)*100));
+          return `<div class="${COLOR_CLASS[e]}" style="width:${pct}%"></div>`;
+        }).join("")}
+      </div>` : "" }
+    </div>
+  `;
+}
+
+/* ---------- UI: Interactions (합/충/형/파/해) ---------- */
+function renderInteractions(root, interactions){
+  const br = interactions?.branches || interactions?.branch || {};
+  const st = interactions?.stems || interactions?.stem || {};
+
+  const bag = [];
+  const pushList = (arr, label, tone) => {
+    if (Array.isArray(arr) && arr.length) {
+      arr.forEach(x => bag.push(`<span class="badge ${tone}">${label}: ${x}</span>`));
+    }
+  };
+  pushList(st.합, "간합", "info"); pushList(st.충, "간충", "warn");
+  pushList(br.합, "지합", "info"); pushList(br.충, "지충", "warn");
+  pushList(br.형, "형", "warn");   pushList(br.파, "파", "warn");  pushList(br.해, "해", "warn");
+
+  if (!bag.length) { root.innerHTML = ""; return; }
+
+  root.innerHTML = `
+    <div class="card">
+      <div class="kicker">INTERACTIONS</div>
+      <div class="badges">${bag.join("")}</div>
+    </div>
+  `;
+}
+
+/* ---------- UI: Big Luck Timeline ---------- */
+function calcAge(birthDateISO){
+  if (!birthDateISO) return null;
+  const b = new Date(birthDateISO+"T00:00:00");
+  const now = new Date();
+  let age = now.getFullYear() - b.getFullYear();
+  const m = now.getMonth() - b.getMonth();
+  if (m < 0 || (m===0 && now.getDate() < b.getDate())) age--;
+  return age;
+}
+function renderLuck(root, luck, birthDateISO){
+  const list = luck?.bigLuck || luck?.daeyun || [];
+  if (!Array.isArray(list) || !list.length) { root.innerHTML = ""; return; }
+
+  const age = calcAge(birthDateISO);
+  root.innerHTML = `
+    <div class="card luck">
+      <div class="kicker">BIG LUCK (10-year cycles)</div>
+      <div class="luck-bar">
+        ${list.map(({startAge, stem, branch, tenGod})=>{
+          const now = typeof age === 'number' && age >= startAge && age < startAge + 10;
+          return `
+            <div class="luck-seg ${now?'luck-now':''}">
+              <div class="luck-title">Age ${startAge}–${startAge+9}</div>
+              <div class="luck-ganji">${stem||''}${branch||''}</div>
+              ${tenGod?`<div class="luck-god">${tenGod}</div>`:''}
+              ${typeof startAge==='number'?`<div class="luck-age">starts ${startAge}</div>`:''}
+            </div>
+          `;
+        }).join("")}
+      </div>
+    </div>
+  `;
+}
+
+/* ---------- Demo controls ---------- */
+el('#fillExample').addEventListener('click', () => {
+  el('#birthDate').value = '1992-06-02';
+  el('#birthTime').value = '09:00';
+  el('#city').value = 'Seoul';
+  el('#accuracy').value = 'exact';
+});
+
+/* ---------- Main flow ---------- */
 runBtn.addEventListener('click', async () => {
   const birthDateISO = el('#birthDate').value.trim();
   const birthTime = el('#birthTime').value.trim();
@@ -153,16 +297,16 @@ runBtn.addEventListener('click', async () => {
   runBtn.disabled = true;
   setStatus('Step 1/3: Resolving city → timezone…');
 
-  // Step 1: city → lat/lng/timezone
+  // Step 1: geo
   const geo = await fetchJSON(`/api/geo-timezone?city=${encodeURIComponent(city)}`);
   if (!geo.ok || !geo.data?.timezone) {
-    setStatus('Failed on Step 1 (geo-timezone). Check city spelling or try again.', 'err');
+    setStatus('Failed on Step 1 (geo-timezone).', 'err');
     runBtn.disabled = false; return;
   }
-
   const { lat, lng } = geo.data.location;
   const tzId = geo.data.timezone;
 
+  // Step 2: calc (extended)
   setStatus('Step 2/3: Calculating pillars/elements…');
   const calcPayload = { birthDateISO, birthTime: birthTime || null, lat, lng, tzId, timeAccuracy };
   const calc = await fetchJSON('/api/calc', {
@@ -173,24 +317,28 @@ runBtn.addEventListener('click', async () => {
     setStatus('Failed on Step 2 (calc).', 'err'); runBtn.disabled = false; return;
   }
 
-  const { pillars, elements } = calc.data.data;
+  const d = calc.data.data || {};
+  const { pillars, elements, tenGods, hiddenStems, interactions, luck } = d;
 
+  // Extended UIs
+  renderPillars(document.getElementById('pillars-root'), pillars, elements, tenGods, hiddenStems);
+  renderInteractions(document.getElementById('interactions-root'), interactions);
+  renderLuck(document.getElementById('luck-root'), luck, birthDateISO);
+
+  // Step 3: reading
   setStatus('Step 3/3: Generating English reading…');
   const read = await fetchJSON('/api/reading-generate', {
     method: 'POST', headers: { 'Content-Type':'application/json' },
-    body: JSON.stringify({ pillars, elements, type:'summary', locale:'en-US' })
+    body: JSON.stringify({ pillars, elements, tenGods, interactions, type:'summary', locale:'en-US' })
   });
-
   if (!read.ok || !read.data) {
     setStatus('Failed on Step 3 (reading).', 'err'); runBtn.disabled = false; return;
   }
-
-  const out = read.data.output || read.data.output; // either live or fallback/mock shares 'output'
-  renderReading(out, { fallback: read.data.fallback, mocked: read.data.mocked });
+  renderReading(read.data.output || read.data.output, { fallback: read.data.fallback, mocked: read.data.mocked });
 
   setStatus(`Done • tz: ${tzId} • lat:${lat.toFixed(4)}, lng:${lng.toFixed(4)}`, 'ok');
 
-  // Show raw JSON for debugging
+  // Debug dump
   resultEl.insertAdjacentHTML('beforeend', `
     <details class="card" style="margin-top:12px">
       <summary>Debug JSON (geo/calc/reading)</summary>
