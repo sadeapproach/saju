@@ -1,44 +1,50 @@
 // api/reading-generate.js
-// Long-form Saju reading with robust fallback & clearer errors (CommonJS).
+// Long-form Saju reading (6 sections) with robust fallback (CommonJS)
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 const SYSTEM = `
 You are a Saju (Four Pillars) interpreter for an English-speaking audience.
 Write in warm, encouraging, modern English. Be practical and non‑fatalistic.
-Avoid medical/legal/financial advice; keep it general wellbeing.
-Output valid JSON ONLY using the requested schema.
+Offer gentle lifestyle ideas, not medical/legal/financial advice.
+Return ONLY JSON matching the schema.
 `;
 
+// ---- Long-form MOCK (used when no key / errors). At least ~4 sentences per section.
 function mockOutput() {
   return {
-    title: "Saju Analysis Summary",
+    title: "Embracing Your Unique Journey",
     bullets: [
-      "Your Day Master suggests a calm, thoughtful core with creative leanings.",
-      "Element balance shows strengths you can grow and a few areas to gently support.",
-      "Relationships benefit from steady pacing and honest, low‑pressure conversations.",
-      "Career themes favor consistent practice over quick wins.",
-      "This phase rewards grounded routines and small experiments."
+      "Your Day Master points to a calm yet creative core that prefers depth over rush.",
+      "Element balance suggests clear strengths with a few areas that thrive on gentle support.",
+      "Relationships benefit when pacing is steady and intentions are spoken early.",
+      "Career growth compounds through small, consistent practice.",
+      "This season rewards grounded routines and simple experiments."
     ],
-    forecastOneLiner: "Lean into steady progress and simple, repeatable habits—your momentum will build.",
+    forecastOneLiner: "Build steady momentum through repeatable habits—clarity grows as you move.",
     actions: [
-      "Block 25 minutes daily for one focused activity (study, portfolio, practice).",
-      "Choose one supportive routine (sleep, walking, hydration) and track for 7 days.",
-      "Reach out to one person each week to share progress or ask for feedback.",
-      "Declutter one small area of your workspace to reduce friction."
+      "Reserve 25–30 minutes daily for one focused practice (study, portfolio, or craft).",
+      "Choose one supportive routine (sleep window, short walks, hydration) and track it for 10 days.",
+      "Share progress weekly with one trusted person to anchor accountability.",
+      "Declutter one tiny space to lower friction for starting."
     ],
     sections: {
-      overview: "Your Day Master points to a steady, thoughtful temperament. You tend to prefer depth over noise, and you do best when you can pace yourself and build trust over time.",
-      elements: "Your five‑element balance hints at areas to nourish gently through environment and routines. Small daily rituals—light movement, hydration, sunlight—will support clarity and energy.",
-      careerMoney: "For work, think process over outcome: consistent practice compounds. Money decisions benefit from simplicity and clarity—reduce distractions and keep a single source of truth.",
-      relationships: "Relating improves through calm pacing and realistic expectations. Share intentions early and keep space for others’ timing.",
-      healthLifestyle: "Pick one foundational habit and make it easy: earlier bedtime, a short walk after meals, or keeping water at your desk.",
-      timing: "In the near term, steady routines beat intensity. Give yourself 4–6 weeks for a fair test before changing course.",
-      closing: "You don’t need to do everything at once. Choose one step you can repeat this week—momentum will take care of the rest."
+      corePersonality:
+        "Your core nature combines steadiness with quiet curiosity. You notice patterns others miss and prefer making thoughtful moves over reacting quickly. People often feel at ease around you because your presence is calm and grounded. When decisions matter, you gather context and then act with intention—this becomes a superpower when paired with consistent practice.",
+      fiveElementsBalance:
+        "The five‑element mix shows reliable fire and earth for drive and stability, while water benefits from gentle support through rest, hydration, and reflective time. If energy dips, sunlight walks and light stretching can unlock focus. Use color and environment as subtle levers—greens and natural wood tones soothe; soft blues invite reflection. Seasonal rhythm helps too: spring projects for creativity, autumn for editing and simplification.",
+      tenGodsThemes:
+        "Money themes favor simple structures and repeatable income instead of high volatility. Career patterns suggest you grow best through craft mastery and calm leadership rather than loud competition. In relationships, cooperation outperforms rivalry—small acts of reliability build deep trust. When pressure rises, step back, name the outcome you want, and move in measured steps.",
+      luckSummary:
+        "Current luck emphasizes consolidating skills and strengthening your platform. It is a season to refine systems, document know‑how, and make your work easier to repeat. Near‑term opportunities tend to come from people who already know your reliability. Give 4–6 weeks to each experiment before you change direction; momentum will reward patience.",
+      healthLifestyle:
+        "Keep routines light and doable: a short walk after meals, steady hydration, and a consistent bedtime are surprisingly powerful. If screen time is heavy, add a brief stretch between tasks to reset posture and attention. Choose foods that are warm and easy to digest when stress is high, and schedule small social check‑ins to balance solitary focus. Your energy is more about rhythm than intensity.",
+      overallSummary:
+        "This phase invites steadiness over speed. Your strengths—care, clarity, and quiet consistency—become amplifiers when turned into routines. Focus on one craft or project you can improve weekly, and keep relationships warm with simple, regular contact. Small, repeatable steps will carry you further than dramatic pushes."
     },
     cards: {
       badge: "Personal Growth",
-      share: { headline: "Discover Your Saju Insights", sub: "Reflect, refine, and grow—one step at a time." }
+      share: { headline: "Discover Your Saju Insights", sub: "Reflect, refine, and grow—one steady step at a time." }
     }
   };
 }
@@ -46,10 +52,7 @@ function mockOutput() {
 async function callOpenAI(payload) {
   const r = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${OPENAI_API_KEY}`
-    },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENAI_API_KEY}` },
     body: JSON.stringify(payload)
   });
   const j = await r.json();
@@ -75,7 +78,7 @@ module.exports = async (req, res) => {
     return res.status(400).json({ ok: false, error: 'Missing pillars/elements' });
   }
 
-  // ── 1) 환경 변수 없으면 즉시 MOCK 반환 (UX 보호)
+  // No key → return long-form mock safely
   if (!OPENAI_API_KEY) {
     return res.status(200).json({ ok: true, mocked: true, output: mockOutput() });
   }
@@ -86,32 +89,20 @@ module.exports = async (req, res) => {
   "forecastOneLiner": string,
   "actions": string[],
   "sections": {
-    "overview"?: string,
-    "elements"?: string,
-    "careerMoney"?: string,
-    "relationships"?: string,
-    "healthLifestyle"?: string,
-    "timing"?: string,
-    "closing"?: string
+    "corePersonality": string,       // 4+ sentences
+    "fiveElementsBalance": string,   // 4+ sentences
+    "tenGodsThemes": string,         // 4+ sentences (money/career/relationships)
+    "luckSummary": string,           // 4+ sentences (present big luck & near-term tone)
+    "healthLifestyle": string,       // 4+ sentences (gentle lifestyle tips)
+    "overallSummary": string         // 4+ sentences (keywords & closing)
   },
-  "cards"?: {
-    "badge"?: string,
-    "share"?: { "headline": string, "sub"?: string }
-  }
+  "cards"?: { "badge"?: string, "share"?: { "headline": string, "sub"?: string } }
 }`;
 
   const lengthGuide =
     length === 'long'
-      ? `Write ${Math.min(5, maxBullets)}-${maxBullets} bullets, 3-5 actions, and 5-7 short paragraphs across sections.`
-      : length === 'medium'
-      ? `Write 4-5 bullets, 2-3 actions, and 3-4 paragraphs.`
-      : `Write 3 bullets, 2 actions, and 1-2 short paragraphs.`;
-
-  const hints = `
-- Day Master (일간) → personality core in "overview".
-- Element balance → lifestyle supports; gentle, doable steps.
-- Ten Gods / interactions → themes only (no predictions).
-- Big Luck → flavor of timing, not fortunes.`;
+      ? `Write ${Math.min(5, maxBullets)}-${maxBullets} concise bullets, 3–5 actions, and SIX sections with 4–7 sentences each.`
+      : `Write clear bullets and actions, keep sections at least 3 sentences each.`;
 
   const data = { pillars, elements, tenGods, interactions, luck, type, locale, length, maxBullets };
 
@@ -119,51 +110,41 @@ module.exports = async (req, res) => {
 SCHEMA:
 ${schema}
 
-DATA (JSON):
+DATA:
 ${JSON.stringify(data)}
 
-TASK:
-- ${lengthGuide}
-- Friendly, modern, practical. Avoid fatalism. No medical/legal/financial advice.
-- Output ONE valid JSON object only (use the schema above).`;
+GUIDANCE:
+- English tone: friendly, modern, practical; avoid fatalism.
+- Mention Day Master as the core of personality in "corePersonality".
+- Use the five‑element distribution for "fiveElementsBalance" with gentle supports (colors, hobbies, seasons, routines).
+- "tenGodsThemes" covers money (재성), career (관성/인성), relationships (비견/겁재); keep it practical and non‑deterministic.
+- "luckSummary" describes the *flavor* of timing (current big luck) and what benefits from attention now/soon.
+- "healthLifestyle" offers general wellbeing ideas; no medical claims.
+- "overallSummary" ends with 1–2 empowering sentences and clear keywords.
+- Return ONE valid JSON object only. No markdown, no commentary.
+`;
 
   try {
     const j = await callOpenAI({
       model: 'gpt-4o-mini',
-      temperature: 0.35,
-      max_tokens: 1100,
+      temperature: 0.4,
+      max_tokens: 1400,
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: SYSTEM },
-        { role: 'user', content: hints },
         { role: 'user', content: userMsg }
       ]
     });
 
     const content = j?.choices?.[0]?.message?.content;
     let output = null;
-    try { output = JSON.parse(content); } catch (e) {}
+    try { output = JSON.parse(content); } catch {}
 
     if (!output) {
-      // ── 2) 모델이 JSON을 못 주면 폴백
-      return res.status(200).json({
-        ok: true,
-        fallback: true,
-        reason: 'parse_failed',
-        raw: j,
-        output: mockOutput()
-      });
+      return res.status(200).json({ ok: true, fallback: true, reason: 'parse_failed', raw: j, output: mockOutput() });
     }
-
     return res.status(200).json({ ok: true, output });
   } catch (err) {
-    // ── 3) 네트워크/권한/쿼터 등 모든 오류 폴백
-    return res.status(200).json({
-      ok: true,
-      fallback: true,
-      reason: 'openai_error',
-      error: String(err),
-      output: mockOutput()
-    });
+    return res.status(200).json({ ok: true, fallback: true, reason: 'openai_error', error: String(err), output: mockOutput() });
   }
 };
