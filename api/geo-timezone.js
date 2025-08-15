@@ -1,7 +1,10 @@
+// api/geo-timezone.js (offline-first final)
 // City -> (lat,lng) -> tzId
 // Geocoding: Nominatim -> maps.co -> Open‑Meteo
-// Timezone: timeapi.io -> Open‑Meteo -> (proxy 우회) r.jina.ai
+// Timezone: ① tz-lookup (offline) -> ② timeapi.io -> ③ open‑meteo -> ④ proxy 우회
 // + 타임아웃/재시도/상세로그/CORS
+
+const tzlookup = require('tz-lookup');
 
 function setCORS(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -34,6 +37,7 @@ function normalizeCity(raw){
   if (/^seoul$/i.test(s)) s = 'Seoul, South Korea';
   return s;
 }
+function isFiniteNum(n){ return Number.isFinite(n); }
 
 // ---------- Geocoders
 async function geoNominatim(q){
@@ -61,7 +65,7 @@ async function geoOpenMeteo(q){
   return { ok:true, provider:'open-meteo-geocoding', url, name:`${f.name}${f.country?', '+f.country:''}`, lat:f.latitude, lng:f.longitude, country:f.country||null };
 }
 
-// ---------- Timezone providers (정식 + 프록시 우회)
+// ---------- Timezone providers (온라인 폴백)
 async function tzTimeapi(lat,lng){
   const headers = {
     'Accept':'application/json',
@@ -71,24 +75,19 @@ async function tzTimeapi(lat,lng){
   };
   const url1 = `https://timeapi.io/api/TimeZone/coordinate?latitude=${lat}&longitude=${lng}`;
   const url2 = `https://timeapi.io/api/Time/current/coordinate?latitude=${lat}&longitude=${lng}`;
-  const tries = [url1, url2];
-  const results = [];
-
-  for (const u of tries){
-    for (let j=0;j<2;j++){
+  for (const u of [url1, url2]){
+    for (let i=0;i<2;i++){
       const r = await fetchTextWithTimeout(u, { headers });
       const d = J(r.text);
       if (r.ok && d && (d.timeZone || d.timeZoneName || d.timezone)) {
         const tz = d.timeZone || d.timeZoneName || d.timezone;
-        return { ok:true, provider:'timeapi.io', url: u, timezone: tz };
+        return { ok:true, provider:'timeapi.io', url:u, timezone:tz };
       }
-      results.push({ ok:false, provider:'timeapi.io', url:u, status:r.status, raw:r.text });
       await sleep(200);
     }
   }
-  return { ok:false, provider:'timeapi.io', url:url1, status:0, raw: JSON.stringify(results).slice(0, 800) };
+  return { ok:false, provider:'timeapi.io', url:url1, status:0, raw:'timeapi_failed' };
 }
-
 async function tzOpenMeteo(lat,lng){
   const url = `https://api.open-meteo.com/v1/timezone?latitude=${lat}&longitude=${lng}`;
   const r = await fetchTextWithTimeout(url);
@@ -96,13 +95,13 @@ async function tzOpenMeteo(lat,lng){
   if (r.ok && d?.timezone) return { ok:true, provider:'open-meteo-timezone', url, timezone:d.timezone };
   return { ok:false, provider:'open-meteo-timezone', url, status:r.status, raw:r.text };
 }
-
-// --- 프록시 우회 (r.jina.ai는 대상 URL의 원문을 그대로 반환)
+// --- Proxy 우회
 async function tzTimeapiProxy(lat,lng){
-  const pu = (u)=>`https://r.jina.ai/http://${u.replace(/^https?:\/\//,'')}`;
-  const url1 = pu(`https://timeapi.io/api/TimeZone/coordinate?latitude=${lat}&longitude=${lng}`);
-  const url2 = pu(`https://timeapi.io/api/Time/current/coordinate?latitude=${lat}&longitude=${lng}`);
-  for (const u of [url1, url2]){
+  const wrap = u => `https://r.jina.ai/http://${u.replace(/^https?:\/\//,'')}`;
+  for (const u of [
+    wrap(`https://timeapi.io/api/TimeZone/coordinate?latitude=${lat}&longitude=${lng}`),
+    wrap(`https://timeapi.io/api/Time/current/coordinate?latitude=${lat}&longitude=${lng}`)
+  ]){
     const r = await fetchTextWithTimeout(u);
     const d = J(r.text);
     if (r.ok && d && (d.timeZone || d.timeZoneName || d.timezone)) {
@@ -110,7 +109,7 @@ async function tzTimeapiProxy(lat,lng){
       return { ok:true, provider:'timeapi.io-proxy', url:u, timezone:tz };
     }
   }
-  return { ok:false, provider:'timeapi.io-proxy', url:url1, status:0, raw:'proxy_failed' };
+  return { ok:false, provider:'timeapi.io-proxy', url:'proxy', status:0, raw:'proxy_failed' };
 }
 async function tzOpenMeteoProxy(lat,lng){
   const u = `https://r.jina.ai/http://api.open-meteo.com/v1/timezone?latitude=${lat}&longitude=${lng}`;
@@ -131,7 +130,7 @@ module.exports = async (req, res) => {
   const candidates = [ normalizeCity(raw), raw.replace(/\+/g,' ') ];
 
   try {
-    // 1) Geocoding
+    // 1) Geocoding (최대 3×2회 시도)
     const attempts = [];
     let geo = null;
     const geoProviders = [ geoNominatim, geoMapsCo, geoOpenMeteo ];
@@ -150,22 +149,42 @@ module.exports = async (req, res) => {
     }
     if (!geo) return res.status(502).json({ ok:false, error:'Geocoding failed', attempts });
 
-    // 2) Timezone: 정식 → 폴백 → 프록시 우회
+    const { lat, lng } = geo;
+
+    // 2) Timezone — 오프라인 tz-lookup 우선
+    if (isFiniteNum(lat) && isFiniteNum(lng)) {
+      try {
+        const zone = tzlookup(lat, lng); // 🔥 네트워크 없이 즉시 계산
+        if (zone && typeof zone === 'string') {
+          return res.status(200).json({
+            ok:true,
+            input:{ city: raw },
+            provider: geo.provider,
+            location:{ name: geo.name, country: geo.country, lat, lng },
+            timezone: zone,
+            debug:{ geo_url: geo.url, tz_url: 'tz-lookup(local)' }
+          });
+        }
+      } catch (e) {
+        // 계속 진행하여 온라인 폴백 사용
+      }
+    }
+
+    // 3) 온라인 폴백
     const tzAttempts = [];
-    let tz = await tzTimeapi(geo.lat, geo.lng);
-    tzAttempts.push(tz);
-    if (!tz.ok) { const t2 = await tzOpenMeteo(geo.lat, geo.lng); tzAttempts.push(t2); tz = t2; }
-    if (!tz.ok) { const t3 = await tzTimeapiProxy(geo.lat, geo.lng); tzAttempts.push(t3); tz = t3; }
-    if (!tz.ok) { const t4 = await tzOpenMeteoProxy(geo.lat, geo.lng); tzAttempts.push(t4); tz = t4; }
+    let tz = await tzTimeapi(lat, lng);      tzAttempts.push(tz);
+    if (!tz.ok) { const t2 = await tzOpenMeteo(lat, lng);      tzAttempts.push(t2); tz = t2; }
+    if (!tz.ok) { const t3 = await tzTimeapiProxy(lat, lng);   tzAttempts.push(t3); tz = t3; }
+    if (!tz.ok) { const t4 = await tzOpenMeteoProxy(lat, lng); tzAttempts.push(t4); tz = t4; }
 
     if (!tz.ok) return res.status(502).json({ ok:false, error:'Timezone lookup failed', geo, tzAttempts });
 
-    // 3) Success
+    // 4) 성공
     return res.status(200).json({
       ok:true,
       input:{ city: raw },
       provider: geo.provider,
-      location:{ name: geo.name, country: geo.country, lat: geo.lat, lng: geo.lng },
+      location:{ name: geo.name, country: geo.country, lat, lng },
       timezone: tz.timezone,
       debug:{ geo_url: geo.url, tz_url: tz.url }
     });
