@@ -1,10 +1,63 @@
 // api/reading-generate.js
-// Long-form Saju reading with clear sections for English audiences.
+// Long-form Saju reading with robust fallback & clearer errors (CommonJS).
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ ok:false, error:'Use POST' });
+const SYSTEM = `
+You are a Saju (Four Pillars) interpreter for an English-speaking audience.
+Write in warm, encouraging, modern English. Be practical and non‑fatalistic.
+Avoid medical/legal/financial advice; keep it general wellbeing.
+Output valid JSON ONLY using the requested schema.
+`;
+
+function mockOutput() {
+  return {
+    title: "Saju Analysis Summary",
+    bullets: [
+      "Your Day Master suggests a calm, thoughtful core with creative leanings.",
+      "Element balance shows strengths you can grow and a few areas to gently support.",
+      "Relationships benefit from steady pacing and honest, low‑pressure conversations.",
+      "Career themes favor consistent practice over quick wins.",
+      "This phase rewards grounded routines and small experiments."
+    ],
+    forecastOneLiner: "Lean into steady progress and simple, repeatable habits—your momentum will build.",
+    actions: [
+      "Block 25 minutes daily for one focused activity (study, portfolio, practice).",
+      "Choose one supportive routine (sleep, walking, hydration) and track for 7 days.",
+      "Reach out to one person each week to share progress or ask for feedback.",
+      "Declutter one small area of your workspace to reduce friction."
+    ],
+    sections: {
+      overview: "Your Day Master points to a steady, thoughtful temperament. You tend to prefer depth over noise, and you do best when you can pace yourself and build trust over time.",
+      elements: "Your five‑element balance hints at areas to nourish gently through environment and routines. Small daily rituals—light movement, hydration, sunlight—will support clarity and energy.",
+      careerMoney: "For work, think process over outcome: consistent practice compounds. Money decisions benefit from simplicity and clarity—reduce distractions and keep a single source of truth.",
+      relationships: "Relating improves through calm pacing and realistic expectations. Share intentions early and keep space for others’ timing.",
+      healthLifestyle: "Pick one foundational habit and make it easy: earlier bedtime, a short walk after meals, or keeping water at your desk.",
+      timing: "In the near term, steady routines beat intensity. Give yourself 4–6 weeks for a fair test before changing course.",
+      closing: "You don’t need to do everything at once. Choose one step you can repeat this week—momentum will take care of the rest."
+    },
+    cards: {
+      badge: "Personal Growth",
+      share: { headline: "Discover Your Saju Insights", sub: "Reflect, refine, and grow—one step at a time." }
+    }
+  };
+}
+
+async function callOpenAI(payload) {
+  const r = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${OPENAI_API_KEY}`
+    },
+    body: JSON.stringify(payload)
+  });
+  const j = await r.json();
+  return j;
+}
+
+module.exports = async (req, res) => {
+  if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Use POST' });
 
   const {
     pillars,
@@ -14,73 +67,55 @@ export default async function handler(req, res) {
     luck,
     type = 'summary',
     locale = 'en-US',
-    length = 'long',        // 'short' | 'medium' | 'long'
+    length = 'long',
     maxBullets = 6
   } = req.body || {};
 
   if (!pillars || !elements) {
-    return res.status(400).json({ ok:false, error:'Missing pillars/elements' });
+    return res.status(400).json({ ok: false, error: 'Missing pillars/elements' });
   }
 
-  // --- System guardrails: friendly, actionable, safe for general audiences
-  const system = `
-You are a Saju (Four Pillars) interpreter for an English-speaking audience.
-Write in warm, encouraging, and modern American-English.
-Be practical and suggest small, doable next steps. Avoid fatalism and guarantees.
-Never give medical/legal/financial advice; use general wellbeing language.
-Output valid JSON only, using the schema provided.
-`;
+  // ── 1) 환경 변수 없으면 즉시 MOCK 반환 (UX 보호)
+  if (!OPENAI_API_KEY) {
+    return res.status(200).json({ ok: true, mocked: true, output: mockOutput() });
+  }
 
-  // --- Output schema: rich sections (backward compatible with the old UI)
   const schema = `{
-  "title": string,                     // concise headline
-  "bullets": string[],                 // ${Math.min(5, maxBullets)}-${maxBullets} key points (short, concrete)
-  "forecastOneLiner": string,          // 1-2 sentences, uplifting & realistic
-  "actions": string[],                 // 3-5 specific suggestions a person can try within a week
-
-  // Optional long-form sections (if present, the UI will render them nicely)
+  "title": string,
+  "bullets": string[],
+  "forecastOneLiner": string,
+  "actions": string[],
   "sections": {
-    "overview"?: string,               // personality & core tendencies (Day Master)
-    "elements"?: string,               // five-element balance + gentle lifestyle ideas
-    "careerMoney"?: string,            // work, growth themes; money mindset (no financial advice)
-    "relationships"?: string,          // how to connect better with others
-    "healthLifestyle"?: string,        // general wellbeing & routines (non-medical)
-    "timing"?: string,                 // big-luck/near-term timing themes (no predictions)
-    "closing"?: string                 // short, hopeful wrap-up
+    "overview"?: string,
+    "elements"?: string,
+    "careerMoney"?: string,
+    "relationships"?: string,
+    "healthLifestyle"?: string,
+    "timing"?: string,
+    "closing"?: string
   },
-
-  // Optional badges for the card footer
   "cards"?: {
     "badge"?: string,
     "share"?: { "headline": string, "sub"?: string }
   }
 }`;
 
-  // --- Extra guidance to steer length and content
   const lengthGuide =
     length === 'long'
-      ? `Write ${Math.min(5, maxBullets)}-${maxBullets} bullets, 3-5 actions,
-and 5-7 concise paragraphs across sections. Keep each paragraph 2-4 sentences.`
+      ? `Write ${Math.min(5, maxBullets)}-${maxBullets} bullets, 3-5 actions, and 5-7 short paragraphs across sections.`
       : length === 'medium'
-      ? `Write 4-5 bullets, 2-3 actions, and 3-4 concise paragraphs.`
+      ? `Write 4-5 bullets, 2-3 actions, and 3-4 paragraphs.`
       : `Write 3 bullets, 2 actions, and 1-2 short paragraphs.`;
 
   const hints = `
-MAPPING HINTS (soft, not deterministic):
-- Day Master (일간) informs core temperament; reference it briefly in "overview".
-- Element balance: high values ~ strengths; very low values ~ areas to support with environment, hobbies, colors, routines.
-- Ten Gods: 財/官 → responsibility/resources themes; 印 → learning/care; 食/傷 → creativity/output; 比/劫 → peers/self-drive.
-- Interactions (合/冲/刑/破/害) can be framed as relationship or pacing tips.
-- Big Luck: talk about the "flavor" of the current cycle; avoid fortune-telling.
-- Tone: practical + kind; focus on what is in the user's control.
-`;
+- Day Master (일간) → personality core in "overview".
+- Element balance → lifestyle supports; gentle, doable steps.
+- Ten Gods / interactions → themes only (no predictions).
+- Big Luck → flavor of timing, not fortunes.`;
 
-  const data = {
-    pillars, elements, tenGods, interactions, luck,
-    type, locale, length, maxBullets
-  };
+  const data = { pillars, elements, tenGods, interactions, luck, type, locale, length, maxBullets };
 
-  const user = `
+  const userMsg = `
 SCHEMA:
 ${schema}
 
@@ -89,41 +124,46 @@ ${JSON.stringify(data)}
 
 TASK:
 - ${lengthGuide}
-- Write for a general English-speaking audience; avoid jargon or explain it in plain words.
-- Do not output anything except one valid JSON object following the schema.
-`;
+- Friendly, modern, practical. Avoid fatalism. No medical/legal/financial advice.
+- Output ONE valid JSON object only (use the schema above).`;
 
   try {
-    const r = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': \`Bearer \${OPENAI_API_KEY}\`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',      // 사용 모델
-        temperature: 0.35,         // 따뜻하지만 일관되게
-        max_tokens: 1100,          // 충분한 길이
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: hints },
-          { role: 'user', content: user }
-        ]
-      })
+    const j = await callOpenAI({
+      model: 'gpt-4o-mini',
+      temperature: 0.35,
+      max_tokens: 1100,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: SYSTEM },
+        { role: 'user', content: hints },
+        { role: 'user', content: userMsg }
+      ]
     });
 
-    const j = await r.json();
-    const content = j.choices?.[0]?.message?.content;
+    const content = j?.choices?.[0]?.message?.content;
     let output = null;
-    try { output = JSON.parse(content); } catch(e){}
+    try { output = JSON.parse(content); } catch (e) {}
 
     if (!output) {
-      return res.status(502).json({ ok:false, error:'parse_failed', raw:j });
+      // ── 2) 모델이 JSON을 못 주면 폴백
+      return res.status(200).json({
+        ok: true,
+        fallback: true,
+        reason: 'parse_failed',
+        raw: j,
+        output: mockOutput()
+      });
     }
 
-    return res.status(200).json({ ok:true, output });
-  } catch (e) {
-    return res.status(500).json({ ok:false, error: String(e) });
+    return res.status(200).json({ ok: true, output });
+  } catch (err) {
+    // ── 3) 네트워크/권한/쿼터 등 모든 오류 폴백
+    return res.status(200).json({
+      ok: true,
+      fallback: true,
+      reason: 'openai_error',
+      error: String(err),
+      output: mockOutput()
+    });
   }
-}
+};
