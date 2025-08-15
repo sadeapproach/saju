@@ -1,4 +1,4 @@
-// api/geo-timezone.js (stable)
+// api/geo-timezone.js (revised with custom provider order & clearer structure)
 // City -> (lat,lng) -> tzId
 // Geocoding: Open-Meteo -> maps.co(Nominatim mirror) -> Nominatim
 // Timezone: timeapi.io -> Open-Meteo
@@ -36,19 +36,18 @@ function normalizeCity(raw){
   return s;
 }
 
-// ---- Geocoders (3개 체인)
+// ---- Geocoders
 async function geoOpenMeteo(q){
   const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1&language=en&format=json`;
-  const r = await fetchTextWithTimeout(url, {});
+  const r = await fetchTextWithTimeout(url);
   const d = J(r.text);
   const f = d?.results?.[0];
   if (!r.ok || !f) return { ok:false, provider:'open-meteo-geocoding', url, status:r.status, raw:r.text };
   return { ok:true, provider:'open-meteo-geocoding', url, name:`${f.name}${f.country?', '+f.country:''}`, lat:f.latitude, lng:f.longitude, country:f.country||null };
 }
 async function geoMapsCo(q){
-  // maps.co는 nominatim mirror (무료, UA 요구 적음)
   const url = `https://geocode.maps.co/search?q=${encodeURIComponent(q)}&api_key=free`;
-  const r = await fetchTextWithTimeout(url, {});
+  const r = await fetchTextWithTimeout(url);
   const d = J(r.text);
   const f = Array.isArray(d) ? d[0] : null;
   if (!r.ok || !f) return { ok:false, provider:'maps.co', url, status:r.status, raw:r.text };
@@ -63,17 +62,17 @@ async function geoNominatim(q){
   return { ok:true, provider:'nominatim', url, name:f.display_name, lat:parseFloat(f.lat), lng:parseFloat(f.lon), country:f.address?.country||null };
 }
 
-// ---- Timezone (2개 체인)
+// ---- Timezone
 async function tzTimeapi(lat,lng){
   const url = `https://timeapi.io/api/TimeZone/coordinate?latitude=${lat}&longitude=${lng}`;
-  const r = await fetchTextWithTimeout(url, {});
+  const r = await fetchTextWithTimeout(url);
   const d = J(r.text);
   if (r.ok && d?.timeZone) return { ok:true, provider:'timeapi.io', url, timezone:d.timeZone };
   return { ok:false, provider:'timeapi.io', url, status:r.status, raw:r.text };
 }
 async function tzOpenMeteo(lat,lng){
   const url = `https://api.open-meteo.com/v1/timezone?latitude=${lat}&longitude=${lng}`;
-  const r = await fetchTextWithTimeout(url, {});
+  const r = await fetchTextWithTimeout(url);
   const d = J(r.text);
   if (r.ok && d?.timezone) return { ok:true, provider:'open-meteo-timezone', url, timezone:d.timezone };
   return { ok:false, provider:'open-meteo-timezone', url, status:r.status, raw:r.text };
@@ -82,7 +81,10 @@ async function tzOpenMeteo(lat,lng){
 module.exports = async (req, res) => {
   setCORS(res);
   if (req.method === 'OPTIONS') return res.status(204).end();
-  if (req.method !== 'GET') { res.setHeader('Allow','GET, OPTIONS'); return res.status(405).json({ ok:false, error:'Use GET' }); }
+  if (req.method !== 'GET') {
+    res.setHeader('Allow','GET, OPTIONS');
+    return res.status(405).json({ ok:false, error:'Use GET' });
+  }
 
   const raw = (req.query.city||'').toString();
   if (!raw.trim()) return res.status(400).json({ ok:false, error:'Missing ?city=' });
@@ -90,26 +92,31 @@ module.exports = async (req, res) => {
   const candidates = [ normalizeCity(raw), raw.replace(/\+/g,' ') ];
 
   try {
-    // --- Geocoding with retry & providers
     const attempts = [];
     let geo = null;
 
+    // **여기서 순서 바꾸면 위치 이동 효과**
+    const geoProviders = [
+      geoNominatim,       // 예: nominatim을 1순위로
+      geoMapsCo,
+      geoOpenMeteo
+    ];
+
     for (const q of candidates) {
-      // 각 공급자 2회까지 재시도 (간단 backoff)
-      for (const provider of [geoOpenMeteo, geoMapsCo, geoNominatim]) {
-        for (let i=0;i<2;i++){
+      for (const provider of geoProviders) {
+        for (let i=0; i<2; i++){
           const r = await provider(q);
           attempts.push(r);
           if (r.ok) { geo = r; break; }
-          await sleep(250); // 짧은 백오프
+          await sleep(250);
         }
         if (geo) break;
       }
       if (geo) break;
     }
+
     if (!geo) return res.status(502).json({ ok:false, error:'Geocoding failed', attempts });
 
-    // --- Timezone lookup
     let tz = await tzTimeapi(geo.lat, geo.lng);
     if (!tz.ok) tz = await tzOpenMeteo(geo.lat, geo.lng);
     if (!tz.ok) return res.status(502).json({ ok:false, error:'Timezone lookup failed', geo, tz });
