@@ -1,348 +1,353 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Saju-Eight • End-to-End Playground (Extended • Hybrid UI)</title>
-
-  <!-- CJK font for Hanzi/Hangul -->
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Saju-Eight • Playground (Extended + Topics Carousel)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap">
-
   <style>
-    :root { --bg:#0b1220; --panel:#121a2a; --muted:#6b7a90; --txt:#e9f0ff; --accent:#66b3ff; --ok:#49d39a; --err:#ff7a7a; }
-    * { box-sizing: border-box; }
-    body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, "Noto Sans KR", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: linear-gradient(120deg,#0b1220,#0e2342); color:var(--txt); }
-    .wrap { max-width: 980px; margin: 40px auto 80px; padding: 0 20px; }
-    .title { font-size: 26px; font-weight: 800; letter-spacing: .2px; margin-bottom: 8px; }
-    .sub { color: var(--muted); margin-bottom: 18px; font-size: 14px; }
-    .card { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 16px; padding: 16px; box-shadow: 0 10px 40px rgba(0,0,0,.35); }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-    label { font-size: 12px; color: var(--muted); display:block; margin-bottom: 6px; }
-    select, input, button { width: 100%; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,.12); background:#0b1426; color:var(--txt); outline: none; }
-    select:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(102,179,255,.2); }
-    button { background: linear-gradient(135deg,#4da3ff,#66b3ff); color:#06101d; font-weight: 700; cursor: pointer; border: none; }
-    button[disabled] { opacity: .6; cursor: not-allowed; }
-    .row { display:flex; gap:10px; align-items:center; }
-    .row > * { flex:1; }
-    .actions { display:flex; gap:10px; margin-top: 10px; }
-    .muted { color: var(--muted); font-size: 13px; }
-    .kicker { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
-    .headline { font-size: 20px; font-weight: 800; margin: 0 0 8px; }
-    ul { padding-left: 18px; margin: 8px 0 0; }
-    .one { margin-top: 8px; font-style: italic; color:#cfe4ff; }
-    .callout { margin-top: 10px; padding: 10px 12px; background: rgba(73,211,154,.09); border: 1px solid rgba(73,211,154,.25); border-radius: 12px; }
-    details { margin-top: 12px; }
-    pre { background: #081123; border:1px solid rgba(255,255,255,.08); padding: 12px; border-radius: 12px; overflow:auto; }
-    .pill { display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); font-size:12px; }
-    .ok { color: var(--ok); } .err { color: var(--err); }
-    .result { margin-top: 16px; }
-
-    /* Pillars */
-    .pillars-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
-    @media (min-width:768px){.pillars-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
-    .pillar-card{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);border-radius:16px;padding:12px}
-    .pillar-title{font-size:12px;opacity:.8;text-align:center;margin-bottom:6px}
-    .pillar-sub{font-size:11px;color:#7dd3fc;text-align:center;margin-bottom:6px}
-    .box{height:84px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:700;letter-spacing:.02em;border:1px solid #0003}
-    .subline{font-size:11px;text-align:center;color:#c8d6f8;margin-top:6px}
-    .chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:6px}
-    .chip{font-size:11px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}
-    .wood{background:#16a34a;color:#fff}.fire{background:#ef4444;color:#fff}
-    .earth{background:#f59e0b;color:#111}.metal{background:#e5e7eb;color:#111;border-color:#cbd5e1}
-    .water{background:#06b6d4;color:#fff}
+    :root{
+      --bg:#0b1220; --panel:#121a2a; --muted:#6b7a90; --txt:#e9f0ff; --accent:#66b3ff;
+      --ok:#49d39a; --err:#ff7a7a; --card:#0b1426; --border:rgba(255,255,255,.10);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,"Noto Sans KR","Segoe UI",Roboto,Arial,sans-serif;background:linear-gradient(120deg,#0b1220,#0e2342);color:var(--txt)}
+    .wrap{max-width:980px;margin:40px auto;padding:0 16px}
+    .title{font-size:24px;font-weight:800;margin-bottom:6px}
+    .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+    .card{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+    .grid{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+    .grid-5{display:grid;gap:10px;grid-template-columns:repeat(5,minmax(0,1fr))}
+    @media (max-width:760px){.grid,.grid-5{grid-template-columns:1fr 1fr}.grid-5{grid-template-columns:1fr 1fr}}
+    label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+    input,select,button,textarea{width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:var(--card);color:var(--txt);outline:none}
+    input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(102,179,255,.2)}
+    button{background:linear-gradient(135deg,#4da3ff,#66b3ff);border:none;font-weight:700;color:#06101d;cursor:pointer}
+    button[disabled]{opacity:.6;cursor:not-allowed}
+    .muted{color:var(--muted);font-size:13px}
+    .kicker{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+    .headline{font-weight:800;margin:0 0 8px;font-size:20px}
+    .row{display:flex;gap:10px;align-items:center}
+    .pill{display:inline-flex;gap:8px;align-items:center;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--border);font-size:12px}
+    .ok{color:var(--ok)} .err{color:var(--err)}
+    details{margin-top:12px} pre{background:#081123;border:1px solid var(--border);padding:12px;border-radius:12px;overflow:auto}
+    /* Pillars quick styles (kept short here) */
+    .pillars{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .pillar{border:1px solid var(--border);border-radius:16px;padding:12px;background:rgba(255,255,255,.04)}
+    .pillar .t{font-size:12px;opacity:.8;text-align:center;margin-bottom:6px}
+    .box{height:82px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:800;border:1px solid #0003}
+    .stem{background:#0ea5e9} .branch{background:#f43f5e}
+    /* Gauge */
     .gauge{display:flex;height:10px;overflow:hidden;border-radius:10px;border:1px solid #2a2a2a;margin-top:12px}
     .gauge>div{height:100%}
-
-    /* Luck */
-    .luck{margin-top:16px}
-    .luck-bar{display:flex;gap:8px;flex-wrap:wrap}
-    .luck-seg{flex:1;min-width:126px;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px;background:rgba(255,255,255,.05)}
-    .luck-title{font-size:12px;opacity:.85;margin-bottom:4px}
-    .luck-ganji{font-size:16px;font-weight:800}
-    .luck-god{font-size:11px;color:#cfe4ff;margin-top:2px}
-    .luck-age{font-size:11px;color:#9fb3d6;margin-top:6px}
-    .luck-now{outline:2px solid #66b3ff; box-shadow:0 0 0 4px rgba(102,179,255,.2)}
-
-    /* Hybrid toggle */
-    .view-toggle{display:inline-flex;border-radius:999px;border:1px solid rgba(255,255,255,.15);overflow:hidden;background:rgba(255,255,255,.05)}
-    .view-toggle button{padding:8px 14px;background:transparent;color:#cfe4ff;border:none}
-    .view-toggle button.active{background:#66b3ff;color:#07121f;font-weight:800}
-    .section-card{margin-top:12px}
-    .section-title{font-size:16px;font-weight:800;margin:0 0 6px}
-    .section-kicker{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9db1d8}
-    .section-p{margin:6px 0 0;line-height:1.5}
-    .section-list{margin:6px 0 0 16px}
-    .badges-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-    .badge{padding:6px 10px;border-radius:999px;font-size:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05)}
+    .wood{background:#16a34a}.fire{background:#ef4444}.earth{background:#f59e0b}.metal{background:#e5e7eb}.water{background:#06b6d4}
+    /* Reading cards */
+    .section{margin-top:14px}
+    .badgeRow{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+    .chip{font-size:11px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--border)}
+    /* ---------- Topics Carousel (mobile-first) ---------- */
+    .topics-wrap{margin-top:18px}
+    .topics-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+    .topics-scroll{
+      display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;
+      -webkit-overflow-scrolling:touch;scrollbar-width:none
+    }
+    .topics-scroll::-webkit-scrollbar{display:none}
+    .topic-card{
+      flex:0 0 230px;scroll-snap-align:start;background:rgba(255,255,255,.05);border:1px solid var(--border);
+      border-radius:16px;padding:12px 12px 14px;display:flex;flex-direction:column;gap:8px
+    }
+    .topic-emoji{font-size:22px}
+    .topic-title{font-weight:800}
+    .topic-desc{color:var(--muted);font-size:13px;line-height:1.4}
+    .topic-btn{margin-top:auto}
+    .topic-disabled{opacity:.6;pointer-events:none}
+    /* topic result */
+    .topic-result{margin-top:10px}
+    .skeleton{position:relative;overflow:hidden;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:12px;height:84px}
+    .skeleton::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);animation:sh 1.2s infinite}
+    @keyframes sh{to{transform:translateX(100%)}}
+    /* Ask box */
+    .ask-row{display:flex;gap:8px;margin-top:10px}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="title">Saju-Eight • End-to-End Playground (Extended)</div>
-    <div class="sub">Enter birth info and city → timezone → pillars → English reading (no options; single standard). <span class="muted">Switch Quick/Deep below.</span></div>
+<div class="wrap">
+  <div class="title">Saju-Eight • End-to-End Playground (Extended)</div>
+  <div class="sub">Enter birth info and city → timezone → pillars → English reading (single standard). Then explore <b>Specific Fortunes</b> with a mobile-friendly carousel.</div>
 
-    <!-- View toggle -->
-    <div class="row" style="justify-content:space-between; margin-bottom:10px">
-      <div></div>
-      <div class="view-toggle" id="viewToggle">
-        <button data-view="quick" class="active">Quick</button>
-        <button data-view="deep">Deep</button>
+  <!-- ===== Form ===== -->
+  <div class="card">
+    <div class="grid-5">
+      <div>
+        <label>Birth year</label>
+        <select id="year"></select>
+      </div>
+      <div>
+        <label>Birth month</label>
+        <select id="month"></select>
+      </div>
+      <div>
+        <label>Birth day</label>
+        <select id="day"></select>
+      </div>
+      <div>
+        <label>Hour</label>
+        <select id="hour"></select>
+      </div>
+      <div>
+        <label>Minute</label>
+        <select id="minute"></select>
       </div>
     </div>
-
-    <!-- Input card (select pickers) -->
-    <div class="card" id="formCard">
-      <div class="grid">
-        <div>
-          <label>Birth year</label>
-          <select id="year"></select>
-        </div>
-        <div>
-          <label>Birth month</label>
-          <select id="month"></select>
-        </div>
+    <div class="grid" style="margin-top:10px">
+      <div>
+        <label>Birth city (in English)</label>
+        <input id="city" placeholder="Seoul / New York / Tokyo"/>
       </div>
-      <div class="grid">
-        <div>
-          <label>Birth day</label>
-          <select id="day"></select>
-        </div>
+      <div>
+        <label>&nbsp;</label>
         <div class="row">
-          <div>
-            <label>Hour</label>
-            <select id="hour"></select>
-          </div>
-          <div>
-            <label>Minute</label>
-            <select id="minute"></select>
-          </div>
-          <div>
-            <label>Birth city (in English)</label>
-            <input id="city" placeholder="Seoul" value="seoul"/>
-          </div>
+          <button id="runBtn">Calculate & Generate</button>
+          <button id="fillExample" type="button">Fill Example</button>
         </div>
       </div>
-      <div class="actions">
-        <button id="runBtn">Calculate & Generate</button>
-        <button id="fillExample" type="button">Fill Example</button>
-      </div>
-      <div id="status" class="muted" style="margin-top:8px;"></div>
-
-      <details>
-        <summary class="muted">What happens under the hood?</summary>
-        <ul class="muted">
-          <li>Step 1: GET <code>/api/geo-timezone?city=...</code></li>
-          <li>Step 2: POST <code>/api/calc</code></li>
-          <li>Step 3: POST <code>/api/reading-generate</code></li>
-        </ul>
-      </details>
     </div>
-
-    <!-- Outputs -->
-    <div id="pillars-root"></div>
-    <div id="luck-root"></div>
-    <div class="result" id="result"></div>
+    <div id="status" class="muted" style="margin-top:6px"></div>
+    <details style="margin-top:8px">
+      <summary class="muted">What happens under the hood?</summary>
+      <ul class="muted">
+        <li>Step 1: GET <code>/api/geo-timezone?city=...</code></li>
+        <li>Step 2: POST <code>/api/calc</code> (Four Pillars, elements, ten gods, big luck)</li>
+        <li>Step 3: POST <code>/api/reading-generate</code> (Deep reading)</li>
+      </ul>
+    </details>
   </div>
 
+  <!-- ===== Pillars ===== -->
+  <div id="pillars" class="section"></div>
+
+  <!-- ===== Big Luck ===== -->
+  <div id="luck" class="section"></div>
+
+  <!-- ===== Deep Reading ===== -->
+  <div id="reading" class="section"></div>
+
+  <!-- ===== Topics Carousel + Mixed UI ===== -->
+  <div id="topics" class="section"></div>
+
+  <details class="card section">
+    <summary>Debug JSON (geo/calc/reading)</summary>
+    <pre id="dbg"></pre>
+  </details>
+</div>
+
 <script>
-/* ---------- Helpers ---------- */
-const el = (q) => document.querySelector(q);
-const statusEl = el('#status');
-const resultEl = el('#result');
-const runBtn = el('#runBtn');
-const viewToggle = el('#viewToggle');
+/* ---------------- Utilities ---------------- */
+const el = (q)=>document.querySelector(q);
+const statusEl = el('#status'), dbgEl = el('#dbg');
+const state = { lastCalc:null, lastGeo:null, lastReading:null };
 
-function setStatus(msg, type=''){ statusEl.innerHTML = msg; statusEl.className = 'muted '+(type||''); }
-async function fetchJSON(url, opts={}){ const r=await fetch(url,opts); const t=await r.text(); try{ return{ok:r.ok,status:r.status,data:JSON.parse(t),raw:t} }catch{ return{ok:r.ok,status:r.status,data:null,raw:t} } }
-function esc(s){ return (s||"").replace(/[&<>"']/g,m=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[m])); }
+function setStatus(msg,type=''){ statusEl.textContent = msg; statusEl.className = 'muted ' + (type||''); }
+async function fetchJSON(url,opts={}){ const r=await fetch(url,opts); const t=await r.text(); try{return{ok:r.ok,status:r.status,data:JSON.parse(t),raw:t}}catch{return{ok:r.ok,status:r.status,data:null,raw:t}} }
+const ESC = (s)=>String(s||'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 
-/* ---------- View mode ---------- */
-const MODE_KEY = "saju_view_mode";
-function getMode(){ return localStorage.getItem(MODE_KEY) || "quick"; }
-function setMode(m){ localStorage.setItem(MODE_KEY, m); for(const b of viewToggle.querySelectorAll('button')) b.classList.toggle('active', b.dataset.view===m); }
-viewToggle.addEventListener('click', (e)=>{ if(e.target.tagName!=='BUTTON') return; setMode(e.target.dataset.view); });
+/* ---------------- Select builders ---------------- */
+(function buildSelects(){
+  const y=el('#year'), m=el('#month'), d=el('#day'), h=el('#hour'), min=el('#minute');
+  const now=new Date();
+  for(let i=now.getFullYear(); i>=1900; i--) y.insertAdjacentHTML('beforeend', `<option>${i}</option>`);
+  for(let i=1;i<=12;i++) m.insertAdjacentHTML('beforeend', `<option value="${String(i).padStart(2,'0')}">${String(i).padStart(2,'0')}</option>`);
+  for(let i=1;i<=31;i++) d.insertAdjacentHTML('beforeend', `<option value="${String(i).padStart(2,'0')}">${String(i).padStart(2,'0')}</option>`);
+  for(let i=0;i<24;i++) h.insertAdjacentHTML('beforeend', `<option value="${String(i).padStart(2,'0')}">${String(i).padStart(2,'0')}</option>`);
+  for(let i=0;i<60;i+=1) min.insertAdjacentHTML('beforeend', `<option value="${String(i).padStart(2,'0')}">${String(i).padStart(2,'0')}</option>`);
+})();
 
-// init mode UI
-setMode(getMode());
-
-/* ---------- Select pickers ---------- */
-function fillRange(sel, start, end, pad=2){
-  sel.innerHTML = "";
-  for(let v=start; v<=end; v++){
-    const o=document.createElement('option');
-    o.value = String(v).padStart(pad,'0'); o.textContent = o.value; sel.appendChild(o);
-  }
-}
-const now = new Date();
-fillRange(el('#year'), 1900, now.getFullYear(), 4);
-fillRange(el('#month'), 1, 12);
-fillRange(el('#day'), 1, 31);
-fillRange(el('#hour'), 0, 23);
-fillRange(el('#minute'), 0, 59);
-
-// Default
-el('#year').value = '1989';
-el('#month').value = '08';
-el('#day').value = '08';
-el('#hour').value = '07';
-el('#minute').value = '30';
-
-/* ---------- Pillars rendering (compact, same as 이전 버전) ---------- */
-const STEM_ELEM = {甲:"wood",乙:"wood",丙:"fire",丁:"fire",戊:"earth",己:"earth",庚:"metal",辛:"metal",壬:"water",癸:"water"};
-const BRANCH_ELEM = {子:"water",丑:"earth",寅:"wood",卯:"wood",辰:"earth",巳:"fire",午:"fire",未:"earth",申:"metal",酉:"metal",戌:"earth",亥:"water"};
-const COLOR_CLASS = {wood:"wood",fire:"fire",earth:"earth",metal:"metal",water:"water"};
-const TITLES = {hour:"Hour Pillar (시주)",day:"Day Pillar (일주)",month:"Month Pillar (월주)",year:"Year Pillar (년주)"};
-
-function renderPillars(root, pillars, elements, tenGods, hiddenStems){
-  if(!pillars){ root.innerHTML = `<div class="card"><div class="kicker">FOUR PILLARS</div><div class="muted">No pillars returned.</div></div>`; return; }
+/* ---------------- UI renderers (short) ---------------- */
+function renderPillars(calc){
+  const root = el('#pillars');
+  if(!calc?.pillars){ root.innerHTML=''; return; }
+  const p=calc.pillars, e=calc.elements||{};
   root.innerHTML = `
     <div class="card">
       <div class="kicker">FOUR PILLARS</div>
-      <div class="pillars-grid">
-        ${["hour","day","month","year"].map(k=>{
-          const p = pillars[k] || {};
-          const stemClass = COLOR_CLASS[STEM_ELEM[p.stem]] || "wood";
-          const branchClass = COLOR_CLASS[BRANCH_ELEM[p.branch]] || "earth";
-          const tg = (tenGods?.byPillar?.[k] || tenGods?.[k] || tenGods?.[`${k}Stem`]) || "";
-          const hs = hiddenStems?.[p.branch] || hiddenStems?.byBranch?.[p.branch] || [];
-          const small = p.tenGodSmall || "";
-          return `
-            <div class="pillar-card">
-              <div class="pillar-title">${TITLES[k]}</div>
-              ${k==="day"?'<div class="pillar-sub">Day Master (Self) / 일간(나)</div>':""}
-              <div class="box ${stemClass}">${p.stem || "?"}</div>
-              <div class="box ${branchClass}" style="margin-top:8px">${p.branch || "?"}</div>
-              ${small?`<div class="subline">${esc(small)}</div>`:''}
-              ${tg?`<div class="subline">${esc(tg)}</div>`:''}
-              ${Array.isArray(hs)&&hs.length?`<div class="chips">${hs.map(h=>`<span class="chip">${h}</span>`).join('')}</div>`:''}
-            </div>`;
-        }).join("")}
+      <div class="pillars">
+        ${['hour','day','month','year'].map(k=>`
+          <div class="pillar">
+            <div class="t">${({hour:'Hour Pillar (시주)',day:'Day Pillar (일주)',month:'Month Pillar (월주)',year:'Year Pillar (년주)'})[k]}</div>
+            <div class="box stem">${ESC(p[k]?.stem||'?')}</div>
+            <div class="box branch" style="margin-top:8px">${ESC(p[k]?.branch||'?')}</div>
+          </div>`).join('')}
       </div>
-      ${elements?`<div class="gauge">${["wood","fire","earth","metal","water"].map(e=>{const pct=Math.max(2,Math.round((elements[e]||0)*100));return `<div class="${COLOR_CLASS[e]}" style="width:${pct}%"></div>`}).join("")}</div>`:""}
+      <div class="gauge" title="Elements balance">
+        <div class="wood"  style="width:${Math.max(2,Math.round((e.wood ||0)*100))}%"></div>
+        <div class="fire"  style="width:${Math.max(2,Math.round((e.fire ||0)*100))}%"></div>
+        <div class="earth" style="width:${Math.max(2,Math.round((e.earth||0)*100))}%"></div>
+        <div class="metal" style="width:${Math.max(2,Math.round((e.metal||0)*100))}%"></div>
+        <div class="water" style="width:${Math.max(2,Math.round((e.water||0)*100))}%"></div>
+      </div>
     </div>`;
 }
-
-/* ---------- Luck rendering ---------- */
-function calcAge(birthISO){ if(!birthISO) return null; const b=new Date(birthISO+"T00:00:00"); const n=new Date(); let a=n.getFullYear()-b.getFullYear(); const m=n.getMonth()-b.getMonth(); if(m<0||(m===0&&n.getDate()<b.getDate())) a--; return a; }
-function renderLuck(root, luck, birthISO){
-  const list = luck?.bigLuck || []; const age = calcAge(birthISO);
-  if(!Array.isArray(list)||!list.length){ root.innerHTML=""; return; }
-  root.innerHTML = `<div class="card luck">
-    <div class="kicker">BIG LUCK (10-year cycles)</div>
-    <div class="luck-bar">${
-      list.map(({startAge,stem,branch,tenGod})=>{
-        const now = typeof age==='number' && age>=startAge && age<startAge+10;
-        return `<div class="luck-seg ${now?'luck-now':''}">
-          <div class="luck-title">Age ${startAge}–${startAge+9}</div>
-          <div class="luck-ganji">${(stem||'')}${(branch||'')}</div>
-          ${tenGod?`<div class="luck-god">${esc(tenGod)}</div>`:''}
-        </div>`;
-      }).join("")
-    }</div></div>`;
+function renderLuck(calc){
+  const root=el('#luck'); const list=calc?.luck?.bigLuck||[];
+  if(!list.length){ root.innerHTML=''; return; }
+  root.innerHTML = `
+    <div class="card"><div class="kicker">BIG LUCK (10-year cycles)</div>
+      <div class="row" style="flex-wrap:wrap;gap:8px">
+        ${list.map(s=>`<div class="pill">Age ${s.startAge}–${s.startAge+9}${s.stem?` • ${ESC(s.stem)}${ESC(s.branch||'')}`:''}</div>`).join('')}
+      </div>
+    </div>`;
 }
-
-/* ---------- Hybrid Reading rendering ---------- */
-function renderReadingQuick(out, meta={}){
-  const { badge, share } = out.cards || {};
-  const pill = meta.fallback ? `<span class="pill">Fallback</span>` : meta.mocked ? `<span class="pill">Mock</span>` : `<span class="pill ok">Live</span>`;
-  return `
+function renderDeepReading(out,meta={}){
+  const root=el('#reading');
+  if(!out){ root.innerHTML=''; return; }
+  const pill = meta.fallback ? '<span class="pill">Fallback</span>' : meta.mocked ? '<span class="pill">Mock</span>' : '<span class="pill ok">Live</span>';
+  const sec = (t,ps,tags=[])=>`
+    <div class="card section">
+      <div class="kicker">SECTION</div>
+      <h3 class="headline">${ESC(t)}</h3>
+      <ul>${(ps||[]).map(p=>`<li>${ESC(p)}</li>`).join('')}</ul>
+      ${tags.length?`<div class="badgeRow">${tags.map(x=>`<span class="chip">${ESC(x)}</span>`).join('')}</div>`:''}
+    </div>`;
+  root.innerHTML = `
     <div class="card">
-      <div class="row" style="justify-content:space-between"><div class="kicker">READING</div><div>${pill}</div></div>
-      <h3 class="headline">${esc(out.title || 'Your Saju Reading')}</h3>
-      <ul>${(out.bullets||[]).map(b=>`<li>${esc(b)}</li>`).join('')}</ul>
-      <div class="one">${esc(out.forecastOneLiner || '')}</div>
-      ${Array.isArray(out.actions)&&out.actions[0]?`<div class="callout"><strong>Try:</strong> ${esc(out.actions[0])}</div>`:''}
-      ${badge||(share?.headline)?`<div class="row" style="margin-top:10px">${badge?`<span class="pill">${esc(badge)}</span>`:''}${share?.headline?`<span class="muted">${esc(share.headline)} — ${esc(share.sub||'')}</span>`:''}</div>`:''}
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div class="kicker">READING</div><div>${pill}</div>
+      </div>
+      <h3 class="headline">${ESC(out.title||'Your Saju Insights')}</h3>
+      <ul>${(out.bullets||[]).map(b=>`<li>${ESC(b)}</li>`).join('')}</ul>
+      ${out.forecastOneLiner?`<div class="muted" style="margin-top:8px"><em>${ESC(out.forecastOneLiner)}</em></div>`:''}
+      ${Array.isArray(out.actions)&&out.actions[0]?`<div class="pill" style="margin-top:10px"><b>Try:</b>&nbsp;${ESC(out.actions[0])}</div>`:''}
+    </div>
+    ${Array.isArray(out.sections)? out.sections.map(s=>sec(s.title,s.points,s.tags)).join('') : ''}`;
+}
+
+/* ---------------- Topics (carousel + mixed UI) ---------------- */
+const TOPICS = [
+  {key:'wealth',        emoji:'💰', title:'Wealth & Money',        desc:'Income, savings, timing for investments.'},
+  {key:'love',          emoji:'❤️', title:'Love & Relationships',   desc:'Compatibility, meeting timing, harmony tips.'},
+  {key:'career',        emoji:'💼', title:'Career & Growth',        desc:'Fit, leadership vs. craft, pivots.'},
+  {key:'health',        emoji:'🌿', title:'Health & Wellness',      desc:'Element imbalance → care routines.'},
+  {key:'family',        emoji:'👶', title:'Family & Children',      desc:'Fertility/children themes & dynamics.'},
+  {key:'moving',        emoji:'✈️', title:'Travel/Relocation',      desc:'Best timing, directions, cautions.'},
+  {key:'study',         emoji:'📚', title:'Learning & Skills',      desc:'What to study, how to deepen talent.'},
+  {key:'timing',        emoji:'⏳', title:'Timing & Luck Windows',   desc:'Near-term chances and watch-outs.'},
+];
+
+function renderTopics(calc){
+  const root = el('#topics');
+  const disabled = !calc?.pillars;
+  root.innerHTML = `
+    <div class="card">
+      <div class="topics-head">
+        <div class="kicker">EXPLORE SPECIFIC FORTUNES</div>
+        <div class="muted">${disabled?'Run calculation first to enable cards':'Swipe → Choose a topic'}</div>
+      </div>
+      <div class="topics-scroll" id="topicsScroll">
+        ${TOPICS.map(t=>`
+          <div class="topic-card ${disabled?'topic-disabled':''}" data-topic="${t.key}">
+            <div class="topic-emoji">${t.emoji}</div>
+            <div class="topic-title">${ESC(t.title)}</div>
+            <div class="topic-desc">${ESC(t.desc)}</div>
+            <button class="topic-btn">See insights</button>
+          </div>`).join('')}
+      </div>
+      <div class="topic-result" id="topicResult"></div>
+      <div class="ask-row">
+        <input id="askInput" placeholder="Or ask your own question (e.g., ‘Will switching jobs this year be good?’)"/>
+        <button id="askBtn">Ask</button>
+      </div>
+    </div>`;
+  if(!disabled){
+    el('#topicsScroll').addEventListener('click', onTopicClick);
+    el('#askBtn').addEventListener('click', onAsk);
+  }
+}
+
+function showTopicSkeleton(){
+  el('#topicResult').innerHTML = `
+    <div class="skeleton" style="height:18px;margin-bottom:8px"></div>
+    <div class="skeleton" style="height:72px"></div>`;
+}
+function renderTopicOutput(title, bullets, oneLiner){
+  el('#topicResult').innerHTML = `
+    <div class="section card">
+      <div class="kicker">TOPIC RESULT</div>
+      <h3 class="headline">${ESC(title||'Your Focused Insight')}</h3>
+      <ul>${(bullets||[]).map(b=>`<li>${ESC(b)}</li>`).join('')}</ul>
+      ${oneLiner?`<div class="muted" style="margin-top:6px"><em>${ESC(oneLiner)}</em></div>`:''}
     </div>`;
 }
-function renderReadingDeep(out){
-  const secs = Array.isArray(out.sections) ? out.sections : [];
-  const secHTML = secs.map(s=>`
-    <div class="card section-card">
-      <div class="section-kicker">${esc(s.kicker||'SECTION')}</div>
-      <h3 class="section-title">${esc(s.title||'')}</h3>
-      ${[s.p1,s.p2,s.p3,s.p4,s.p5].filter(Boolean).map(p=>`<p class="section-p">${esc(p)}</p>`).join('')}
-      ${Array.isArray(s.list)&&s.list.length?`<ul class="section-list">${s.list.map(li=>`<li>${esc(li)}</li>`).join('')}</ul>`:''}
-      ${Array.isArray(s.keywords)&&s.keywords.length?`<div class="badges-row">${s.keywords.map(k=>`<span class="badge">${esc(k)}</span>`).join('')}</div>`:''}
-    </div>
-  `).join('');
-  return secHTML;
+async function onTopicClick(e){
+  const card = e.target.closest('.topic-card'); if(!card) return;
+  const topic = card.getAttribute('data-topic');
+  const c = state.lastCalc; if(!c) return;
+  showTopicSkeleton();
+  const body = JSON.stringify({
+    type:'topic', topic, locale:'en-US', length:'deep',
+    pillars:c.pillars, elements:c.elements, tenGods:c.tenGods, interactions:c.interactions, luck:c.luck
+  });
+  const r = await fetchJSON('/api/reading-generate', {method:'POST', headers:{'Content-Type':'application/json'}, body});
+  if(!r.ok || !r.data?.output){ el('#topicResult').innerHTML = `<div class="pill err">Failed to get topic reading.</div>`; return; }
+  const out = r.data.output;
+  renderTopicOutput(out.title, out.bullets, out.forecastOneLiner);
+}
+async function onAsk(){
+  const q = el('#askInput').value.trim(); if(!q) return;
+  const c = state.lastCalc; if(!c) return;
+  showTopicSkeleton();
+  const body = JSON.stringify({
+    type:'question', question:q, locale:'en-US', length:'deep',
+    pillars:c.pillars, elements:c.elements, tenGods:c.tenGods, interactions:c.interactions, luck:c.luck
+  });
+  const r = await fetchJSON('/api/reading-generate', {method:'POST', headers:{'Content-Type':'application/json'}, body});
+  if(!r.ok || !r.data?.output){ el('#topicResult').innerHTML = `<div class="pill err">Failed to answer your question.</div>`; return; }
+  const out = r.data.output;
+  renderTopicOutput(out.title||'Answer', out.bullets, out.forecastOneLiner);
 }
 
-/* ---------- Example & run ---------- */
-el('#fillExample').addEventListener('click', () => {
-  el('#year').value = '1989';
-  el('#month').value = '08';
-  el('#day').value = '08';
-  el('#hour').value = '07';
-  el('#minute').value = '30';
-  el('#city').value = 'seoul';
+/* ---------------- Flow: run → geo → calc → reading → topics ---------------- */
+function birthISO(){ return `${el('#year').value}-${el('#month').value}-${el('#day').value}`; }
+el('#fillExample').addEventListener('click', ()=>{
+  el('#year').value='1989'; el('#month').value='08'; el('#day').value='08';
+  el('#hour').value='07';  el('#minute').value='30'; el('#city').value='seoul';
 });
-
-runBtn.addEventListener('click', async () => {
-  const y = el('#year').value, m = el('#month').value, d = el('#day').value;
-  const birthDateISO = `${y}-${m}-${d}`;
-  const hh = el('#hour').value, mm = el('#minute').value;
-  const birthTime = `${hh}:${mm}`;
-  const city = el('#city').value.trim();
-  if (!birthDateISO || !city) { setStatus('Please fill birth date and city.', 'err'); return; }
-
-  runBtn.disabled = true;
-  setStatus('Step 1/3: Resolving city → timezone…');
-
-  const geo = await fetchJSON(`/api/geo-timezone?city=${encodeURIComponent(city)}`);
-  if (!geo.ok || !geo.data?.timezone) {
-    setStatus(`Failed on Step 1 (geo-timezone). <details><summary>details</summary><pre>${esc(geo.raw||'')}</pre></details>`, 'err');
-    runBtn.disabled=false; return;
-  }
-  const { lat, lng } = geo.data.location; const tzId = geo.data.timezone;
-
-  setStatus('Step 2/3: Calculating pillars/elements…');
-  const calcPayload = { birthDateISO, birthTime, lat, lng, tzId, timeAccuracy:'exact' };
-  const calc = await fetchJSON('/api/calc', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(calcPayload) });
-  if (!calc.ok || !calc.data?.data) {
-    setStatus(`Failed on Step 2 (calc). <details><summary>details</summary><pre>${esc(calc.raw||'')}</pre></details>`, 'err');
-    runBtn.disabled=false; return;
-  }
-
-  const dta = calc.data.data || {};
-  const { pillars, elements, tenGods, hiddenStems, interactions, luck } = dta;
-
-  // Render upstream blocks
-  renderPillars(document.getElementById('pillars-root'), pillars, elements, tenGods, hiddenStems);
-  renderLuck(document.getElementById('luck-root'), luck, birthDateISO);
-
-  setStatus('Step 3/3: Generating English reading…');
-  const read = await fetchJSON('/api/reading-generate', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ pillars, elements, tenGods, interactions, luck, age: (new Date().getFullYear() - +y) })
+el('#runBtn').addEventListener('click', async ()=>{
+  const city = el('#city').value.trim(); if(!city){ setStatus('Enter birth city.', 'err'); return; }
+  const tzReq = await fetchJSON(`/api/geo-timezone?city=${encodeURIComponent(city)}`);
+  if(!tzReq.ok || !tzReq.data?.timezone){ setStatus('Step 1 failed (geo-timezone).', 'err'); return; }
+  state.lastGeo = tzReq.data;
+  const tzId = tzReq.data.timezone; const lat=tzReq.data.location?.lat, lng=tzReq.data.location?.lng;
+  setStatus('Step 2/3: Calculating pillars…');
+  const calcBody = JSON.stringify({
+    birthDateISO: birthISO(),
+    birthTime: `${el('#hour').value}:${el('#minute').value}`,
+    tzId, lat, lng, timeAccuracy:'exact'
   });
-  if (!read.ok || !read.data) {
-    setStatus(`Failed on Step 3 (reading). <details><summary>details</summary><pre>${esc(read.raw||'')}</pre></details>`, 'err');
-    runBtn.disabled=false; return;
-  }
+  const calc = await fetchJSON('/api/calc', {method:'POST', headers:{'Content-Type':'application/json'}, body:calcBody});
+  if(!calc.ok || !calc.data?.data){ setStatus('Step 2 failed (calc).', 'err'); return; }
+  state.lastCalc = calc.data.data;
+  renderPillars(state.lastCalc); renderLuck(state.lastCalc);
 
-  // HYBRID RENDER
-  const out = read.data.output || read.data.output;
-  const mode = getMode();
-  let html = renderReadingQuick(out, { fallback: read.data.fallback, mocked: read.data.mocked });
-  if(mode === 'deep') html += renderReadingDeep(out);
-  resultEl.innerHTML = html;
+  setStatus('Step 3/3: Generating deep reading…');
+  const readBody = JSON.stringify({
+    type:'summary', locale:'en-US', length:'long',
+    pillars:state.lastCalc.pillars, elements:state.lastCalc.elements, tenGods:state.lastCalc.tenGods, interactions:state.lastCalc.interactions, luck:state.lastCalc.luck
+  });
+  const read = await fetchJSON('/api/reading-generate', {method:'POST', headers:{'Content-Type':'application/json'}, body:readBody});
+  if(!read.ok || !read.data?.output){ setStatus('Step 3 failed (reading).', 'err'); return; }
+  state.lastReading = read.data.output;
+  renderDeepReading(state.lastReading, {fallback:read.data.fallback, mocked:read.data.mocked});
+  renderTopics(state.lastCalc);
+  setStatus(`Done • tz: ${tzId} • lat:${(+lat).toFixed(4)}, lng:${(+lng).toFixed(4)}`, 'ok');
 
-  setStatus(`Done • tz: ${tzId} • lat:${lat.toFixed(4)}, lng:${lng.toFixed(4)}`, 'ok');
-  // Debug
-  resultEl.insertAdjacentHTML('beforeend', `
-    <details class="card" style="margin-top:12px">
-      <summary>Debug JSON (geo/calc/reading)</summary>
-      <pre>geo-timezone\n${esc(JSON.stringify(geo.data, null, 2))}</pre>
-      <pre>calc\n${esc(JSON.stringify(calc.data, null, 2))}</pre>
-      <pre>reading\n${esc(JSON.stringify(read.data, null, 2))}</pre>
-    </details>
-  `);
-
-  runBtn.disabled = false;
+  // Debug dump (compact)
+  dbgEl.textContent = [
+    'geo-timezone\n'+JSON.stringify(state.lastGeo,null,2),
+    'calc\n'+JSON.stringify(calc.data,null,2),
+    'reading\n'+JSON.stringify(read.data,null,2)
+  ].join('\n\n');
 });
 </script>
 </body>
