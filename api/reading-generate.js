@@ -1,150 +1,285 @@
 // api/reading-generate.js
-// Long-form Saju reading (6 sections) with robust fallback (CommonJS)
+// Extended reading generator that ALWAYS returns 6 sections the frontend expects.
+// - If OPENAI_API_KEY is present, it will ask the model for copy and then enrich/guard.
+// - If not, it will build high-quality deterministic prose from pillars/elements/tenGods/interactions/luck.
+// Response shape:
+// {
+//   ok: true,
+//   output: {
+//     title, bullets[], forecastOneLiner, actions[],
+//     sections: [{ id, kicker, title, p1..p5, list[], keywords[] }, ... 6 items]
+//   },
+//   mocked: boolean, fallback: boolean
+// }
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const USE_MODEL = !!process.env.OPENAI_API_KEY;
+const OPENAI_MODEL = process.env.SAJU_OPENAI_MODEL || "gpt-4o-mini"; // small, cheap; override if you like
 
-const SYSTEM = `
-You are a Saju (Four Pillars) interpreter for an English-speaking audience.
-Write in warm, encouraging, modern English. Be practical and non‑fatalistic.
-Offer gentle lifestyle ideas, not medical/legal/financial advice.
-Return ONLY JSON matching the schema.
-`;
+function J(x){ try { return JSON.parse(x); } catch { return null; } }
+function pct(n){ return Math.round((n || 0) * 100); }
 
-// ---- Long-form MOCK (used when no key / errors). At least ~4 sentences per section.
-function mockOutput() {
+function nounFor(elem){
+  return {wood:"Wood",fire:"Fire",earth:"Earth",metal:"Metal",water:"Water"}[elem] || elem;
+}
+function emoFor(elem){
   return {
-    title: "Embracing Your Unique Journey",
-    bullets: [
-      "Your Day Master points to a calm yet creative core that prefers depth over rush.",
-      "Element balance suggests clear strengths with a few areas that thrive on gentle support.",
-      "Relationships benefit when pacing is steady and intentions are spoken early.",
-      "Career growth compounds through small, consistent practice.",
-      "This season rewards grounded routines and simple experiments."
-    ],
-    forecastOneLiner: "Build steady momentum through repeatable habits—clarity grows as you move.",
-    actions: [
-      "Reserve 25–30 minutes daily for one focused practice (study, portfolio, or craft).",
-      "Choose one supportive routine (sleep window, short walks, hydration) and track it for 10 days.",
-      "Share progress weekly with one trusted person to anchor accountability.",
-      "Declutter one tiny space to lower friction for starting."
-    ],
-    sections: {
-      corePersonality:
-        "Your core nature combines steadiness with quiet curiosity. You notice patterns others miss and prefer making thoughtful moves over reacting quickly. People often feel at ease around you because your presence is calm and grounded. When decisions matter, you gather context and then act with intention—this becomes a superpower when paired with consistent practice.",
-      fiveElementsBalance:
-        "The five‑element mix shows reliable fire and earth for drive and stability, while water benefits from gentle support through rest, hydration, and reflective time. If energy dips, sunlight walks and light stretching can unlock focus. Use color and environment as subtle levers—greens and natural wood tones soothe; soft blues invite reflection. Seasonal rhythm helps too: spring projects for creativity, autumn for editing and simplification.",
-      tenGodsThemes:
-        "Money themes favor simple structures and repeatable income instead of high volatility. Career patterns suggest you grow best through craft mastery and calm leadership rather than loud competition. In relationships, cooperation outperforms rivalry—small acts of reliability build deep trust. When pressure rises, step back, name the outcome you want, and move in measured steps.",
-      luckSummary:
-        "Current luck emphasizes consolidating skills and strengthening your platform. It is a season to refine systems, document know‑how, and make your work easier to repeat. Near‑term opportunities tend to come from people who already know your reliability. Give 4–6 weeks to each experiment before you change direction; momentum will reward patience.",
-      healthLifestyle:
-        "Keep routines light and doable: a short walk after meals, steady hydration, and a consistent bedtime are surprisingly powerful. If screen time is heavy, add a brief stretch between tasks to reset posture and attention. Choose foods that are warm and easy to digest when stress is high, and schedule small social check‑ins to balance solitary focus. Your energy is more about rhythm than intensity.",
-      overallSummary:
-        "This phase invites steadiness over speed. Your strengths—care, clarity, and quiet consistency—become amplifiers when turned into routines. Focus on one craft or project you can improve weekly, and keep relationships warm with simple, regular contact. Small, repeatable steps will carry you further than dramatic pushes."
-    },
-    cards: {
-      badge: "Personal Growth",
-      share: { headline: "Discover Your Saju Insights", sub: "Reflect, refine, and grow—one steady step at a time." }
-    }
+    wood:"growth, creativity, planning",
+    fire:"passion, visibility, courage",
+    earth:"stability, care, patience",
+    metal:"clarity, discipline, structure",
+    water:"intuition, adaptability, wisdom"
+  }[elem] || "balance";
+}
+function lifestyleFor(elem){
+  return {
+    wood:"green color palette, hiking, learning new skills",
+    fire:"sunlight, warm colors, dance or cardio",
+    earth:"gardening, cooking, grounding routines",
+    metal:"decluttering, journaling, breathwork",
+    water:"meditation near water, reflective writing, calm walks"
+  }[elem] || "gentle movement and mindful routines";
+}
+function healthFor(elem){
+  return {
+    wood:"liver/eyes; stretch hips & sides; sleep by 11pm",
+    fire:"heart/small intestine; keep caffeine moderate; cooling foods",
+    earth:"spleen/stomach; consistent meals; warm easy-to-digest foods",
+    metal:"lungs/skin; fresh air; breath training",
+    water:"kidneys/ears; hydrate; manage stress and sleep"
+  }[elem] || "overall balance";
+}
+function guessDayMaster(pillars){
+  // pillars.day.stem exists in our calc output
+  const dm = pillars?.day?.stem || "";
+  const map = {甲:"wood",乙:"wood",丙:"fire",丁:"fire",戊:"earth",己:"earth",庚:"metal",辛:"metal",壬:"water",癸:"water"};
+  return map[dm] || null;
+}
+function topElements(elements){
+  const arr = Object.entries(elements||{}).map(([k,v])=>({k,v}));
+  arr.sort((a,b)=> (b.v||0) - (a.v||0));
+  return arr;
+}
+function need(bucket, t=0.20){ // deficient if strictly below 20%
+  return (bucket||0) < t;
+}
+function excess(bucket, t=0.30){ // strong if >= 30%
+  return (bucket||0) >= t;
+}
+
+function buildDeterministicReading(payload){
+  const { pillars, elements={}, tenGods={}, interactions={}, luck } = payload || {};
+
+  // ---- Header summary
+  const dm = guessDayMaster(pillars);
+  const top = topElements(elements);
+  const topKey = top[0]?.k || dm || "balance";
+  const dmNoun = nounFor(dm || topKey);
+
+  const title = "Embracing Your Unique Journey";
+  const bullets = [
+    `Balance your elements for a harmonious life.`,
+    `Focus on nurturing relationships and meaningful connections.`,
+    `Stay open to new opportunities and hands-on experiences.`,
+    `Prioritize self-care and mindful routines to sustain energy.`
+  ];
+  const forecastOneLiner = "This is a period to align your strengths with supportive habits and clear intentions.";
+  const actions = [
+    `Try: Engage in creative outlets that express your inner voice (e.g., ${lifestyleFor(topKey)}).`
+  ];
+
+  // ---- Section 1: Traits
+  const traits = {
+    id: "traits",
+    kicker: "SECTION",
+    title: "Core Traits & Disposition (기본 성향·기질)",
+    p1: `As a Day Master represented by ${dmNoun} element, your core nature leans toward ${emoFor(dm || topKey)}.`,
+    p2: `You thrive when your daily life includes rhythms that match your temperament—this keeps your decision-making clear and your motivation steady.`,
+    p3: `Your strengths are noticeable in the way you handle challenges: you tend to learn, adapt, and then move forward with confidence.`,
+    p4: `When stressed, you may overuse your strongest element; creating small balancing rituals helps you stay centered.`
+  };
+
+  // ---- Section 2: Element Balance
+  const balanceList = [
+    `Wood ${pct(elements.wood)}%`, `Fire ${pct(elements.fire)}%`,
+    `Earth ${pct(elements.earth)}%`, `Metal ${pct(elements.metal)}%`,
+    `Water ${pct(elements.water)}%`
+  ];
+  const lack = Object.entries(elements).filter(([k,v])=>need(v)).map(([k])=>nounFor(k));
+  const strong = Object.entries(elements).filter(([k,v])=>excess(v)).map(([k])=>nounFor(k));
+  const balance = {
+    id: "balance",
+    kicker: "SECTION",
+    title: "Element Balance (오행 균형·보완)",
+    p1: `Your mix shows strengths in ${strong.length? strong.join(", "): "certain areas"} and room to nourish ${lack.length? lack.join(", "): "overall steadiness"}.`,
+    p2: `${lack.length? `Gently boost ${lack.join(", ")} with colors, activities, and environments that evoke them.` : `Maintain your current routines to protect balance.`}`,
+    p3: `${strong.length? `If a strong element runs the show for too long, schedule counter-balancing breaks to avoid burnout.` : `Keep small anchors—sleep, food, fresh air—to stay grounded.`}`,
+    p4: `Practical cues: ${nounFor(topKey)} rituals such as ${lifestyleFor(topKey)} are especially beneficial now.`,
+    list: balanceList,
+    keywords: ["balance","habits", dmNoun, ...strong.slice(0,1), ...lack.slice(0,1)].filter(Boolean)
+  };
+
+  // ---- Section 3: Ten Gods — Wealth/Career/Relationships
+  const tgDay = (tenGods?.byPillar?.day || tenGods?.day || "");
+  const tgMonth = (tenGods?.byPillar?.month || tenGods?.month || "");
+  const tgYear = (tenGods?.byPillar?.year || tenGods?.year || "");
+  const tenGodsSec = {
+    id: "tenGods",
+    kicker: "SECTION",
+    title: "Ten Gods — Wealth/Career/Relationships (십신 기반 경향)",
+    p1: `Career & learning: signs point to growth through ${tgMonth || "focused practice"} and consistent skill-building.`,
+    p2: `Wealth: look for ${tgDay || "steady"} income streams first; experiment with variable opportunities once the foundation holds.`,
+    p3: `Relationships: your ${tgYear || "social ties"} benefit from clear communication and shared goals.`,
+    p4: `Teamwork improves when you mix your strengths with someone whose element complements yours.`
+  };
+
+  // ---- Section 4: Luck cycles
+  const firstLuck = (luck?.bigLuck || [])[0];
+  const nowLuck = (luck?.bigLuck || []).find(x=>{
+    const a = x?.startAge; if(typeof a!=='number') return false;
+    const age = payload?.age;
+    return typeof age==='number' ? (age>=a && age<a+10) : false;
+  });
+  const luckSec = {
+    id: "luck",
+    kicker: "SECTION",
+    title: "Big Luck & Yearly Outlook (대운·세운 요약)",
+    p1: `Your long cycles suggest steady progress when you keep routines that amplify your strongest qualities.`,
+    p2: nowLuck ? `Current 10-year cycle (starts ${nowLuck.startAge}): ${nowLuck.stem||""}${nowLuck.branch||""} — lean into its lessons with patience.` : `Focus on building momentum for the coming cycle.`,
+    p3: firstLuck ? `Early cycle hint: ${firstLuck.stem||""}${firstLuck.branch||""} encouraged foundational skills—returning to those basics can open new doors.` : `Use the present to lay strong groundwork.`,
+    p4: `Yearly changes add flavor, but your daily habits decide the real outcome.`
+  };
+
+  // ---- Section 5: Wellness
+  const weak = topElements(elements).slice().reverse().find(x=>need(x.v,0.20))?.k || null;
+  const wellness = {
+    id: "wellness",
+    kicker: "SECTION",
+    title: "Health & Lifestyle Advice (건강·생활 조언)",
+    p1: `Keep body and mind steady with realistic sleep, simple nutrition, and fresh air.`,
+    p2: weak ? `Gently nourish ${nounFor(weak)}: ${healthFor(weak)}.` : `Maintain balance across all five phases; small routines beat big overhauls.`,
+    p3: `Stress test: if your strongest element gets overused (e.g., too much work, too much socializing), plan a brief opposite activity to reset.`,
+    p4: `Light, movement, and hydration remain the simplest levers with the biggest payoff.`,
+    keywords: ["well-being","sleep","movement","hydration"]
+  };
+
+  // ---- Section 6: Overall summary
+  const summary = {
+    id: "summary",
+    kicker: "SECTION",
+    title: "Overall Keywords & One-liner (전반 요약)",
+    p1: `This season rewards patience, steady practice, and self-honesty.`,
+    p2: `Your strengths are ${dmNoun.toLowerCase()}-style qualities—use them to shape routines that truly fit you.`,
+    p3: `Focus on what you can repeat weekly; momentum follows clarity.`,
+    p4: `A small, meaningful action repeated often will outpace a perfect plan delayed.`,
+    keywords: ["clarity","consistency","momentum"]
+  };
+
+  return {
+    ok: true,
+    output: { title, bullets, forecastOneLiner, actions, sections:[traits, balance, tenGodsSec, luckSec, wellness, summary] },
+    mocked: !USE_MODEL,
+    fallback: false
   };
 }
 
-async function callOpenAI(payload) {
-  const r = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENAI_API_KEY}` },
-    body: JSON.stringify(payload)
-  });
-  const j = await r.json();
-  return j;
+// If OPENAI key exists, we’ll ask for prose then still guarantee sections.
+async function callModel(payload){
+  const { pillars, elements, tenGods, interactions, luck } = payload || {};
+  const sys = `You are a Saju (Four Pillars) assistant. Output JSON ONLY with:
+{
+ "title": "...",
+ "bullets": ["...", "...", "..."],
+ "forecastOneLiner": "...",
+ "actions": ["..."],
+ "sections": [
+   {"id":"traits","kicker":"SECTION","title":"...","p1":"...","p2":"...","p3":"...","p4":"..."},
+   {"id":"balance","kicker":"SECTION","title":"...","p1":"...","p2":"...","p3":"...","p4":"...","list":["..."],"keywords":["..."]},
+   {"id":"tenGods","kicker":"SECTION","title":"...","p1":"...","p2":"...","p3":"...","p4":"..."},
+   {"id":"luck","kicker":"SECTION","title":"...","p1":"...","p2":"...","p3":"...","p4":"..."},
+   {"id":"wellness","kicker":"SECTION","title":"...","p1":"...","p2":"...","p3":"...","p4":"...","keywords":["..."]},
+   {"id":"summary","kicker":"SECTION","title":"...","p1":"...","p2":"...","p3":"...","p4":"...","keywords":["..."]}
+ ]
 }
+Each paragraph must be 1–2 sentences in clear, encouraging English. Avoid medical claims; give gentle lifestyle suggestions.`;
 
-module.exports = async (req, res) => {
-  if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Use POST' });
-
-  const {
+  const user = {
     pillars,
     elements,
     tenGods,
     interactions,
     luck,
-    type = 'summary',
-    locale = 'en-US',
-    length = 'long',
-    maxBullets = 6
-  } = req.body || {};
+    intent: "long_sections",
+    locale: "en-US"
+  };
 
-  if (!pillars || !elements) {
-    return res.status(400).json({ ok: false, error: 'Missing pillars/elements' });
-  }
-
-  // No key → return long-form mock safely
-  if (!OPENAI_API_KEY) {
-    return res.status(200).json({ ok: true, mocked: true, output: mockOutput() });
-  }
-
-  const schema = `{
-  "title": string,
-  "bullets": string[],
-  "forecastOneLiner": string,
-  "actions": string[],
-  "sections": {
-    "corePersonality": string,       // 4+ sentences
-    "fiveElementsBalance": string,   // 4+ sentences
-    "tenGodsThemes": string,         // 4+ sentences (money/career/relationships)
-    "luckSummary": string,           // 4+ sentences (present big luck & near-term tone)
-    "healthLifestyle": string,       // 4+ sentences (gentle lifestyle tips)
-    "overallSummary": string         // 4+ sentences (keywords & closing)
-  },
-  "cards"?: { "badge"?: string, "share"?: { "headline": string, "sub"?: string } }
-}`;
-
-  const lengthGuide =
-    length === 'long'
-      ? `Write ${Math.min(5, maxBullets)}-${maxBullets} concise bullets, 3–5 actions, and SIX sections with 4–7 sentences each.`
-      : `Write clear bullets and actions, keep sections at least 3 sentences each.`;
-
-  const data = { pillars, elements, tenGods, interactions, luck, type, locale, length, maxBullets };
-
-  const userMsg = `
-SCHEMA:
-${schema}
-
-DATA:
-${JSON.stringify(data)}
-
-GUIDANCE:
-- English tone: friendly, modern, practical; avoid fatalism.
-- Mention Day Master as the core of personality in "corePersonality".
-- Use the five‑element distribution for "fiveElementsBalance" with gentle supports (colors, hobbies, seasons, routines).
-- "tenGodsThemes" covers money (재성), career (관성/인성), relationships (비견/겁재); keep it practical and non‑deterministic.
-- "luckSummary" describes the *flavor* of timing (current big luck) and what benefits from attention now/soon.
-- "healthLifestyle" offers general wellbeing ideas; no medical claims.
-- "overallSummary" ends with 1–2 empowering sentences and clear keywords.
-- Return ONE valid JSON object only. No markdown, no commentary.
-`;
-
-  try {
-    const j = await callOpenAI({
-      model: 'gpt-4o-mini',
-      temperature: 0.4,
-      max_tokens: 1400,
-      response_format: { type: 'json_object' },
+  const r = await fetch("https://api.openai.com/v1/chat/completions", {
+    method:"POST",
+    headers:{
+      "Authorization":`Bearer ${process.env.OPENAI_API_KEY}`,
+      "Content-Type":"application/json"
+    },
+    body: JSON.stringify({
+      model: OPENAI_MODEL,
       messages: [
-        { role: 'system', content: SYSTEM },
-        { role: 'user', content: userMsg }
-      ]
-    });
-
-    const content = j?.choices?.[0]?.message?.content;
-    let output = null;
-    try { output = JSON.parse(content); } catch {}
-
-    if (!output) {
-      return res.status(200).json({ ok: true, fallback: true, reason: 'parse_failed', raw: j, output: mockOutput() });
-    }
-    return res.status(200).json({ ok: true, output });
-  } catch (err) {
-    return res.status(200).json({ ok: true, fallback: true, reason: 'openai_error', error: String(err), output: mockOutput() });
+        {role:"system", content: sys},
+        {role:"user", content: JSON.stringify(user)}
+      ],
+      temperature: 0.7,
+    })
+  });
+  if(!r.ok){
+    const text = await r.text();
+    return { ok:false, error:`openai_error ${r.status}`, raw:text };
   }
-};
+  const data = await r.json();
+  const text = data?.choices?.[0]?.message?.content || "{}";
+  const parsed = J(text) || {};
+  // Guard: ensure we have sections; otherwise fallback to deterministic
+  if(!Array.isArray(parsed.sections) || parsed.sections.length < 6){
+    const det = buildDeterministicReading(payload);
+    // merge model header if present
+    det.output.title = parsed.title || det.output.title;
+    det.output.bullets = Array.isArray(parsed.bullets)&&parsed.bullets.length ? parsed.bullets : det.output.bullets;
+    det.output.forecastOneLiner = parsed.forecastOneLiner || det.output.forecastOneLiner;
+    det.output.actions = Array.isArray(parsed.actions)&&parsed.actions.length ? parsed.actions : det.output.actions;
+    return { ok:true, output: det.output, mocked:false, fallback:true };
+  }
+  return { ok:true, output: parsed, mocked:false, fallback:false };
+}
+
+export default async function handler(req, res){
+  if(req.method !== 'POST'){
+    return res.status(405).json({ ok:false, error:"Use POST" });
+  }
+  const body = typeof req.body === 'string' ? J(req.body) : req.body || {};
+  const payload = {
+    pillars: body.pillars || {},
+    elements: body.elements || {},
+    tenGods: body.tenGods || {},
+    interactions: body.interactions || {},
+    luck: body.luck || {},
+    age: body.age
+  };
+
+  try{
+    let out;
+    if(USE_MODEL){
+      out = await callModel(payload);
+      if(!out.ok) {
+        // Model failed → deterministic fallback with flag
+        const det = buildDeterministicReading(payload);
+        det.fallback = true;
+        return res.status(200).json(det);
+      }
+      return res.status(200).json(out);
+    } else {
+      const det = buildDeterministicReading(payload);
+      return res.status(200).json(det);
+    }
+  } catch (e){
+    const det = buildDeterministicReading(payload);
+    det.fallback = true;
+    det.error = e?.message || 'reading_error';
+    return res.status(200).json(det);
+  }
+}
