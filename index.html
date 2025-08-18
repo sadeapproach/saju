@@ -3,53 +3,44 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Saju‑Eight • Playground (Extended, Bilingual)</title>
+  <title>Saju-Eight • Playground (Select Inputs)</title>
 
   <!-- CJK font for Hanzi/Hangul -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap">
 
   <style>
-    :root { --bg:#0b1220; --panel:#121a2a; --muted:#6b7a90; --txt:#e9f0ff; --accent:#66b3ff; --ok:#49d39a; --err:#ff7a7a; }
-    * { box-sizing: border-box; }
-    body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, "Noto Sans KR", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: linear-gradient(120deg,#0b1220,#0e2342); color:var(--txt); }
-    .wrap { max-width: 980px; margin: 48px auto; padding: 0 20px; }
-    .title { font-size: 28px; font-weight: 800; letter-spacing: .3px; margin-bottom: 16px; }
-    .sub { color: var(--muted); margin-bottom: 28px; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-    .card { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 16px; padding: 18px; box-shadow: 0 10px 40px rgba(0,0,0,.35); }
-    label { font-size: 12px; color: var(--muted); display:block; margin-bottom: 6px; }
-    input, select, button, textarea {
-      width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,.12);
-      background: #0b1426; color: var(--txt); outline: none;
-    }
-    input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(102,179,255,.2); }
-    button { background: linear-gradient(135deg,#4da3ff,#66b3ff); color:#06101d; font-weight: 700; cursor: pointer; border: none; }
-    button[disabled] { opacity: .6; cursor: not-allowed; }
-    .actions { display:flex; gap:10px; margin-top: 12px; }
-    .muted { color: var(--muted); font-size: 13px; }
-    .row { display:flex; gap:12px; align-items:center; }
-    .row > * { flex: 1; }
-    .pill { display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); font-size:12px; }
-    .ok { color: var(--ok); } .err { color: var(--err); }
-    .result { margin-top: 18px; }
-    .kicker { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
-    .headline { font-size: 22px; font-weight: 800; margin: 0 0 8px; }
-    ul { padding-left: 18px; margin: 8px 0 0; }
-    .one { margin-top: 8px; font-style: italic; color:#cfe4ff; }
-    .callout { margin-top: 10px; padding: 10px 12px; background: rgba(73,211,154,.09); border: 1px solid rgba(73,211,154,.25); border-radius: 12px; }
-    details { margin-top: 12px; }
-    pre { background: #081123; border:1px solid rgba(255,255,255,.08); padding: 12px; border-radius: 12px; overflow:auto; }
+    :root { --bg:#0b1220; --panel:#121a2a; --muted:#8ca1c0; --txt:#e9f0ff; --accent:#66b3ff; --ok:#49d39a; --err:#ff7a7a; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,"Noto Sans KR","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:linear-gradient(120deg,#0b1220,#0e2342);color:var(--txt)}
+    .wrap{max-width:980px;margin:40px auto;padding:0 20px}
+    .title{font-size:26px;font-weight:800;margin-bottom:8px}
+    .sub{color:var(--muted);margin-bottom:22px}
+    .card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+    input,select,button{width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:#0b1426;color:var(--txt);outline:none}
+    input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(102,179,255,.2)}
+    button{background:linear-gradient(135deg,#4da3ff,#66b3ff);color:#06101d;font-weight:700;cursor:pointer;border:none}
+    button[disabled]{opacity:.6;cursor:not-allowed}
+    .actions{display:flex;gap:10px;margin-top:12px}
+    .muted{color:var(--muted);font-size:13px}
+    .status{margin-top:8px}
+    .status.ok{color:var(--ok)} .status.err{color:var(--err)}
+    details{margin-top:10px}
+    pre{background:#081123;border:1px solid rgba(255,255,255,.08);padding:12px;border-radius:12px;overflow:auto}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);font-size:12px}
+    .pill.ok{color:var(--ok)}
 
-    /* Pillars */
+    /* Pillars UI */
     .pillars-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
     @media (min-width:768px){.pillars-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
-    .pillar-card{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);border-radius:16px;padding:12px;color:var(--txt)}
-    .pillar-title{font-size:12px;opacity:.8;text-align:center;margin-bottom:6px}
+    .pillar-card{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);border-radius:16px;padding:12px}
+    .pillar-title{font-size:12px;opacity:.85;text-align:center;margin-bottom:6px}
     .pillar-sub{font-size:11px;color:#7dd3fc;text-align:center;margin-bottom:6px}
-    .box{height:84px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:700;letter-spacing:.02em;border:1px solid #0003}
-    .subline{font-size:11px;text-align:center;color:#c8d6f8;margin-top:6px}
+    .box{height:84px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:800;letter-spacing:.02em;border:1px solid #0003}
+    .subline{font-size:11px;text-align:center;color:#cfe4ff;margin-top:6px}
     .chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:6px}
     .chip{font-size:11px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}
     .wood{background:#16a34a;color:#fff}.fire{background:#ef4444;color:#fff}
@@ -58,13 +49,11 @@
     .gauge{display:flex;height:10px;overflow:hidden;border-radius:10px;border:1px solid #2a2a2a;margin-top:12px}
     .gauge>div{height:100%}
 
-    /* Interactions */
+    /* Interactions & Luck */
     .badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
     .badge{padding:6px 10px;border-radius:999px;font-size:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05)}
     .badge.warn{border-color:#f59e0b66;color:#f8d48b;background:#f59e0b20}
     .badge.info{border-color:#66b3ff66;color:#bfe0ff;background:#66b3ff1a}
-
-    /* Big Luck */
     .luck{margin-top:16px}
     .luck-bar{display:flex;gap:8px}
     .luck-seg{flex:1;min-width:64px;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px;background:rgba(255,255,255,.05)}
@@ -73,37 +62,44 @@
     .luck-god{font-size:11px;color:#cfe4ff;margin-top:2px}
     .luck-age{font-size:11px;color:#9fb3d6;margin-top:6px}
     .luck-now{outline:2px solid #66b3ff; box-shadow:0 0 0 4px rgba(102,179,255,.2)}
-    .empty-note{font-size:13px;color:#9fb3d6;margin-top:8px}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="title">Saju‑Eight • End‑to‑End Playground (Extended)</div>
-    <div class="sub">Enter birth info and city → timezone → pillars → English reading, plus pillars UI • ten gods • hidden stems • interactions • big luck.</div>
+    <div class="title">Saju-Eight • End-to-End Playground (Extended)</div>
+    <div class="sub">Enter birth info and city → timezone → pillars → English reading (no options; single standard).</div>
 
-    <div class="card" id="formCard">
+    <!-- FORM (Select-based inputs) -->
+    <div class="card">
       <div class="grid">
         <div>
-          <label>Birth date (YYYY‑MM‑DD)</label>
-          <input id="birthDate" placeholder="1992-06-02" />
+          <label>Birth year</label>
+          <select id="year"></select>
         </div>
         <div>
-          <label>Birth time (HH:mm, optional)</label>
-          <input id="birthTime" placeholder="09:00 (or leave blank)" />
+          <label>Birth month</label>
+          <select id="month"></select>
         </div>
       </div>
+
       <div class="grid">
         <div>
-          <label>Birth city (in English)</label>
-          <input id="city" placeholder="Seoul / New York / Tokyo" />
+          <label>Birth day</label>
+          <select id="day"></select>
         </div>
-        <div>
-          <label>Time accuracy</label>
-          <select id="accuracy">
-            <option value="exact">Exact time</option>
-            <option value="approx">Approximate</option>
-            <option value="unknown">Unknown</option>
-          </select>
+        <div class="grid-3">
+          <div>
+            <label>Hour</label>
+            <select id="hour"></select>
+          </div>
+          <div>
+            <label>Minute</label>
+            <select id="minute"></select>
+          </div>
+          <div>
+            <label>Birth city (in English)</label>
+            <input id="city" placeholder="Seoul / New York / Tokyo" />
+          </div>
         </div>
       </div>
 
@@ -111,18 +107,19 @@
         <button id="runBtn">Calculate & Generate</button>
         <button id="fillExample" type="button">Fill Example</button>
       </div>
-      <div id="status" class="muted" style="margin-top:8px;"></div>
+      <div id="status" class="muted status"></div>
 
       <details>
         <summary class="muted">What happens under the hood?</summary>
         <ul class="muted">
-          <li>Step 1: GET <code>/api/geo-timezone?city=...</code></li>
-          <li>Step 2: POST <code>/api/calc</code></li>
-          <li>Step 3: POST <code>/api/reading-generate</code></li>
+          <li>Step 1: GET <code>/api/geo-timezone?city=...</code> → <em>lat/lng</em> & <em>tzId</em></li>
+          <li>Step 2: POST <code>/api/calc</code> → pillars & elements (single standard; no options)</li>
+          <li>Step 3: POST <code>/api/reading-generate</code> → English reading JSON</li>
         </ul>
       </details>
     </div>
 
+    <!-- OUTPUT AREAS -->
     <div id="pillars-root"></div>
     <div id="interactions-root"></div>
     <div id="luck-root"></div>
@@ -130,99 +127,109 @@
   </div>
 
 <script>
+/* ---------- tiny helpers ---------- */
 const el = (q) => document.querySelector(q);
 const statusEl = el('#status');
 const resultEl = el('#result');
 const runBtn = el('#runBtn');
-
-// Element & label mapping
-const STEM_ELEM = {甲:"wood",乙:"wood",丙:"fire",丁:"fire",戊:"earth",己:"earth",庚:"metal",辛:"metal",壬:"water",癸:"water"};
-const BRANCH_ELEM = {子:"water",丑:"earth",寅:"wood",卯:"wood",辰:"earth",巳:"fire",午:"fire",未:"earth",申:"metal",酉:"metal",戌:"earth",亥:"water"};
-
-// ✅ Bilingual pillar titles
-const TITLES = {
-  hour:  "Hour Pillar (시주)",
-  day:   "Day Pillar (일주)",
-  month: "Month Pillar (월주)",
-  year:  "Year Pillar (년주)"
-};
-
-// ✅ 섹션 제목(영/한 병기) & HTML escape
-const SECTION_TITLES = {
-  corePersonality:     "Core Traits & Disposition (기본 성향·기질)",
-  fiveElementsBalance: "Five‑Element Balance (오행 균형·보완)",
-  tenGodsThemes:       "Ten Gods — Money/Career/Relationships (십신 경향)",
-  luckSummary:         "Luck Cycles — Now & Next (대운·세운 요약)",
-  healthLifestyle:     "Health & Lifestyle Tips (건강·생활 조언)",
-  overallSummary:      "Keywords & Summary (전반 요약)"
-};
-const esc = (s='') => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-
-// Colors
-const COLOR_CLASS = {wood:"wood",fire:"fire",earth:"earth",metal:"metal",water:"water"};
-
-function setStatus(msg, type=''){ statusEl.innerHTML = msg; statusEl.className = 'muted '+(type||''); }
+function setStatus(msg, kind=''){ statusEl.textContent = msg; statusEl.className = 'muted status ' + (kind||''); }
 async function fetchJSON(url, opts={}){ const r=await fetch(url,opts); const t=await r.text(); try{return{ok:r.ok,status:r.status,data:JSON.parse(t),raw:t}}catch{return{ok:r.ok,status:r.status,data:null,raw:t}} }
 
-// ✅ 장문 섹션 6개 렌더
-function renderReading(output, meta={}) {
-  const { badge, share } = output.cards || {};
-  const pill = meta.fallback ? `<span class="pill">Fallback</span>`
-             : meta.mocked  ? `<span class="pill">Mock</span>`
-             : `<span class="pill ok">Live</span>`;
+/* ---------- selects: populate & persist ---------- */
+const yearSel = el('#year'), monthSel = el('#month'), daySel = el('#day'), hourSel = el('#hour'), minuteSel = el('#minute'), cityInput = el('#city');
 
-  const sections = output.sections || {};
-  const order = [
-    "corePersonality",
-    "fiveElementsBalance",
-    "tenGodsThemes",
-    "luckSummary",
-    "healthLifestyle",
-    "overallSummary"
-  ];
+function range(n1,n2){ const out=[]; for(let i=n1;i<=n2;i++) out.push(i); return out; }
+function pad2(n){ return String(n).padStart(2,'0'); }
 
-  const sectionCards = order
-    .filter(key => sections[key])
-    .map(key => {
-      const title = SECTION_TITLES[key] || key;
-      const paras = String(sections[key]).split(/\n+/).map(p => `<p style="margin:8px 0 0">${esc(p)}</p>`).join("");
-      return `
-        <div class="card" style="margin-top:12px">
-          <div class="kicker">SECTION</div>
-          <h3 class="headline" style="margin-top:0">${esc(title)}</h3>
-          ${paras}
-        </div>`;
-    }).join("");
-
-  resultEl.innerHTML = `
-    <div class="card">
-      <div class="row" style="justify-content:space-between"><div class="kicker">READING</div><div>${pill}</div></div>
-      <h3 class="headline">${esc(output.title || 'Your Saju Reading')}</h3>
-
-      ${Array.isArray(output.bullets)&&output.bullets.length
-        ? `<ul>${output.bullets.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>` : ''}
-
-      ${output.forecastOneLiner ? `<div class="one">${esc(output.forecastOneLiner)}</div>` : ''}
-
-      ${Array.isArray(output.actions)&&output.actions[0]
-        ? `<div class="callout"><strong>Try:</strong> ${esc(output.actions[0])}</div>` : ''}
-
-      ${(badge||(share?.headline))
-        ? `<div class="row" style="margin-top:10px">
-             ${badge?`<span class="pill">${esc(badge)}</span>`:''}
-             ${share?.headline?`<span class="muted">${esc(share.headline)} — ${esc(share.sub||'')}</span>`:''}
-           </div>` : ''}
-    </div>
-
-    ${sectionCards}
-  `;
+function daysInMonth(y,m){ // m: 1-12
+  return new Date(y, m, 0).getDate();
 }
 
+function populateSelects(){
+  // years: 1900 ~ current+5
+  const thisYear = new Date().getFullYear();
+  range(1900, thisYear+5).forEach(y=>{
+    const o=document.createElement('option');
+    o.value=o.textContent=y; yearSel.appendChild(o);
+  });
+
+  // months 01~12
+  range(1,12).forEach(m=>{
+    const o=document.createElement('option');
+    o.value=pad2(m); o.textContent=`${pad2(m)}`; monthSel.appendChild(o);
+  });
+
+  // hours 00~23
+  range(0,23).forEach(h=>{
+    const o=document.createElement('option');
+    o.value=pad2(h); o.textContent=pad2(h); hourSel.appendChild(o);
+  });
+
+  // minutes 00~55 (5-min step). 1분 단위로 바꾸려면 range(0,59) 사용.
+  for(let m=0;m<60;m+=5){
+    const o=document.createElement('option');
+    o.value=pad2(m); o.textContent=pad2(m); minuteSel.appendChild(o);
+  }
+
+  // day는 year/month에 따라 동적
+  updateDayOptions();
+}
+
+function updateDayOptions(){
+  const y=Number(yearSel.value||new Date().getFullYear());
+  const m=Number(monthSel.value||1);
+  const max = daysInMonth(y,m);
+  const current = daySel.value || '01';
+  daySel.innerHTML='';
+  range(1,max).forEach(d=>{
+    const o=document.createElement('option');
+    o.value=pad2(d); o.textContent=pad2(d); daySel.appendChild(o);
+  });
+  // 기존 선택 보존
+  const keep = Number(current) <= max ? current : pad2(max);
+  daySel.value = keep;
+}
+
+yearSel.addEventListener('change', updateDayOptions);
+monthSel.addEventListener('change', updateDayOptions);
+
+/* ---------- localStorage persist ---------- */
+const KEY = 'sajueight_form_v1';
+function saveForm(){
+  const data = {
+    y: yearSel.value, m: monthSel.value, d: daySel.value,
+    hh: hourSel.value, mm: minuteSel.value,
+    city: cityInput.value
+  };
+  localStorage.setItem(KEY, JSON.stringify(data));
+}
+function loadForm(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(!raw) return;
+    const d = JSON.parse(raw);
+    if(d?.y) yearSel.value=d.y;
+    if(d?.m) monthSel.value=d.m;
+    updateDayOptions();
+    if(d?.d) daySel.value=d.d;
+    if(d?.hh) hourSel.value=d.hh;
+    if(d?.mm) minuteSel.value=d.mm;
+    if(d?.city) cityInput.value=d.city;
+  }catch{}
+}
+[yearSel,monthSel,daySel,hourSel,minuteSel,cityInput].forEach(x=>x.addEventListener('change', saveForm));
+
+/* ---------- pillars rendering ---------- */
+const STEM_ELEM = {甲:"wood",乙:"wood",丙:"fire",丁:"fire",戊:"earth",己:"earth",庚:"metal",辛:"metal",壬:"water",癸:"water"};
+const BRANCH_ELEM = {子:"water",丑:"earth",寅:"wood",卯:"wood",辰:"earth",巳:"fire",午:"fire",未:"earth",申:"metal",酉:"metal",戌:"earth",亥:"water"};
+const COLOR_CLASS = {wood:"wood",fire:"fire",earth:"earth",metal:"metal",water:"water"};
+const TITLES = {hour:"Hour Pillar (시주)", day:"Day Pillar (일주)", month:"Month Pillar (월주)", year:"Year Pillar (년주)"};
+
 function renderPillars(root, pillars, elements, tenGods, hiddenStems){
-  if(!pillars){ root.innerHTML = `<div class="card"><div class="kicker">FOUR PILLARS</div><div class="empty-note">No pillars returned from /api/calc. Check server.</div></div>`; return; }
+  if(!pillars){ root.innerHTML = `<div class="card"><div class="muted">No pillars returned from /api/calc.</div></div>`; return; }
   root.innerHTML = `
     <div class="card">
-      <div class="kicker">FOUR PILLARS</div>
+      <div class="muted" style="font-size:12px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px">FOUR PILLARS</div>
       <div class="pillars-grid">
         ${["hour","day","month","year"].map(k=>{
           const p = pillars[k]; if(!p) return "";
@@ -230,12 +237,14 @@ function renderPillars(root, pillars, elements, tenGods, hiddenStems){
           const branchClass = COLOR_CLASS[BRANCH_ELEM[p.branch]] || "earth";
           const tg = (tenGods?.byPillar?.[k] || tenGods?.[k] || tenGods?.[`${k}Stem`]) || "";
           const hs = hiddenStems?.[p.branch] || hiddenStems?.byBranch?.[p.branch] || [];
+          const tag = p.role ? `<div class="subline">${p.role}</div>` : '';
           return `
             <div class="pillar-card">
               <div class="pillar-title">${TITLES[k]}</div>
               ${k==="day"?'<div class="pillar-sub">Day Master (Self) / 일간(나)</div>':""}
-              <div class="box ${stemClass}">${p.stem}</div>
-              <div class="box ${branchClass}" style="margin-top:8px">${p.branch}</div>
+              <div class="box ${stemClass}">${p.stem || "?"}</div>
+              <div class="box ${branchClass}" style="margin-top:8px">${p.branch || "?"}</div>
+              ${tag}
               ${tg?`<div class="subline">${tg}</div>`:''}
               ${Array.isArray(hs)&&hs.length?`<div class="chips">${hs.map(h=>`<span class="chip">${h}</span>`).join('')}</div>`:''}
             </div>`;
@@ -253,15 +262,16 @@ function renderInteractions(root, interactions){
   pushList(st.합,"Stem Harmony (간합)","info"); pushList(st.충,"Stem Clash (간충)","warn");
   pushList(br.합,"Branch Harmony (지합)","info"); pushList(br.충,"Branch Clash (지충)","warn"); pushList(br.형,"Penalty (형)","warn"); pushList(br.파,"Break (파)","warn"); pushList(br.해,"Harm (해)","warn");
   if(!bag.length){ root.innerHTML=""; return; }
-  root.innerHTML = `<div class="card"><div class="kicker">INTERACTIONS</div><div class="badges">${bag.join("")}</div></div>`;
+  root.innerHTML = `<div class="card"><div class="muted" style="font-size:12px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px">INTERACTIONS</div><div class="badges">${bag.join("")}</div></div>`;
 }
 
 function calcAge(birthDateISO){ if(!birthDateISO) return null; const b=new Date(birthDateISO+"T00:00:00"); const n=new Date(); let a=n.getFullYear()-b.getFullYear(); const m=n.getMonth()-b.getMonth(); if(m<0||(m===0&&n.getDate()<b.getDate())) a--; return a; }
+
 function renderLuck(root, luck, birthDateISO){
   const list = luck?.bigLuck || [];
   if(!Array.isArray(list)||!list.length){ root.innerHTML=""; return; }
   const age = calcAge(birthDateISO);
-  root.innerHTML = `<div class="card luck"><div class="kicker">BIG LUCK (10-year cycles)</div><div class="luck-bar">${
+  root.innerHTML = `<div class="card luck"><div class="muted" style="font-size:12px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px">BIG LUCK (10-year cycles)</div><div class="luck-bar">${
     list.map(({startAge,stem,branch,tenGod})=>{
       const now = typeof age==='number' && age>=startAge && age<startAge+10;
       return `<div class="luck-seg ${now?'luck-now':''}"><div class="luck-title">Age ${startAge}–${startAge+9}</div><div class="luck-ganji">${stem||''}${branch||''}</div>${tenGod?`<div class="luck-god">${tenGod}</div>`:''}${typeof startAge==='number'?`<div class="luck-age">starts ${startAge}</div>`:''}</div>`;
@@ -269,40 +279,69 @@ function renderLuck(root, luck, birthDateISO){
   }</div></div>`;
 }
 
+function renderReading(output, meta={}){
+  const { badge, share } = output.cards || {};
+  const pill = meta.fallback ? `<span class="pill">Fallback</span>` : meta.mocked ? `<span class="pill">Mock</span>` : `<span class="pill ok">Live</span>`;
+  resultEl.innerHTML = `
+    <div class="card">
+      <div class="row" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="muted" style="font-size:12px;letter-spacing:.16em;text-transform:uppercase">READING</div>
+        <div>${pill}</div>
+      </div>
+      <h3 style="margin:8px 0 8px 0;font-size:20px;font-weight:800">${output.title || 'Your Saju Reading'}</h3>
+      <ul style="padding-left:18px;margin:8px 0 0">${(output.bullets||[]).map(b=>`<li>${b}</li>`).join('')}</ul>
+      ${output.forecastOneLiner?`<div style="margin-top:8px;color:#cfe4ff;font-style:italic">${output.forecastOneLiner}</div>`:''}
+      ${Array.isArray(output.actions)&&output.actions[0]?`<div style="margin-top:10px;padding:10px 12px;background:rgba(73,211,154,.09);border:1px solid rgba(73,211,154,.25);border-radius:12px"><strong>Try:</strong> ${output.actions[0]}</div>`:''}
+      ${badge||(share?.headline)?`<div class="row" style="display:flex;gap:10px;margin-top:10px">${badge?`<span class="pill">${badge}</span>`:''}${share?.headline?`<span class="muted">${share.headline} — ${share.sub||''}</span>`:''}</div>`:''}
+    </div>`;
+}
+
+/* ---------- build birthDate/time strings ---------- */
+function getBirthDateISO(){
+  const y=yearSel.value, m=monthSel.value, d=daySel.value;
+  if(!y||!m||!d) return null;
+  return `${y}-${m}-${d}`; // YYYY-MM-DD
+}
+function getBirthTime(){
+  const hh = hourSel.value || '00';
+  const mm = minuteSel.value || '00';
+  return `${hh}:${mm}`;
+}
+
+/* ---------- run button ---------- */
 el('#fillExample').addEventListener('click', () => {
-  el('#birthDate').value = '1992-06-02';
-  el('#birthTime').value = '07:00';
-  el('#city').value = 'Seoul';
-  el('#accuracy').value = 'exact';
+  // 예시: 1992-06-02 09:00, Seoul
+  yearSel.value='1992'; monthSel.value='06'; updateDayOptions(); daySel.value='02';
+  hourSel.value='09'; minuteSel.value='00';
+  cityInput.value='Seoul';
+  saveForm();
 });
 
 runBtn.addEventListener('click', async () => {
-  const birthDateISO = el('#birthDate').value.trim();
-  const birthTime = el('#birthTime').value.trim();
-  const city = el('#city').value.trim();
-  const timeAccuracy = el('#accuracy').value;
-  if (!birthDateISO || !city) { setStatus('Please fill birth date and city.', 'err'); return; }
+  const birthDateISO = getBirthDateISO();
+  const birthTime = getBirthTime();
+  const city = cityInput.value.trim();
+  if(!birthDateISO || !city){ setStatus('Please select birth year/month/day and enter city.', 'err'); return; }
 
   runBtn.disabled = true;
   setStatus('Step 1/3: Resolving city → timezone…');
 
-  // Step 1
+  // Step1: city → lat/lng/timezone
   const geo = await fetchJSON(`/api/geo-timezone?city=${encodeURIComponent(city)}`);
   if (!geo.ok || !geo.data?.timezone) {
-    const reason = geo.data?.error || geo.data?.reason || '';
-    setStatus(`Failed on Step 1 (geo-timezone)${reason ? `: ${reason}` : ''}`, 'err');
+    const hint = geo?.data?.error ? ` • ${geo.data.error}` : '';
+    setStatus(`Failed on Step 1 (geo-timezone).${hint} • Try a nearby big city (e.g., "Seoul" instead of district).`, 'err');
     runBtn.disabled=false; return;
   }
   const { lat, lng } = geo.data.location; const tzId = geo.data.timezone;
 
-  // Step 2
+  // Step2: calc
   setStatus('Step 2/3: Calculating pillars/elements…');
-  const calcPayload = { birthDateISO, birthTime: birthTime || null, lat, lng, tzId, timeAccuracy };
+  const calcPayload = { birthDateISO, birthTime, lat, lng, tzId, timeAccuracy: 'exact' };
   const calc = await fetchJSON('/api/calc', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(calcPayload) });
   if (!calc.ok || !calc.data?.data) {
-    const reason = calc.data?.error || calc.data?.reason || '';
-    setStatus(`Failed on Step 2 (calc)${reason ? `: ${reason}` : ''}`, 'err');
-    runBtn.disabled=false; return;
+    const em = calc?.data?.error || 'Unknown error';
+    setStatus(`Failed on Step 2 (calc) • ${em}`, 'err'); runBtn.disabled=false; return;
   }
 
   const d = calc.data.data || {};
@@ -312,30 +351,21 @@ runBtn.addEventListener('click', async () => {
   renderInteractions(document.getElementById('interactions-root'), interactions);
   renderLuck(document.getElementById('luck-root'), luck, birthDateISO);
 
-  // Step 3
+  // Step3: reading
   setStatus('Step 3/3: Generating English reading…');
   const read = await fetchJSON('/api/reading-generate', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
+    method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ pillars, elements, tenGods, interactions, type:'summary', locale:'en-US', length:'long', maxBullets:6 })
   });
-
   if (!read.ok || !read.data) {
-    setStatus('Failed on Step 3 (reading).', 'err'); 
-    runBtn.disabled=false; return;
+    const em = read?.data?.error || 'Unknown error';
+    setStatus(`Failed on Step 3 (reading) • ${em}`, 'err'); runBtn.disabled=false; return;
   }
+  renderReading(read.data.output || read.data.output, { fallback: read.data.fallback, mocked: read.data.mocked });
 
-  const info = read.data;
-  if (!info.ok && (info.error || info.reason)) {
-    setStatus(`Failed on Step 3 (reading): ${info.error || info.reason}`, 'err');
-    runBtn.disabled=false; return;
-  }
+  setStatus(`Done • tz: ${tzId} • lat:${lat.toFixed(4)}, lng:${lng.toFixed(4)}`, 'ok');
 
-  const tag = info.fallback ? ' • (fallback)' : info.mocked ? ' • (mock)' : '';
-  renderReading(info.output || {}, { fallback: info.fallback, mocked: info.mocked });
-  setStatus(`Done${tag} • tz: ${tzId} • lat:${lat.toFixed(4)}, lng:${lng.toFixed(4)}`, 'ok');
-
-  // Debug JSON
+  // debug
   resultEl.insertAdjacentHTML('beforeend', `
     <details class="card" style="margin-top:12px">
       <summary>Debug JSON (geo/calc/reading)</summary>
@@ -344,8 +374,16 @@ runBtn.addEventListener('click', async () => {
       <pre>reading\n${JSON.stringify(read.data, null, 2)}</pre>
     </details>
   `);
-  runBtn.disabled = false;
+
+  saveForm();
+  runBtn.disabled=false;
 });
+
+/* ---------- boot ---------- */
+populateSelects();
+loadForm();
+// 기본값 없으면 오늘 날짜 셋업
+if(!yearSel.value){ const n=new Date(); yearSel.value=n.getFullYear(); monthSel.value=pad2(n.getMonth()+1); updateDayOptions(); daySel.value=pad2(n.getDate()); hourSel.value=pad2(n.getHours()); minuteSel.value='00'; }
 </script>
 </body>
 </html>
