@@ -100,7 +100,7 @@
       <ul class="muted">
         <li>Step 1: <code>/api/geo-timezone</code> → geocode + tzId</li>
         <li>Step 2: <code>/api/calc</code> → pillars / elements / ten gods / luck</li>
-        <li>Step 3: <code>/api/reading-generate</code> → 6 English sections</li>
+        <li>Step 3: <code>/api/reading-generate</code> → 6 English sections (or synthesized if missing)</li>
       </ul>
     </details>
   </div>
@@ -118,10 +118,10 @@
     <div id="luckRoot" class="luck"></div>
   </div>
 
-  <!-- READING (6 sections) -->
+  <!-- READING (summary + 6 sections) -->
   <div id="readingCard" class="card" style="margin-top:12px">
     <div class="kicker">READING</div>
-    <h3 class="headline" id="readTitle">Navigating Life’s Journey with Saju Insights</h3>
+    <h3 class="headline" id="readTitle">Your Saju Reading</h3>
     <ul id="readBullets"></ul>
     <div class="callout" id="readTry" style="display:none"></div>
   </div>
@@ -175,6 +175,7 @@ const STEM_ELEM={甲:"wood",乙:"wood",丙:"fire",丁:"fire",戊:"earth",己:"ea
 const BRANCH_ELEM={子:"water",丑:"earth",寅:"wood",卯:"wood",辰:"earth",巳:"fire",午:"fire",未:"earth",申:"metal",酉:"metal",戌:"earth",亥:"water"};
 const COLOR={wood:"wood",fire:"fire",earth:"earth",metal:"metal",water:"water"};
 const TITLES={hour:"Hour Pillar (시주)",day:"Day Pillar (일주)",month:"Month Pillar (월주)",year:"Year Pillar (년주)"};
+function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]))}
 
 /* ---------- selects ---------- */
 (function initSelects(){
@@ -227,7 +228,6 @@ function renderLuck(luck,birthISO){
 }
 function calcAge(iso){if(!iso) return null; const b=new Date(iso+'T00:00:00'); const n=new Date(); let a=n.getFullYear()-b.getFullYear(); const m=n.getMonth()-b.getMonth(); if(m<0||(m===0&&n.getDate()<b.getDate())) a--; return a;}
 
-function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]))}
 function renderReading6(sections){
   const root=el('#sections'); root.innerHTML='';
   const order=[
@@ -244,6 +244,66 @@ function renderReading6(sections){
     box.innerHTML=`<div class="kicker">SECTION</div><h3 class="headline">${esc(title)}</h3><div style="white-space:pre-wrap;opacity:.95">${esc(t)}</div>`;
     root.appendChild(box);
   });
+}
+
+/* ---------- synthesize 6 sections if backend doesn't send them ---------- */
+function synthesizeSections(ctx,out){
+  // very lightweight rule-based write-up (>=4 sentences each)
+  const dm = ctx?.pillars?.day?.stem || '';
+  const dmElem = STEM_ELEM[dm]||'';
+  const elem = ctx?.elements||{};
+  const top = Object.entries(elem).sort((a,b)=>b[1]-a[1]).map(([k])=>k);
+  const hi = top[0]||'', lo = top[4]||'';
+  const luckNow = (ctx?.luck?.bigLuck||[]).find(({startAge})=>{
+    const a=calcAge(ctx?.birthDateISO); return typeof a==='number'&&a>=startAge&&a<startAge+10;
+  });
+
+  const elemWord = e=>({wood:'Wood',fire:'Fire',earth:'Earth',metal:'Metal',water:'Water'}[e]||e);
+  const dmText = dm ? `As a Day Master represented by ${dm} (${elemWord(dmElem)}), you tend to express the qualities of ${dmElem}.` : '';
+  const core = [
+    `${dmText} Your chart shows a blend of strengths you can apply in daily life.`,
+    `You naturally lean toward ${elemWord(hi)} qualities right now, while ${elemWord(lo)} appears comparatively quieter.`,
+    `This combination can shape how you communicate, plan, and make decisions.`,
+    `Leaning into your strengths while gently developing the quieter areas will keep you balanced and effective.`
+  ].join(' ');
+
+  const balance = [
+    `Your elemental balance highlights ${elemWord(hi)} as a leading force with room to cultivate ${elemWord(lo)}.`,
+    `Build balance through simple routines: colors, environments, or activities associated with ${elemWord(lo)}.`,
+    `For example, choose hobbies, foods, or nature time that symbolize this element to steadily nourish it.`,
+    `Small, consistent changes will keep your energy stable across relationships and work.`
+  ].join(' ');
+
+  const tg = ctx?.tenGods?.summary || 'Your Ten Gods suggest how you relate to power, resources, expression, and support.';
+  const tengods = [
+    tg,
+    `Notice which roles feel most natural—leading, collaborating, researching, or crafting—and align your efforts with them.`,
+    `Use supportive roles around you to complement your style and avoid doing everything alone.`,
+    `As your circumstances shift, your Ten Gods profile becomes a helpful compass for choosing next steps.`
+  ].join(' ');
+
+  const luck = [
+    luckNow ? `Your current 10-year cycle (Age ${luckNow.startAge}–${luckNow.startAge+9}) emphasizes ${(luckNow.tenGod||'growth and learning').toLowerCase()}.` : `Your luck cycles move in 10-year phases; each brings different opportunities.`,
+    `Treat each phase like a theme year: double down on what is supported and keep experiments lightweight elsewhere.`,
+    `Mark gentle checkpoints each quarter to adjust plans to real-world feedback.`,
+    `This rhythm will help you ride momentum without burning out.`
+  ].join(' ');
+
+  const wellness = [
+    `Well-being stabilizes when the quieter element—${elemWord(lo)}—gets steady attention.`,
+    `Pair focused work with grounding breaks to keep mental clarity and emotional ease.`,
+    `Sleep, hydration, and light movement form the base; a tiny habit every day beats a big burst once a month.`,
+    `As balance improves, you’ll notice clearer thinking and more consistent energy.`
+  ].join(' ');
+
+  const summary = [
+    `In short, lead with ${elemWord(hi)} while nurturing ${elemWord(lo)}.`,
+    `Use your Ten Gods strengths to choose roles that fit; invite support for the rest.`,
+    `Follow the current luck theme with a simple quarterly rhythm.`,
+    `Consistency over intensity will help your talents compound over time.`
+  ].join(' ');
+
+  return { core, balance, tengods, luck, wellness, summary };
 }
 
 /* ---------- Chat (Ask) ---------- */
@@ -326,7 +386,11 @@ el('#calcBtn').addEventListener('click', async ()=>{
   setStatus('Step 3/3: Generating English reading…');
   const read = await fetchJSON('/api/reading-generate',{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({pillars,elements,tenGods,interactions,type:'summary',locale:'en-US',length:'long',maxBullets:6})
+    body:JSON.stringify({
+      pillars,elements,tenGods,interactions,
+      type:'summary',locale:'en-US',length:'long',maxBullets:6,
+      wantSections:true
+    })
   });
   el('#dbgRead').textContent = `reading\n${read.raw}`;
   if(!read.ok||!read.data){ setStatus('Failed on Step 3 (reading).','err'); return; }
@@ -336,8 +400,11 @@ el('#calcBtn').addEventListener('click', async ()=>{
   el('#readBullets').innerHTML = (out.bullets||[]).map(b=>`<li>${b}</li>`).join('');
   if(out.actions&&out.actions[0]){ el('#readTry').style.display='block'; el('#readTry').innerHTML=`<strong>Try:</strong> ${out.actions[0]}`; }
   else { el('#readTry').style.display='none'; }
-  // sections: {core, balance, tengods, luck, wellness, summary}
-  renderReading6(out.sections||{});
+
+  // ✅ 섹션: 서버 → 없으면 프론트 합성
+  const sectionsFromServer = read.data.sections || out.sections;
+  const sections = sectionsFromServer || synthesizeSections(window.__latestCalcContext, out);
+  renderReading6(sections);
 
   setStatus(`Done • tz: ${tzId} • lat:${(+lat).toFixed(4)}, lng:${(+lng).toFixed(4)}`,'ok');
 });
