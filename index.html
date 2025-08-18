@@ -1,175 +1,123 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Saju-Eight • Playground (Extended + Topics Carousel)</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap">
-  <style>
-    :root{
-      --bg:#0b1220; --panel:#121a2a; --muted:#6b7a90; --txt:#e9f0ff; --accent:#66b3ff;
-      --ok:#49d39a; --err:#ff7a7a; --card:#0b1426; --border:rgba(255,255,255,.10);
-    }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,"Noto Sans KR","Segoe UI",Roboto,Arial,sans-serif;background:linear-gradient(120deg,#0b1220,#0e2342);color:var(--txt)}
-    .wrap{max-width:980px;margin:40px auto;padding:0 16px}
-    .title{font-size:24px;font-weight:800;margin-bottom:6px}
-    .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
-    .card{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
-    .grid{display:grid;gap:10px;grid-template-columns:1fr 1fr}
-    .grid-5{display:grid;gap:10px;grid-template-columns:repeat(5,minmax(0,1fr))}
-    @media (max-width:760px){.grid,.grid-5{grid-template-columns:1fr 1fr}.grid-5{grid-template-columns:1fr 1fr}}
-    label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
-    input,select,button,textarea{width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:var(--card);color:var(--txt);outline:none}
-    input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(102,179,255,.2)}
-    button{background:linear-gradient(135deg,#4da3ff,#66b3ff);border:none;font-weight:700;color:#06101d;cursor:pointer}
-    button[disabled]{opacity:.6;cursor:not-allowed}
-    .muted{color:var(--muted);font-size:13px}
-    .kicker{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-    .headline{font-weight:800;margin:0 0 8px;font-size:20px}
-    .row{display:flex;gap:10px;align-items:center}
-    .pill{display:inline-flex;gap:8px;align-items:center;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--border);font-size:12px}
-    .ok{color:var(--ok)} .err{color:var(--err)}
-    details{margin-top:12px} pre{background:#081123;border:1px solid var(--border);padding:12px;border-radius:12px;overflow:auto}
-    /* Pillars quick styles (kept short here) */
-    .pillars{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-    .pillar{border:1px solid var(--border);border-radius:16px;padding:12px;background:rgba(255,255,255,.04)}
-    .pillar .t{font-size:12px;opacity:.8;text-align:center;margin-bottom:6px}
-    .box{height:82px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:800;border:1px solid #0003}
-    .stem{background:#0ea5e9} .branch{background:#f43f5e}
-    /* Gauge */
-    .gauge{display:flex;height:10px;overflow:hidden;border-radius:10px;border:1px solid #2a2a2a;margin-top:12px}
-    .gauge>div{height:100%}
-    .wood{background:#16a34a}.fire{background:#ef4444}.earth{background:#f59e0b}.metal{background:#e5e7eb}.water{background:#06b6d4}
-    /* Reading cards */
-    .section{margin-top:14px}
-    .badgeRow{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
-    .chip{font-size:11px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--border)}
-    /* ---------- Topics Carousel (mobile-first) ---------- */
-    .topics-wrap{margin-top:18px}
-    .topics-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-    .topics-scroll{
-      display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;
-      -webkit-overflow-scrolling:touch;scrollbar-width:none
-    }
-    .topics-scroll::-webkit-scrollbar{display:none}
-    .topic-card{
-      flex:0 0 230px;scroll-snap-align:start;background:rgba(255,255,255,.05);border:1px solid var(--border);
-      border-radius:16px;padding:12px 12px 14px;display:flex;flex-direction:column;gap:8px
-    }
-    .topic-emoji{font-size:22px}
-    .topic-title{font-weight:800}
-    .topic-desc{color:var(--muted);font-size:13px;line-height:1.4}
-    .topic-btn{margin-top:auto}
-    .topic-disabled{opacity:.6;pointer-events:none}
-    /* topic result */
-    .topic-result{margin-top:10px}
-    .skeleton{position:relative;overflow:hidden;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:12px;height:84px}
-    .skeleton::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);animation:sh 1.2s infinite}
-    @keyframes sh{to{transform:translateX(100%)}}
-    /* Ask box */
-    .ask-row{display:flex;gap:8px;margin-top:10px}
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Saju-Eight • Extended (Deep + 6 Sections + Topic Grid)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap">
+<style>
+:root{
+  --bg:#0b1220; --panel:#121a2a; --muted:#6b7a90; --txt:#e9f0ff; --accent:#66b3ff;
+  --ok:#49d39a; --err:#ff7a7a; --border:rgba(255,255,255,.10); --card:#0b1426;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,"Noto Sans KR","Segoe UI",Roboto,Arial,sans-serif;background:linear-gradient(120deg,#0b1220,#0e2342);color:var(--txt)}
+.wrap{max-width:980px;margin:40px auto;padding:0 16px}
+.title{font-weight:800;font-size:24px;margin-bottom:6px}
+.sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+.card{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+.grid{display:grid;gap:10px}
+.grid-5{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media (max-width:760px){.grid-5{grid-template-columns:1fr 1fr}}
+label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+input,select,button,textarea{width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:var(--card);color:var(--txt);outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(102,179,255,.2)}
+button{background:linear-gradient(135deg,#4da3ff,#66b3ff);border:none;font-weight:700;color:#06101d;cursor:pointer}
+button[disabled]{opacity:.6;cursor:not-allowed}
+.muted{color:var(--muted);font-size:13px}
+.kicker{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.headline{font-size:20px;margin:0 0 8px;font-weight:800}
+.row{display:flex;gap:10px;align-items:center}
+.pill{display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.06);font-size:12px}
+.ok{color:var(--ok)} .err{color:var(--err)}
+/* pillars */
+.pillars{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.pillar{border:1px solid var(--border);border-radius:16px;padding:12px;background:rgba(255,255,255,.04)}
+.pillar .t{font-size:12px;opacity:.8;text-align:center;margin-bottom:6px}
+.box{height:82px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:800;border:1px solid #0003}
+.stem{background:#0ea5e9}.branch{background:#f43f5e}
+/* gauge */
+.gauge{display:flex;height:10px;overflow:hidden;border-radius:10px;border:1px solid #2a2a2a;margin-top:12px}
+.gauge>div{height:100%}
+.wood{background:#16a34a}.fire{background:#ef4444}.earth{background:#f59e0b}.metal{background:#e5e7eb}.water{background:#06b6d4}
+/* sections */
+.section{margin-top:14px}
+.badgeRow{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.chip{font-size:11px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--border)}
+/* topics grid */
+.topics{margin-top:14px}
+.grid-topics{display:grid;gap:10px;grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:900px){.grid-topics{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:640px){.grid-topics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.topic{position:relative;display:flex;flex-direction:column;gap:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);border-radius:16px;padding:12px;transition:.2s ease}
+.topic .emoji{font-size:24px}
+.topic .ttl{font-weight:800}
+.topic .desc{color:var(--muted);font-size:13px;line-height:1.35}
+.topic .cta{margin-top:auto}
+.topic.expanded{grid-column:span 2;background:rgba(255,255,255,.07)}
+.topic .result{margin-top:10px}
+.skel{position:relative;height:80px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid var(--border);overflow:hidden}
+.skel::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);animation:sh 1.2s infinite}
+@keyframes sh{to{transform:translateX(100%)}}
+.askRow{display:flex;gap:8px;margin-top:10px}
+</style>
 </head>
 <body>
 <div class="wrap">
   <div class="title">Saju-Eight • End-to-End Playground (Extended)</div>
-  <div class="sub">Enter birth info and city → timezone → pillars → English reading (single standard). Then explore <b>Specific Fortunes</b> with a mobile-friendly carousel.</div>
+  <div class="sub">Deep English reading with <b>6 sections</b> guaranteed. Explore <b>specific fortunes</b> via an expandable <b>2×4 topic grid</b>, or ask your own question.</div>
 
   <!-- ===== Form ===== -->
   <div class="card">
-    <div class="grid-5">
-      <div>
-        <label>Birth year</label>
-        <select id="year"></select>
-      </div>
-      <div>
-        <label>Birth month</label>
-        <select id="month"></select>
-      </div>
-      <div>
-        <label>Birth day</label>
-        <select id="day"></select>
-      </div>
-      <div>
-        <label>Hour</label>
-        <select id="hour"></select>
-      </div>
-      <div>
-        <label>Minute</label>
-        <select id="minute"></select>
-      </div>
+    <div class="grid grid-5">
+      <div><label>Birth year</label><select id="year"></select></div>
+      <div><label>Birth month</label><select id="month"></select></div>
+      <div><label>Birth day</label><select id="day"></select></div>
+      <div><label>Hour</label><select id="hour"></select></div>
+      <div><label>Minute</label><select id="minute"></select></div>
     </div>
-    <div class="grid" style="margin-top:10px">
-      <div>
-        <label>Birth city (in English)</label>
-        <input id="city" placeholder="Seoul / New York / Tokyo"/>
-      </div>
-      <div>
-        <label>&nbsp;</label>
-        <div class="row">
-          <button id="runBtn">Calculate & Generate</button>
-          <button id="fillExample" type="button">Fill Example</button>
-        </div>
-      </div>
+    <div class="grid" style="grid-template-columns:2fr 1fr;margin-top:10px">
+      <div><label>Birth city (in English)</label><input id="city" placeholder="Seoul / New York / Tokyo"/></div>
+      <div style="align-self:end"><div class="row"><button id="runBtn">Calculate & Generate</button><button id="fillExample" type="button">Fill Example</button></div></div>
     </div>
     <div id="status" class="muted" style="margin-top:6px"></div>
-    <details style="margin-top:8px">
-      <summary class="muted">What happens under the hood?</summary>
-      <ul class="muted">
-        <li>Step 1: GET <code>/api/geo-timezone?city=...</code></li>
-        <li>Step 2: POST <code>/api/calc</code> (Four Pillars, elements, ten gods, big luck)</li>
-        <li>Step 3: POST <code>/api/reading-generate</code> (Deep reading)</li>
-      </ul>
-    </details>
+    <details style="margin-top:6px"><summary class="muted">What happens under the hood?</summary><ul class="muted"><li>GET <code>/api/geo-timezone</code></li><li>POST <code>/api/calc</code></li><li>POST <code>/api/reading-generate</code> (deep + sections)</li></ul></details>
   </div>
 
-  <!-- ===== Pillars ===== -->
   <div id="pillars" class="section"></div>
-
-  <!-- ===== Big Luck ===== -->
   <div id="luck" class="section"></div>
-
-  <!-- ===== Deep Reading ===== -->
   <div id="reading" class="section"></div>
-
-  <!-- ===== Topics Carousel + Mixed UI ===== -->
   <div id="topics" class="section"></div>
 
-  <details class="card section">
-    <summary>Debug JSON (geo/calc/reading)</summary>
-    <pre id="dbg"></pre>
-  </details>
+  <details class="card section"><summary>Debug JSON (geo/calc/reading)</summary><pre id="dbg"></pre></details>
 </div>
 
 <script>
-/* ---------------- Utilities ---------------- */
-const el = (q)=>document.querySelector(q);
-const statusEl = el('#status'), dbgEl = el('#dbg');
-const state = { lastCalc:null, lastGeo:null, lastReading:null };
+/* ============= Utilities ============= */
+const el=(q)=>document.querySelector(q); const statusEl=el('#status'), dbgEl=el('#dbg');
+const state={ lastGeo:null,lastCalc:null,lastReading:null };
+const ESC=s=>String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function setStatus(m,t=''){statusEl.textContent=m;statusEl.className='muted '+(t||'')}
+async function fetchJSON(url,opts={}){const r=await fetch(url,opts);const t=await r.text();try{return{ok:r.ok,status:r.status,data:JSON.parse(t),raw:t}}catch{return{ok:r.ok,status:r.status,data:null,raw:t}}}
 
-function setStatus(msg,type=''){ statusEl.textContent = msg; statusEl.className = 'muted ' + (type||''); }
-async function fetchJSON(url,opts={}){ const r=await fetch(url,opts); const t=await r.text(); try{return{ok:r.ok,status:r.status,data:JSON.parse(t),raw:t}}catch{return{ok:r.ok,status:r.status,data:null,raw:t}} }
-const ESC = (s)=>String(s||'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-
-/* ---------------- Select builders ---------------- */
-(function buildSelects(){
-  const y=el('#year'), m=el('#month'), d=el('#day'), h=el('#hour'), min=el('#minute');
+/* ============= Selects ============= */
+(function initSelects(){
+  const y=el('#year'), m=el('#month'), d=el('#day'), h=el('#hour'), mi=el('#minute');
   const now=new Date();
-  for(let i=now.getFullYear(); i>=1900; i--) y.insertAdjacentHTML('beforeend', `<option>${i}</option>`);
-  for(let i=1;i<=12;i++) m.insertAdjacentHTML('beforeend', `<option value="${String(i).padStart(2,'0')}">${String(i).padStart(2,'0')}</option>`);
-  for(let i=1;i<=31;i++) d.insertAdjacentHTML('beforeend', `<option value="${String(i).padStart(2,'0')}">${String(i).padStart(2,'0')}</option>`);
-  for(let i=0;i<24;i++) h.insertAdjacentHTML('beforeend', `<option value="${String(i).padStart(2,'0')}">${String(i).padStart(2,'0')}</option>`);
-  for(let i=0;i<60;i+=1) min.insertAdjacentHTML('beforeend', `<option value="${String(i).padStart(2,'0')}">${String(i).padStart(2,'0')}</option>`);
-})();
+  for(let i=now.getFullYear();i>=1900;i--) y.insertAdjacentHTML('beforeend',`<option>${i}</option>`);
+  for(let i=1;i<=12;i++) m.insertAdjacentHTML('beforeend',`<option value="${String(i).padStart(2,'0')}">${String(i).padStart(2,'0')}</option>`);
+  for(let i=1;i<=31;i++) d.insertAdjacentHTML('beforeend',`<option value="${String(i).padStart(2,'0')}">${String(i).padStart(2,'0')}</option>`);
+  for(let i=0;i<24;i++) h.insertAdjacentHTML('beforeend',`<option value="${String(i).padStart(2,'0')}">${String(i).padStart(2,'0')}</option>`);
+  for(let i=0;i<60;i++) mi.insertAdjacentHTML('beforeend',`<option value="${String(i).padStart(2,'0')}">${String(i).padStart(2,'0')}</option>`);
+})()
+function birthISO(){return `${el('#year').value}-${el('#month').value}-${el('#day').value}`}
 
-/* ---------------- UI renderers (short) ---------------- */
+/* ============= Render: pillars/luck/reading ============= */
 function renderPillars(calc){
-  const root = el('#pillars');
-  if(!calc?.pillars){ root.innerHTML=''; return; }
-  const p=calc.pillars, e=calc.elements||{};
-  root.innerHTML = `
+  const root=el('#pillars'); if(!calc?.pillars){root.innerHTML='';return}
+  const p=calc.pillars,e=calc.elements||{};
+  root.innerHTML=`
     <div class="card">
       <div class="kicker">FOUR PILLARS</div>
       <div class="pillars">
@@ -190,164 +138,172 @@ function renderPillars(calc){
     </div>`;
 }
 function renderLuck(calc){
-  const root=el('#luck'); const list=calc?.luck?.bigLuck||[];
-  if(!list.length){ root.innerHTML=''; return; }
-  root.innerHTML = `
-    <div class="card"><div class="kicker">BIG LUCK (10-year cycles)</div>
-      <div class="row" style="flex-wrap:wrap;gap:8px">
-        ${list.map(s=>`<div class="pill">Age ${s.startAge}–${s.startAge+9}${s.stem?` • ${ESC(s.stem)}${ESC(s.branch||'')}`:''}</div>`).join('')}
-      </div>
-    </div>`;
+  const root=el('#luck'); const list=calc?.luck?.bigLuck||[]; if(!list.length){root.innerHTML='';return}
+  root.innerHTML=`<div class="card"><div class="kicker">BIG LUCK (10-year cycles)</div>
+    <div class="row" style="flex-wrap:wrap;gap:8px">${list.map(s=>`<div class="pill">Age ${s.startAge}–${s.startAge+9}${s.stem?` • ${ESC(s.stem)}${ESC(s.branch||'')}`:''}</div>`).join('')}</div>
+  </div>`;
+}
+
+/* 보장 6섹션: 서버 미제공시 플레이스홀더 생성 */
+const SECTION_TITLES=['Core Traits & Disposition','Element Balance','Ten Gods Overview','Luck Insights','Wellness Recommendations','Overall Summary'];
+function ensureSixSections(out){
+  let secs = Array.isArray(out.sections)? out.sections.slice(0,6):[];
+  const have = secs.map(s=>s.title);
+  for(const title of SECTION_TITLES){
+    if(secs.length>=6) break;
+    if(!have.includes(title)) secs.push({ title, points:[ 'More detailed guidance is coming based on your pillars.','Meanwhile, reflect on today’s strengths and a tiny next step you can take.' ], tags:['coming soon'] });
+  }
+  out.sections = secs;
+  return out;
 }
 function renderDeepReading(out,meta={}){
-  const root=el('#reading');
-  if(!out){ root.innerHTML=''; return; }
-  const pill = meta.fallback ? '<span class="pill">Fallback</span>' : meta.mocked ? '<span class="pill">Mock</span>' : '<span class="pill ok">Live</span>';
-  const sec = (t,ps,tags=[])=>`
+  const root=el('#reading'); if(!out){root.innerHTML='';return}
+  ensureSixSections(out);
+  const pill = meta.fallback?'<span class="pill">Fallback</span>':meta.mocked?'<span class="pill">Mock</span>':'<span class="pill ok">Live</span>';
+  const sec=(t,ps,tags=[])=>`
     <div class="card section">
       <div class="kicker">SECTION</div>
       <h3 class="headline">${ESC(t)}</h3>
       <ul>${(ps||[]).map(p=>`<li>${ESC(p)}</li>`).join('')}</ul>
-      ${tags.length?`<div class="badgeRow">${tags.map(x=>`<span class="chip">${ESC(x)}</span>`).join('')}</div>`:''}
+      ${tags?.length?`<div class="badgeRow">${tags.map(x=>`<span class="chip">${ESC(x)}</span>`).join('')}</div>`:''}
     </div>`;
-  root.innerHTML = `
+  root.innerHTML=`
     <div class="card">
-      <div class="row" style="justify-content:space-between;align-items:center">
+      <div class="row" style="justify-content:space-between">
         <div class="kicker">READING</div><div>${pill}</div>
       </div>
-      <h3 class="headline">${ESC(out.title||'Your Saju Insights')}</h3>
+      <h3 class="headline">${ESC(out.title||'Saju Insights for Life Journey')}</h3>
       <ul>${(out.bullets||[]).map(b=>`<li>${ESC(b)}</li>`).join('')}</ul>
       ${out.forecastOneLiner?`<div class="muted" style="margin-top:8px"><em>${ESC(out.forecastOneLiner)}</em></div>`:''}
-      ${Array.isArray(out.actions)&&out.actions[0]?`<div class="pill" style="margin-top:10px"><b>Try:</b>&nbsp;${ESC(out.actions[0])}</div>`:''}
+      ${out.actions?.[0]?`<div class="pill" style="margin-top:10px"><b>Try:</b>&nbsp;${ESC(out.actions[0])}</div>`:''}
     </div>
-    ${Array.isArray(out.sections)? out.sections.map(s=>sec(s.title,s.points,s.tags)).join('') : ''}`;
+    ${out.sections.map(s=>sec(s.title,s.points,s.tags)).join('')}`;
 }
 
-/* ---------------- Topics (carousel + mixed UI) ---------------- */
-const TOPICS = [
-  {key:'wealth',        emoji:'💰', title:'Wealth & Money',        desc:'Income, savings, timing for investments.'},
-  {key:'love',          emoji:'❤️', title:'Love & Relationships',   desc:'Compatibility, meeting timing, harmony tips.'},
-  {key:'career',        emoji:'💼', title:'Career & Growth',        desc:'Fit, leadership vs. craft, pivots.'},
-  {key:'health',        emoji:'🌿', title:'Health & Wellness',      desc:'Element imbalance → care routines.'},
-  {key:'family',        emoji:'👶', title:'Family & Children',      desc:'Fertility/children themes & dynamics.'},
-  {key:'moving',        emoji:'✈️', title:'Travel/Relocation',      desc:'Best timing, directions, cautions.'},
-  {key:'study',         emoji:'📚', title:'Learning & Skills',      desc:'What to study, how to deepen talent.'},
-  {key:'timing',        emoji:'⏳', title:'Timing & Luck Windows',   desc:'Near-term chances and watch-outs.'},
+/* ============= Topics (grid, expand-in-place) ============= */
+const TOPICS=[
+  {key:'wealth',  emoji:'💰', title:'Wealth & Money',      desc:'Income, savings, investment timing.'},
+  {key:'love',    emoji:'❤️', title:'Love & Relationships',desc:'Compatibility, harmony, meeting timing.'},
+  {key:'career',  emoji:'💼', title:'Career & Growth',      desc:'Fit, leadership vs craft, pivots.'},
+  {key:'health',  emoji:'🌿', title:'Health & Wellness',    desc:'Imbalance → care routines.'},
+  {key:'family',  emoji:'👶', title:'Family & Children',    desc:'Fertility & family dynamics.'},
+  {key:'moving',  emoji:'✈️', title:'Travel/Relocation',    desc:'Good periods, directions, cautions.'},
+  {key:'study',   emoji:'📚', title:'Learning & Skills',    desc:'What to study, deepen talent.'},
+  {key:'timing',  emoji:'⏳', title:'Timing & Luck Windows', desc:'Short-term chances & watch-outs.'},
 ];
+/* 토픽 의도 힌트(백엔드가 topic만 보더라도 의미 강화) */
+const TOPIC_HINTS={
+  wealth:'Focus on 财(wealth) stars, 正財/偏財 and money timing from luck cycles.',
+  love:'Focus on relationships via 比肩/劫財/官星 dynamics, harmony/clash, and months with good compatibility.',
+  career:'Focus on 官/印/食傷 for role fit, leadership vs craft, pivots.',
+  health:'Map element imbalance to body systems; give daily/weekly care tips.',
+  family:'Discuss children (食神/傷官) and family harmony; timing considerations.',
+  moving:'Relocation/travel timing using luck windows; note clashes to places/directions.',
+  study:'Study/skill themes via 印星 and day master strengths.',
+  timing:'Next 3–12 months windows; what to advance or avoid.',
+};
 
 function renderTopics(calc){
-  const root = el('#topics');
-  const disabled = !calc?.pillars;
-  root.innerHTML = `
-    <div class="card">
-      <div class="topics-head">
-        <div class="kicker">EXPLORE SPECIFIC FORTUNES</div>
-        <div class="muted">${disabled?'Run calculation first to enable cards':'Swipe → Choose a topic'}</div>
-      </div>
-      <div class="topics-scroll" id="topicsScroll">
+  const root=el('#topics'); const disabled=!calc?.pillars;
+  root.innerHTML=`
+    <div class="card topics">
+      <div class="kicker">EXPLORE SPECIFIC FORTUNES</div>
+      <div class="grid-topics" id="topicsGrid">
         ${TOPICS.map(t=>`
-          <div class="topic-card ${disabled?'topic-disabled':''}" data-topic="${t.key}">
-            <div class="topic-emoji">${t.emoji}</div>
-            <div class="topic-title">${ESC(t.title)}</div>
-            <div class="topic-desc">${ESC(t.desc)}</div>
-            <button class="topic-btn">See insights</button>
+          <div class="topic ${disabled?'topic-disabled':''}" data-topic="${t.key}">
+            <div class="emoji">${t.emoji}</div>
+            <div class="ttl">${ESC(t.title)}</div>
+            <div class="desc">${ESC(t.desc)}</div>
+            <button class="cta">See insights</button>
+            <div class="result"></div>
           </div>`).join('')}
       </div>
-      <div class="topic-result" id="topicResult"></div>
-      <div class="ask-row">
+      <div class="askRow">
         <input id="askInput" placeholder="Or ask your own question (e.g., ‘Will switching jobs this year be good?’)"/>
         <button id="askBtn">Ask</button>
       </div>
     </div>`;
-  if(!disabled){
-    el('#topicsScroll').addEventListener('click', onTopicClick);
-    el('#askBtn').addEventListener('click', onAsk);
+  if(disabled) return;
+  el('#topicsGrid').addEventListener('click', onTopicCard);
+  el('#askBtn').addEventListener('click', onAsk);
+}
+function skeleton(n=2){return Array.from({length:n}).map(()=>`<div class="skel" style="margin:6px 0"></div>`).join('')}
+function showInCard(card,html){card.querySelector('.result').innerHTML=html}
+function expandCard(card){card.classList.toggle('expanded')}
+async function onTopicCard(e){
+  const card=e.target.closest('.topic'); if(!card) return;
+  if(e.target.classList.contains('cta')||e.target.classList.contains('ttl')||e.target.classList.contains('emoji')||e.target.classList.contains('desc')){
+    expandCard(card);
+    const topic=card.getAttribute('data-topic'); const c=state.lastCalc; if(!c) return;
+    showInCard(card,skeleton(2));
+    const body=JSON.stringify({
+      type:'topic', topic, topicHints:TOPIC_HINTS[topic],
+      locale:'en-US', length:'deep',
+      pillars:c.pillars, elements:c.elements, tenGods:c.tenGods, interactions:c.interactions, luck:c.luck
+    });
+    const r=await fetchJSON('/api/reading-generate',{method:'POST',headers:{'Content-Type':'application/json'},body});
+    if(!r.ok||!r.data?.output){showInCard(card,`<div class="pill err">Failed to get topic reading.</div>`);return}
+    const o=r.data.output;
+    showInCard(card,`
+      <div class="card" style="padding:10px">
+        <div class="kicker">TOPIC RESULT</div>
+        <h3 class="headline" style="font-size:16px">${ESC(o.title||'Personalized Insight')}</h3>
+        <ul style="margin:6px 0 0">${(o.bullets||[]).slice(0,5).map(b=>`<li>${ESC(b)}</li>`).join('')}</ul>
+        ${o.forecastOneLiner?`<div class="muted" style="margin-top:6px"><em>${ESC(o.forecastOneLiner)}</em></div>`:''}
+      </div>`);
   }
 }
-
-function showTopicSkeleton(){
-  el('#topicResult').innerHTML = `
-    <div class="skeleton" style="height:18px;margin-bottom:8px"></div>
-    <div class="skeleton" style="height:72px"></div>`;
-}
-function renderTopicOutput(title, bullets, oneLiner){
-  el('#topicResult').innerHTML = `
-    <div class="section card">
-      <div class="kicker">TOPIC RESULT</div>
-      <h3 class="headline">${ESC(title||'Your Focused Insight')}</h3>
-      <ul>${(bullets||[]).map(b=>`<li>${ESC(b)}</li>`).join('')}</ul>
-      ${oneLiner?`<div class="muted" style="margin-top:6px"><em>${ESC(oneLiner)}</em></div>`:''}
-    </div>`;
-}
-async function onTopicClick(e){
-  const card = e.target.closest('.topic-card'); if(!card) return;
-  const topic = card.getAttribute('data-topic');
-  const c = state.lastCalc; if(!c) return;
-  showTopicSkeleton();
-  const body = JSON.stringify({
-    type:'topic', topic, locale:'en-US', length:'deep',
-    pillars:c.pillars, elements:c.elements, tenGods:c.tenGods, interactions:c.interactions, luck:c.luck
-  });
-  const r = await fetchJSON('/api/reading-generate', {method:'POST', headers:{'Content-Type':'application/json'}, body});
-  if(!r.ok || !r.data?.output){ el('#topicResult').innerHTML = `<div class="pill err">Failed to get topic reading.</div>`; return; }
-  const out = r.data.output;
-  renderTopicOutput(out.title, out.bullets, out.forecastOneLiner);
-}
 async function onAsk(){
-  const q = el('#askInput').value.trim(); if(!q) return;
-  const c = state.lastCalc; if(!c) return;
-  showTopicSkeleton();
-  const body = JSON.stringify({
-    type:'question', question:q, locale:'en-US', length:'deep',
+  const q=el('#askInput').value.trim(); if(!q) return;
+  const c=state.lastCalc; if(!c) return;
+  const grid=el('#topicsGrid');
+  const askCard=grid.querySelector('.topic[data-topic="timing"]')||grid.firstElementChild;
+  askCard.classList.add('expanded'); showInCard(askCard,skeleton(2));
+  const body=JSON.stringify({
+    type:'question', question:q,
+    locale:'en-US', length:'deep',
     pillars:c.pillars, elements:c.elements, tenGods:c.tenGods, interactions:c.interactions, luck:c.luck
   });
-  const r = await fetchJSON('/api/reading-generate', {method:'POST', headers:{'Content-Type':'application/json'}, body});
-  if(!r.ok || !r.data?.output){ el('#topicResult').innerHTML = `<div class="pill err">Failed to answer your question.</div>`; return; }
-  const out = r.data.output;
-  renderTopicOutput(out.title||'Answer', out.bullets, out.forecastOneLiner);
+  const r=await fetchJSON('/api/reading-generate',{method:'POST',headers:{'Content-Type':'application/json'},body});
+  if(!r.ok||!r.data?.output){showInCard(askCard,`<div class="pill err">Failed to answer your question.</div>`);return}
+  const o=r.data.output;
+  showInCard(askCard,`
+    <div class="card" style="padding:10px">
+      <div class="kicker">YOUR QUESTION</div>
+      <h3 class="headline" style="font-size:16px">${ESC(o.title||'Answer')}</h3>
+      <ul style="margin:6px 0 0">${(o.bullets||[]).slice(0,6).map(b=>`<li>${ESC(b)}</li>`).join('')}</ul>
+      ${o.forecastOneLiner?`<div class="muted" style="margin-top:6px"><em>${ESC(o.forecastOneLiner)}</em></div>`:''}
+    </div>`);
 }
 
-/* ---------------- Flow: run → geo → calc → reading → topics ---------------- */
-function birthISO(){ return `${el('#year').value}-${el('#month').value}-${el('#day').value}`; }
-el('#fillExample').addEventListener('click', ()=>{
-  el('#year').value='1989'; el('#month').value='08'; el('#day').value='08';
-  el('#hour').value='07';  el('#minute').value='30'; el('#city').value='seoul';
+/* ============= Flow ============= */
+el('#fillExample').addEventListener('click',()=>{
+  el('#year').value='1989';el('#month').value='08';el('#day').value='08';
+  el('#hour').value='07';el('#minute').value='30';el('#city').value='seoul';
 });
-el('#runBtn').addEventListener('click', async ()=>{
-  const city = el('#city').value.trim(); if(!city){ setStatus('Enter birth city.', 'err'); return; }
-  const tzReq = await fetchJSON(`/api/geo-timezone?city=${encodeURIComponent(city)}`);
-  if(!tzReq.ok || !tzReq.data?.timezone){ setStatus('Step 1 failed (geo-timezone).', 'err'); return; }
-  state.lastGeo = tzReq.data;
-  const tzId = tzReq.data.timezone; const lat=tzReq.data.location?.lat, lng=tzReq.data.location?.lng;
+el('#runBtn').addEventListener('click',async()=>{
+  const city=el('#city').value.trim(); if(!city){setStatus('Enter birth city.','err');return}
+  const geo=await fetchJSON(`/api/geo-timezone?city=${encodeURIComponent(city)}`);
+  if(!geo.ok||!geo.data?.timezone){setStatus('Step 1 failed (geo-timezone).','err');return}
+  state.lastGeo=geo.data; const tzId=geo.data.timezone; const {lat,lng}=geo.data.location||{};
   setStatus('Step 2/3: Calculating pillars…');
-  const calcBody = JSON.stringify({
-    birthDateISO: birthISO(),
-    birthTime: `${el('#hour').value}:${el('#minute').value}`,
-    tzId, lat, lng, timeAccuracy:'exact'
-  });
-  const calc = await fetchJSON('/api/calc', {method:'POST', headers:{'Content-Type':'application/json'}, body:calcBody});
-  if(!calc.ok || !calc.data?.data){ setStatus('Step 2 failed (calc).', 'err'); return; }
-  state.lastCalc = calc.data.data;
-  renderPillars(state.lastCalc); renderLuck(state.lastCalc);
+  const calcBody=JSON.stringify({birthDateISO:birthISO(),birthTime:`${el('#hour').value}:${el('#minute').value}`,tzId,lat,lng,timeAccuracy:'exact'});
+  const calc=await fetchJSON('/api/calc',{method:'POST',headers:{'Content-Type':'application/json'},body:calcBody});
+  if(!calc.ok||!calc.data?.data){setStatus('Step 2 failed (calc).','err');return}
+  state.lastCalc=calc.data.data; renderPillars(state.lastCalc); renderLuck(state.lastCalc);
 
   setStatus('Step 3/3: Generating deep reading…');
-  const readBody = JSON.stringify({
-    type:'summary', locale:'en-US', length:'long',
+  const readBody=JSON.stringify({
+    type:'summary', locale:'en-US', length:'deep',
+    minSections:6, wantSections:['core','balance','tenGods','luck','wellness','summary'],
     pillars:state.lastCalc.pillars, elements:state.lastCalc.elements, tenGods:state.lastCalc.tenGods, interactions:state.lastCalc.interactions, luck:state.lastCalc.luck
   });
-  const read = await fetchJSON('/api/reading-generate', {method:'POST', headers:{'Content-Type':'application/json'}, body:readBody});
-  if(!read.ok || !read.data?.output){ setStatus('Step 3 failed (reading).', 'err'); return; }
-  state.lastReading = read.data.output;
-  renderDeepReading(state.lastReading, {fallback:read.data.fallback, mocked:read.data.mocked});
+  const read=await fetchJSON('/api/reading-generate',{method:'POST',headers:{'Content-Type':'application/json'},body:readBody});
+  if(!read.ok||!read.data?.output){setStatus('Step 3 failed (reading).','err');return}
+  state.lastReading=read.data.output; renderDeepReading(state.lastReading,{fallback:read.data.fallback,mocked:read.data.mocked});
   renderTopics(state.lastCalc);
-  setStatus(`Done • tz: ${tzId} • lat:${(+lat).toFixed(4)}, lng:${(+lng).toFixed(4)}`, 'ok');
-
-  // Debug dump (compact)
-  dbgEl.textContent = [
-    'geo-timezone\n'+JSON.stringify(state.lastGeo,null,2),
-    'calc\n'+JSON.stringify(calc.data,null,2),
-    'reading\n'+JSON.stringify(read.data,null,2)
-  ].join('\n\n');
+  setStatus(`Done • tz: ${tzId} • lat:${(+lat).toFixed?.(4)}, lng:${(+lng).toFixed?.(4)}`,'ok');
+  dbgEl.textContent=['geo\n'+JSON.stringify(state.lastGeo,null,2),'calc\n'+JSON.stringify(calc.data,null,2),'reading\n'+JSON.stringify(read.data,null,2)].join('\n\n');
 });
 </script>
 </body>
