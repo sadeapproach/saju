@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Saju-Eight • Playground (Select Inputs)</title>
+  <title>Saju-Eight • Playground (Select + Extended Reading)</title>
 
   <!-- CJK font for Hanzi/Hangul -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -62,6 +62,17 @@
     .luck-god{font-size:11px;color:#cfe4ff;margin-top:2px}
     .luck-age{font-size:11px;color:#9fb3d6;margin-top:6px}
     .luck-now{outline:2px solid #66b3ff; box-shadow:0 0 0 4px rgba(102,179,255,.2)}
+
+    /* Extended Reading section cards */
+    .section-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:14px}
+    @media (min-width:768px){.section-grid{grid-template-columns:1fr}}
+    .section-card{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);border-radius:16px;padding:16px}
+    .section-kicker{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+    .section-title{font-weight:800;font-size:18px;margin:0 0 6px}
+    .section-body{line-height:1.6;color:#e6eeff}
+    .section-list{padding-left:18px;margin:6px 0}
+    .section-chipbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+    .section-chip{font-size:12px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12)}
   </style>
 </head>
 <body>
@@ -114,7 +125,7 @@
         <ul class="muted">
           <li>Step 1: GET <code>/api/geo-timezone?city=...</code> → <em>lat/lng</em> & <em>tzId</em></li>
           <li>Step 2: POST <code>/api/calc</code> → pillars & elements (single standard; no options)</li>
-          <li>Step 3: POST <code>/api/reading-generate</code> → English reading JSON</li>
+          <li>Step 3: POST <code>/api/reading-generate</code> → English reading JSON (extended sections)</li>
         </ul>
       </details>
     </div>
@@ -127,86 +138,55 @@
   </div>
 
 <script>
-/* ---------- tiny helpers ---------- */
+/* -----------------------------------
+   tiny helpers
+----------------------------------- */
 const el = (q) => document.querySelector(q);
 const statusEl = el('#status');
 const resultEl = el('#result');
 const runBtn = el('#runBtn');
 function setStatus(msg, kind=''){ statusEl.textContent = msg; statusEl.className = 'muted status ' + (kind||''); }
 async function fetchJSON(url, opts={}){ const r=await fetch(url,opts); const t=await r.text(); try{return{ok:r.ok,status:r.status,data:JSON.parse(t),raw:t}}catch{return{ok:r.ok,status:r.status,data:null,raw:t}} }
+const escapeHTML = s => (s??'').toString().replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-/* ---------- selects: populate & persist ---------- */
+/* -----------------------------------
+   selects: populate & persist
+----------------------------------- */
 const yearSel = el('#year'), monthSel = el('#month'), daySel = el('#day'), hourSel = el('#hour'), minuteSel = el('#minute'), cityInput = el('#city');
 
 function range(n1,n2){ const out=[]; for(let i=n1;i<=n2;i++) out.push(i); return out; }
 function pad2(n){ return String(n).padStart(2,'0'); }
-
-function daysInMonth(y,m){ // m: 1-12
-  return new Date(y, m, 0).getDate();
-}
+function daysInMonth(y,m){ return new Date(y, m, 0).getDate(); }
 
 function populateSelects(){
-  // years: 1900 ~ current+5
   const thisYear = new Date().getFullYear();
-  range(1900, thisYear+5).forEach(y=>{
-    const o=document.createElement('option');
-    o.value=o.textContent=y; yearSel.appendChild(o);
-  });
-
-  // months 01~12
-  range(1,12).forEach(m=>{
-    const o=document.createElement('option');
-    o.value=pad2(m); o.textContent=`${pad2(m)}`; monthSel.appendChild(o);
-  });
-
-  // hours 00~23
-  range(0,23).forEach(h=>{
-    const o=document.createElement('option');
-    o.value=pad2(h); o.textContent=pad2(h); hourSel.appendChild(o);
-  });
-
-  // minutes 00~55 (5-min step). 1분 단위로 바꾸려면 range(0,59) 사용.
-  for(let m=0;m<60;m+=5){
-    const o=document.createElement('option');
-    o.value=pad2(m); o.textContent=pad2(m); minuteSel.appendChild(o);
-  }
-
-  // day는 year/month에 따라 동적
+  range(1900, thisYear+5).forEach(y=>{ const o=document.createElement('option'); o.value=o.textContent=y; yearSel.appendChild(o); });
+  range(1,12).forEach(m=>{ const o=document.createElement('option'); o.value=pad2(m); o.textContent=pad2(m); monthSel.appendChild(o); });
+  range(0,23).forEach(h=>{ const o=document.createElement('option'); o.value=pad2(h); o.textContent=pad2(h); hourSel.appendChild(o); });
+  for(let m=0;m<60;m+=5){ const o=document.createElement('option'); o.value=pad2(m); o.textContent=pad2(m); minuteSel.appendChild(o); }
   updateDayOptions();
 }
-
 function updateDayOptions(){
   const y=Number(yearSel.value||new Date().getFullYear());
   const m=Number(monthSel.value||1);
   const max = daysInMonth(y,m);
   const current = daySel.value || '01';
   daySel.innerHTML='';
-  range(1,max).forEach(d=>{
-    const o=document.createElement('option');
-    o.value=pad2(d); o.textContent=pad2(d); daySel.appendChild(o);
-  });
-  // 기존 선택 보존
-  const keep = Number(current) <= max ? current : pad2(max);
-  daySel.value = keep;
+  range(1,max).forEach(d=>{ const o=document.createElement('option'); o.value=pad2(d); o.textContent=pad2(d); daySel.appendChild(o); });
+  daySel.value = (Number(current)<=max?current:pad2(max));
 }
-
 yearSel.addEventListener('change', updateDayOptions);
 monthSel.addEventListener('change', updateDayOptions);
 
-/* ---------- localStorage persist ---------- */
+/* persist */
 const KEY = 'sajueight_form_v1';
 function saveForm(){
-  const data = {
-    y: yearSel.value, m: monthSel.value, d: daySel.value,
-    hh: hourSel.value, mm: minuteSel.value,
-    city: cityInput.value
-  };
+  const data = { y:yearSel.value,m:monthSel.value,d:daySel.value, hh:hourSel.value,mm:minuteSel.value, city:cityInput.value };
   localStorage.setItem(KEY, JSON.stringify(data));
 }
 function loadForm(){
   try{
-    const raw = localStorage.getItem(KEY);
-    if(!raw) return;
+    const raw = localStorage.getItem(KEY); if(!raw) return;
     const d = JSON.parse(raw);
     if(d?.y) yearSel.value=d.y;
     if(d?.m) monthSel.value=d.m;
@@ -219,7 +199,9 @@ function loadForm(){
 }
 [yearSel,monthSel,daySel,hourSel,minuteSel,cityInput].forEach(x=>x.addEventListener('change', saveForm));
 
-/* ---------- pillars rendering ---------- */
+/* -----------------------------------
+   pillars rendering / interactions / luck
+----------------------------------- */
 const STEM_ELEM = {甲:"wood",乙:"wood",丙:"fire",丁:"fire",戊:"earth",己:"earth",庚:"metal",辛:"metal",壬:"water",癸:"water"};
 const BRANCH_ELEM = {子:"water",丑:"earth",寅:"wood",卯:"wood",辰:"earth",巳:"fire",午:"fire",未:"earth",申:"metal",酉:"metal",戌:"earth",亥:"water"};
 const COLOR_CLASS = {wood:"wood",fire:"fire",earth:"earth",metal:"metal",water:"water"};
@@ -232,21 +214,21 @@ function renderPillars(root, pillars, elements, tenGods, hiddenStems){
       <div class="muted" style="font-size:12px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px">FOUR PILLARS</div>
       <div class="pillars-grid">
         ${["hour","day","month","year"].map(k=>{
-          const p = pillars[k]; if(!p) return "";
+          const p = pillars[k] || {};
           const stemClass = COLOR_CLASS[STEM_ELEM[p.stem]] || "wood";
           const branchClass = COLOR_CLASS[BRANCH_ELEM[p.branch]] || "earth";
           const tg = (tenGods?.byPillar?.[k] || tenGods?.[k] || tenGods?.[`${k}Stem`]) || "";
           const hs = hiddenStems?.[p.branch] || hiddenStems?.byBranch?.[p.branch] || [];
-          const tag = p.role ? `<div class="subline">${p.role}</div>` : '';
+          const tag = p.role ? `<div class="subline">${escapeHTML(p.role)}</div>` : '';
           return `
             <div class="pillar-card">
               <div class="pillar-title">${TITLES[k]}</div>
               ${k==="day"?'<div class="pillar-sub">Day Master (Self) / 일간(나)</div>':""}
-              <div class="box ${stemClass}">${p.stem || "?"}</div>
-              <div class="box ${branchClass}" style="margin-top:8px">${p.branch || "?"}</div>
+              <div class="box ${stemClass}">${escapeHTML(p.stem||"?")}</div>
+              <div class="box ${branchClass}" style="margin-top:8px">${escapeHTML(p.branch||"?")}</div>
               ${tag}
-              ${tg?`<div class="subline">${tg}</div>`:''}
-              ${Array.isArray(hs)&&hs.length?`<div class="chips">${hs.map(h=>`<span class="chip">${h}</span>`).join('')}</div>`:''}
+              ${tg?`<div class="subline">${escapeHTML(tg)}</div>`:''}
+              ${Array.isArray(hs)&&hs.length?`<div class="chips">${hs.map(h=>`<span class="chip">${escapeHTML(h)}</span>`).join('')}</div>`:''}
             </div>`;
         }).join("")}
       </div>
@@ -258,7 +240,7 @@ function renderInteractions(root, interactions){
   const br = interactions?.branches || {};
   const st = interactions?.stems || {};
   const bag = [];
-  const pushList = (arr,label,tone)=>{ if(Array.isArray(arr)&&arr.length){ arr.forEach(x=>bag.push(`<span class="badge ${tone}">${label}: ${x}</span>`)); } }
+  const pushList = (arr,label,tone)=>{ if(Array.isArray(arr)&&arr.length){ arr.forEach(x=>bag.push(`<span class="badge ${tone}">${label}: ${escapeHTML(x)}</span>`)); } }
   pushList(st.합,"Stem Harmony (간합)","info"); pushList(st.충,"Stem Clash (간충)","warn");
   pushList(br.합,"Branch Harmony (지합)","info"); pushList(br.충,"Branch Clash (지충)","warn"); pushList(br.형,"Penalty (형)","warn"); pushList(br.파,"Break (파)","warn"); pushList(br.해,"Harm (해)","warn");
   if(!bag.length){ root.innerHTML=""; return; }
@@ -274,13 +256,61 @@ function renderLuck(root, luck, birthDateISO){
   root.innerHTML = `<div class="card luck"><div class="muted" style="font-size:12px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px">BIG LUCK (10-year cycles)</div><div class="luck-bar">${
     list.map(({startAge,stem,branch,tenGod})=>{
       const now = typeof age==='number' && age>=startAge && age<startAge+10;
-      return `<div class="luck-seg ${now?'luck-now':''}"><div class="luck-title">Age ${startAge}–${startAge+9}</div><div class="luck-ganji">${stem||''}${branch||''}</div>${tenGod?`<div class="luck-god">${tenGod}</div>`:''}${typeof startAge==='number'?`<div class="luck-age">starts ${startAge}</div>`:''}</div>`;
+      return `<div class="luck-seg ${now?'luck-now':''}"><div class="luck-title">Age ${startAge}–${startAge+9}</div><div class="luck-ganji">${escapeHTML((stem||'')+(branch||''))}</div>${tenGod?`<div class="luck-god">${escapeHTML(tenGod)}</div>`:''}${typeof startAge==='number'?`<div class="luck-age">starts ${startAge}</div>`:''}</div>`;
     }).join("")
   }</div></div>`;
 }
 
-function renderReading(output, meta={}){
-  const { badge, share } = output.cards || {};
+/* -----------------------------------
+   Extended Reading (6 sections) renderer
+----------------------------------- */
+const SECTION_TITLES = {
+  traits: "Core Traits & Disposition (기본 성향·기질)",
+  balance: "Element Balance (오행 균형·보완)",
+  tenGods: "Ten Gods — Wealth/Career/Relationships (십신 기반 경향)",
+  luck: "Big Luck & Yearly Outlook (대운·세운 요약)",
+  wellness: "Health & Lifestyle Advice (건강·생활 조언)",
+  summary: "Overall Keywords & One-liner (전반 요약)"
+};
+
+function renderReadingExtended(out, meta={}){
+  const pill = meta.fallback ? `<span class="pill">Fallback</span>` : meta.mocked ? `<span class="pill">Mock</span>` : `<span class="pill ok">Live</span>`;
+  const sections = Array.isArray(out.sections) ? out.sections : [];
+
+  // Header summary card (title/bullets/one-liner)
+  let headerHTML = `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="muted" style="font-size:12px;letter-spacing:.16em;text-transform:uppercase">READING</div>
+        <div>${pill}</div>
+      </div>
+      <h3 style="margin:8px 0 8px 0;font-size:20px;font-weight:800">${escapeHTML(out.title || 'Your Saju Reading')}</h3>
+      ${Array.isArray(out.bullets)&&out.bullets.length?`<ul style="padding-left:18px;margin:8px 0 0">${out.bullets.map(b=>`<li>${escapeHTML(b)}</li>`).join('')}</ul>`:''}
+      ${out.forecastOneLiner?`<div style="margin-top:8px;color:#cfe4ff;font-style:italic">${escapeHTML(out.forecastOneLiner)}</div>`:''}
+      ${Array.isArray(out.actions)&&out.actions[0]?`<div style="margin-top:10px;padding:10px 12px;background:rgba(73,211,154,.09);border:1px solid rgba(73,211,154,.25);border-radius:12px"><strong>Try:</strong> ${escapeHTML(out.actions[0])}</div>`:''}
+    </div>`;
+
+  // Section cards
+  const secHTML = sections.map(sec=>{
+    const title = sec.title || SECTION_TITLES[sec.id] || 'Insight';
+    const body = [sec.p1,sec.p2,sec.p3,sec.p4,sec.p5].filter(Boolean).map(escapeHTML).join(' ');
+    const list = Array.isArray(sec.list)&&sec.list.length? `<ul class="section-list">${sec.list.map(x=>`<li>${escapeHTML(x)}</li>`).join('')}</ul>` : '';
+    const chips = Array.isArray(sec.keywords)&&sec.keywords.length? `<div class="section-chipbar">${sec.keywords.map(k=>`<span class="section-chip">${escapeHTML(k)}</span>`).join('')}</div>` : '';
+    return `
+      <div class="section-card">
+        <div class="section-kicker">${escapeHTML(sec.kicker || 'SECTION')}</div>
+        <h4 class="section-title">${escapeHTML(title)}</h4>
+        ${body?`<div class="section-body">${body}</div>`:''}
+        ${list}
+        ${chips}
+      </div>`;
+  }).join('');
+
+  resultEl.innerHTML = headerHTML + (secHTML? `<div class="section-grid">${secHTML}</div>` : '');
+}
+
+/* fallback short renderer (only if no sections present) */
+function renderReadingFallback(output, meta={}){
   const pill = meta.fallback ? `<span class="pill">Fallback</span>` : meta.mocked ? `<span class="pill">Mock</span>` : `<span class="pill ok">Live</span>`;
   resultEl.innerHTML = `
     <div class="card">
@@ -288,15 +318,25 @@ function renderReading(output, meta={}){
         <div class="muted" style="font-size:12px;letter-spacing:.16em;text-transform:uppercase">READING</div>
         <div>${pill}</div>
       </div>
-      <h3 style="margin:8px 0 8px 0;font-size:20px;font-weight:800">${output.title || 'Your Saju Reading'}</h3>
-      <ul style="padding-left:18px;margin:8px 0 0">${(output.bullets||[]).map(b=>`<li>${b}</li>`).join('')}</ul>
-      ${output.forecastOneLiner?`<div style="margin-top:8px;color:#cfe4ff;font-style:italic">${output.forecastOneLiner}</div>`:''}
-      ${Array.isArray(output.actions)&&output.actions[0]?`<div style="margin-top:10px;padding:10px 12px;background:rgba(73,211,154,.09);border:1px solid rgba(73,211,154,.25);border-radius:12px"><strong>Try:</strong> ${output.actions[0]}</div>`:''}
-      ${badge||(share?.headline)?`<div class="row" style="display:flex;gap:10px;margin-top:10px">${badge?`<span class="pill">${badge}</span>`:''}${share?.headline?`<span class="muted">${share.headline} — ${share.sub||''}</span>`:''}</div>`:''}
+      <h3 style="margin:8px 0 8px 0;font-size:20px;font-weight:800">${escapeHTML(output.title || 'Your Saju Reading')}</h3>
+      <ul style="padding-left:18px;margin:8px 0 0">${(output.bullets||[]).map(b=>`<li>${escapeHTML(b)}</li>`).join('')}</ul>
+      ${output.forecastOneLiner?`<div style="margin-top:8px;color:#cfe4ff;font-style:italic">${escapeHTML(output.forecastOneLiner)}</div>`:''}
+      ${Array.isArray(output.actions)&&output.actions[0]?`<div style="margin-top:10px;padding:10px 12px;background:rgba(73,211,154,.09);border:1px solid rgba(73,211,154,.25);border-radius:12px"><strong>Try:</strong> ${escapeHTML(output.actions[0])}</div>`:''}
     </div>`;
 }
 
-/* ---------- build birthDate/time strings ---------- */
+/* master reading renderer */
+function renderReading(output, meta={}){
+  if (Array.isArray(output?.sections) && output.sections.length){
+    renderReadingExtended(output, meta);
+  } else {
+    renderReadingFallback(output, meta);
+  }
+}
+
+/* -----------------------------------
+   build birthDate/time + run
+----------------------------------- */
 function getBirthDateISO(){
   const y=yearSel.value, m=monthSel.value, d=daySel.value;
   if(!y||!m||!d) return null;
@@ -308,9 +348,7 @@ function getBirthTime(){
   return `${hh}:${mm}`;
 }
 
-/* ---------- run button ---------- */
 el('#fillExample').addEventListener('click', () => {
-  // 예시: 1992-06-02 09:00, Seoul
   yearSel.value='1992'; monthSel.value='06'; updateDayOptions(); daySel.value='02';
   hourSel.value='09'; minuteSel.value='00';
   cityInput.value='Seoul';
@@ -326,16 +364,14 @@ runBtn.addEventListener('click', async () => {
   runBtn.disabled = true;
   setStatus('Step 1/3: Resolving city → timezone…');
 
-  // Step1: city → lat/lng/timezone
   const geo = await fetchJSON(`/api/geo-timezone?city=${encodeURIComponent(city)}`);
   if (!geo.ok || !geo.data?.timezone) {
     const hint = geo?.data?.error ? ` • ${geo.data.error}` : '';
-    setStatus(`Failed on Step 1 (geo-timezone).${hint} • Try a nearby big city (e.g., "Seoul" instead of district).`, 'err');
+    setStatus(`Failed on Step 1 (geo-timezone).${hint} • Try a nearby big city (e.g., "Seoul").`, 'err');
     runBtn.disabled=false; return;
   }
   const { lat, lng } = geo.data.location; const tzId = geo.data.timezone;
 
-  // Step2: calc
   setStatus('Step 2/3: Calculating pillars/elements…');
   const calcPayload = { birthDateISO, birthTime, lat, lng, tzId, timeAccuracy: 'exact' };
   const calc = await fetchJSON('/api/calc', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(calcPayload) });
@@ -351,21 +387,25 @@ runBtn.addEventListener('click', async () => {
   renderInteractions(document.getElementById('interactions-root'), interactions);
   renderLuck(document.getElementById('luck-root'), luck, birthDateISO);
 
-  // Step3: reading
   setStatus('Step 3/3: Generating English reading…');
   const read = await fetchJSON('/api/reading-generate', {
     method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ pillars, elements, tenGods, interactions, type:'summary', locale:'en-US', length:'long', maxBullets:6 })
+    body: JSON.stringify({
+      pillars, elements, tenGods, interactions,
+      type:'summary', locale:'en-US',
+      length:'long', maxBullets:6,
+      wantSections:true  // 백엔드가 섹션을 생성하도록 힌트
+    })
   });
   if (!read.ok || !read.data) {
     const em = read?.data?.error || 'Unknown error';
     setStatus(`Failed on Step 3 (reading) • ${em}`, 'err'); runBtn.disabled=false; return;
   }
-  renderReading(read.data.output || read.data.output, { fallback: read.data.fallback, mocked: read.data.mocked });
+  const out = read.data.output || read.data.output;
+  renderReading(out, { fallback: read.data.fallback, mocked: read.data.mocked });
 
   setStatus(`Done • tz: ${tzId} • lat:${lat.toFixed(4)}, lng:${lng.toFixed(4)}`, 'ok');
 
-  // debug
   resultEl.insertAdjacentHTML('beforeend', `
     <details class="card" style="margin-top:12px">
       <summary>Debug JSON (geo/calc/reading)</summary>
@@ -379,10 +419,11 @@ runBtn.addEventListener('click', async () => {
   runBtn.disabled=false;
 });
 
-/* ---------- boot ---------- */
+/* -----------------------------------
+   boot
+----------------------------------- */
 populateSelects();
 loadForm();
-// 기본값 없으면 오늘 날짜 셋업
 if(!yearSel.value){ const n=new Date(); yearSel.value=n.getFullYear(); monthSel.value=pad2(n.getMonth()+1); updateDayOptions(); daySel.value=pad2(n.getDate()); hourSel.value=pad2(n.getHours()); minuteSel.value='00'; }
 </script>
 </body>
