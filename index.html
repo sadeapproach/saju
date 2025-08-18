@@ -3,44 +3,32 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Saju-Eight • Extended (Deep + 6 Sections + Topic Grid)</title>
+<title>Saju-Eight • Extended (6 Sections + Focused Topics)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap">
 <style>
-:root{
-  --bg:#0b1220; --panel:#121a2a; --muted:#6b7a90; --txt:#e9f0ff; --accent:#66b3ff;
-  --ok:#49d39a; --err:#ff7a7a; --border:rgba(255,255,255,.10); --card:#0b1426;
-}
-*{box-sizing:border-box}
-body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,"Noto Sans KR","Segoe UI",Roboto,Arial,sans-serif;background:linear-gradient(120deg,#0b1220,#0e2342);color:var(--txt)}
-.wrap{max-width:980px;margin:40px auto;padding:0 16px}
-.title{font-weight:800;font-size:24px;margin-bottom:6px}
-.sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+:root{--bg:#0b1220;--panel:#121a2a;--muted:#6b7a90;--txt:#e9f0ff;--accent:#66b3ff;--ok:#49d39a;--err:#ff7a7a;--border:rgba(255,255,255,.10);--card:#0b1426}
+*{box-sizing:border-box} body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,"Noto Sans KR","Segoe UI",Roboto,Arial,sans-serif;background:linear-gradient(120deg,#0b1220,#0e2342);color:var(--txt)}
+.wrap{max-width:980px;margin:40px auto;padding:0 16px} .title{font-weight:800;font-size:24px;margin-bottom:6px} .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
 .card{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
-.grid{display:grid;gap:10px}
-.grid-5{grid-template-columns:repeat(5,minmax(0,1fr))}
-@media (max-width:760px){.grid-5{grid-template-columns:1fr 1fr}}
+.grid{display:grid;gap:10px} .grid-5{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media(max-width:760px){.grid-5{grid-template-columns:1fr 1fr}}
 label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
 input,select,button,textarea{width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:var(--card);color:var(--txt);outline:none}
 input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(102,179,255,.2)}
-button{background:linear-gradient(135deg,#4da3ff,#66b3ff);border:none;font-weight:700;color:#06101d;cursor:pointer}
-button[disabled]{opacity:.6;cursor:not-allowed}
-.muted{color:var(--muted);font-size:13px}
-.kicker{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-.headline{font-size:20px;margin:0 0 8px;font-weight:800}
-.row{display:flex;gap:10px;align-items:center}
+button{background:linear-gradient(135deg,#4da3ff,#66b3ff);border:none;font-weight:700;color:#06101d;cursor:pointer} button[disabled]{opacity:.6;cursor:not-allowed}
+.muted{color:var(--muted);font-size:13px} .kicker{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.headline{font-size:20px;margin:0 0 8px;font-weight:800} .row{display:flex;gap:10px;align-items:center}
 .pill{display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.06);font-size:12px}
 .ok{color:var(--ok)} .err{color:var(--err)}
 /* pillars */
 .pillars{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-.pillar{border:1px solid var(--border);border-radius:16px;padding:12px;background:rgba(255,255,255,.04)}
-.pillar .t{font-size:12px;opacity:.8;text-align:center;margin-bottom:6px}
+.pillar{border:1px solid var(--border);border-radius:16px;padding:12px;background:rgba(255,255,255,.04)} .pillar .t{font-size:12px;opacity:.8;text-align:center;margin-bottom:6px}
 .box{height:82px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:800;border:1px solid #0003}
 .stem{background:#0ea5e9}.branch{background:#f43f5e}
 /* gauge */
 .gauge{display:flex;height:10px;overflow:hidden;border-radius:10px;border:1px solid #2a2a2a;margin-top:12px}
-.gauge>div{height:100%}
-.wood{background:#16a34a}.fire{background:#ef4444}.earth{background:#f59e0b}.metal{background:#e5e7eb}.water{background:#06b6d4}
+.gauge>div{height:100%}.wood{background:#16a34a}.fire{background:#ef4444}.earth{background:#f59e0b}.metal{background:#e5e7eb}.water{background:#06b6d4}
 /* sections */
 .section{margin-top:14px}
 .badgeRow{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
@@ -48,16 +36,12 @@ button[disabled]{opacity:.6;cursor:not-allowed}
 /* topics grid */
 .topics{margin-top:14px}
 .grid-topics{display:grid;gap:10px;grid-template-columns:repeat(4,minmax(0,1fr))}
-@media (max-width:900px){.grid-topics{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media (max-width:640px){.grid-topics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:900px){.grid-topics{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:640px){.grid-topics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .topic{position:relative;display:flex;flex-direction:column;gap:8px;border:1px solid var(--border);background:rgba(255,255,255,.05);border-radius:16px;padding:12px;transition:.2s ease}
-.topic .emoji{font-size:24px}
-.topic .ttl{font-weight:800}
-.topic .desc{color:var(--muted);font-size:13px;line-height:1.35}
-.topic .cta{margin-top:auto}
-.topic.expanded{grid-column:span 2;background:rgba(255,255,255,.07)}
-.topic .result{margin-top:10px}
-.skel{position:relative;height:80px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid var(--border);overflow:hidden}
+.topic .emoji{font-size:24px} .topic .ttl{font-weight:800} .topic .desc{color:var(--muted);font-size:13px;line-height:1.35}
+.topic .cta{margin-top:auto} .topic.expanded{grid-column:span 2;background:rgba(255,255,255,.07)} .topic .result{margin-top:10px}
+.skel{position:relative;height:82px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid var(--border);overflow:hidden}
 .skel::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);animation:sh 1.2s infinite}
 @keyframes sh{to{transform:translateX(100%)}}
 .askRow{display:flex;gap:8px;margin-top:10px}
@@ -66,9 +50,9 @@ button[disabled]{opacity:.6;cursor:not-allowed}
 <body>
 <div class="wrap">
   <div class="title">Saju-Eight • End-to-End Playground (Extended)</div>
-  <div class="sub">Deep English reading with <b>6 sections</b> guaranteed. Explore <b>specific fortunes</b> via an expandable <b>2×4 topic grid</b>, or ask your own question.</div>
+  <div class="sub">Deep reading with <b>6 sections guaranteed</b>. Explore <b>Specific Fortunes</b> in a 2×4 grid, or ask your own question.</div>
 
-  <!-- ===== Form ===== -->
+  <!-- form -->
   <div class="card">
     <div class="grid grid-5">
       <div><label>Birth year</label><select id="year"></select></div>
@@ -82,7 +66,7 @@ button[disabled]{opacity:.6;cursor:not-allowed}
       <div style="align-self:end"><div class="row"><button id="runBtn">Calculate & Generate</button><button id="fillExample" type="button">Fill Example</button></div></div>
     </div>
     <div id="status" class="muted" style="margin-top:6px"></div>
-    <details style="margin-top:6px"><summary class="muted">What happens under the hood?</summary><ul class="muted"><li>GET <code>/api/geo-timezone</code></li><li>POST <code>/api/calc</code></li><li>POST <code>/api/reading-generate</code> (deep + sections)</li></ul></details>
+    <details style="margin-top:6px"><summary class="muted">What happens under the hood?</summary><ul class="muted"><li>GET <code>/api/geo-timezone</code></li><li>POST <code>/api/calc</code></li><li>POST <code>/api/reading-generate</code></li></ul></details>
   </div>
 
   <div id="pillars" class="section"></div>
@@ -94,14 +78,15 @@ button[disabled]{opacity:.6;cursor:not-allowed}
 </div>
 
 <script>
-/* ============= Utilities ============= */
-const el=(q)=>document.querySelector(q); const statusEl=el('#status'), dbgEl=el('#dbg');
-const state={ lastGeo:null,lastCalc:null,lastReading:null };
+/* ---------- utils ---------- */
+const el=q=>document.querySelector(q); const statusEl=el('#status'), dbgEl=el('#dbg');
+const state={lastGeo:null,lastCalc:null,lastReading:null};
 const ESC=s=>String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-function setStatus(m,t=''){statusEl.textContent=m;statusEl.className='muted '+(t||'')}
-async function fetchJSON(url,opts={}){const r=await fetch(url,opts);const t=await r.text();try{return{ok:r.ok,status:r.status,data:JSON.parse(t),raw:t}}catch{return{ok:r.ok,status:r.status,data:null,raw:t}}}
+function setStatus(m,t=''){statusEl.textContent=m;statusEl.className='muted '+t}
+async function fetchJSON(url,opts={}){const r=await fetch(url,opts);const tx=await r.text();try{return{ok:r.ok,status:r.status,data:JSON.parse(tx),raw:tx}}catch{return{ok:r.ok,status:r.status,data:null,raw:tx}}}
+const pct=x=>Math.max(2,Math.round((x||0)*100));
 
-/* ============= Selects ============= */
+/* ---------- selects ---------- */
 (function initSelects(){
   const y=el('#year'), m=el('#month'), d=el('#day'), h=el('#hour'), mi=el('#minute');
   const now=new Date();
@@ -110,55 +95,115 @@ async function fetchJSON(url,opts={}){const r=await fetch(url,opts);const t=awai
   for(let i=1;i<=31;i++) d.insertAdjacentHTML('beforeend',`<option value="${String(i).padStart(2,'0')}">${String(i).padStart(2,'0')}</option>`);
   for(let i=0;i<24;i++) h.insertAdjacentHTML('beforeend',`<option value="${String(i).padStart(2,'0')}">${String(i).padStart(2,'0')}</option>`);
   for(let i=0;i<60;i++) mi.insertAdjacentHTML('beforeend',`<option value="${String(i).padStart(2,'0')}">${String(i).padStart(2,'0')}</option>`);
-})()
-function birthISO(){return `${el('#year').value}-${el('#month').value}-${el('#day').value}`}
+})();
+const birthISO=()=>`${el('#year').value}-${el('#month').value}-${el('#day').value}`;
 
-/* ============= Render: pillars/luck/reading ============= */
+/* ---------- render pillars & luck ---------- */
 function renderPillars(calc){
   const root=el('#pillars'); if(!calc?.pillars){root.innerHTML='';return}
   const p=calc.pillars,e=calc.elements||{};
   root.innerHTML=`
-    <div class="card">
-      <div class="kicker">FOUR PILLARS</div>
-      <div class="pillars">
-        ${['hour','day','month','year'].map(k=>`
-          <div class="pillar">
-            <div class="t">${({hour:'Hour Pillar (시주)',day:'Day Pillar (일주)',month:'Month Pillar (월주)',year:'Year Pillar (년주)'})[k]}</div>
-            <div class="box stem">${ESC(p[k]?.stem||'?')}</div>
-            <div class="box branch" style="margin-top:8px">${ESC(p[k]?.branch||'?')}</div>
-          </div>`).join('')}
-      </div>
-      <div class="gauge" title="Elements balance">
-        <div class="wood"  style="width:${Math.max(2,Math.round((e.wood ||0)*100))}%"></div>
-        <div class="fire"  style="width:${Math.max(2,Math.round((e.fire ||0)*100))}%"></div>
-        <div class="earth" style="width:${Math.max(2,Math.round((e.earth||0)*100))}%"></div>
-        <div class="metal" style="width:${Math.max(2,Math.round((e.metal||0)*100))}%"></div>
-        <div class="water" style="width:${Math.max(2,Math.round((e.water||0)*100))}%"></div>
-      </div>
-    </div>`;
+  <div class="card">
+    <div class="kicker">FOUR PILLARS</div>
+    <div class="pillars">
+      ${['hour','day','month','year'].map(k=>`
+        <div class="pillar">
+          <div class="t">${({hour:'Hour Pillar (시주)',day:'Day Pillar (일주)',month:'Month Pillar (월주)',year:'Year Pillar (년주)'})[k]}</div>
+          <div class="box stem">${ESC(p[k]?.stem||'?')}</div>
+          <div class="box branch" style="margin-top:8px">${ESC(p[k]?.branch||'?')}</div>
+        </div>`).join('')}
+    </div>
+    <div class="gauge" title="Elements balance">
+      <div class="wood"  style="width:${pct(e.wood)}%"></div>
+      <div class="fire"  style="width:${pct(e.fire)}%"></div>
+      <div class="earth" style="width:${pct(e.earth)}%"></div>
+      <div class="metal" style="width:${pct(e.metal)}%"></div>
+      <div class="water" style="width:${pct(e.water)}%"></div>
+    </div>
+  </div>`;
 }
 function renderLuck(calc){
   const root=el('#luck'); const list=calc?.luck?.bigLuck||[]; if(!list.length){root.innerHTML='';return}
   root.innerHTML=`<div class="card"><div class="kicker">BIG LUCK (10-year cycles)</div>
-    <div class="row" style="flex-wrap:wrap;gap:8px">${list.map(s=>`<div class="pill">Age ${s.startAge}–${s.startAge+9}${s.stem?` • ${ESC(s.stem)}${ESC(s.branch||'')}`:''}</div>`).join('')}</div>
-  </div>`;
+    <div class="row" style="flex-wrap:wrap;gap:8px">
+      ${list.map(s=>`<div class="pill">Age ${s.startAge}–${s.startAge+9}${s.stem?` • ${ESC(s.stem)}${ESC(s.branch||'')}`:''}</div>`).join('')}
+    </div></div>`;
 }
 
-/* 보장 6섹션: 서버 미제공시 플레이스홀더 생성 */
-const SECTION_TITLES=['Core Traits & Disposition','Element Balance','Ten Gods Overview','Luck Insights','Wellness Recommendations','Overall Summary'];
-function ensureSixSections(out){
-  let secs = Array.isArray(out.sections)? out.sections.slice(0,6):[];
-  const have = secs.map(s=>s.title);
-  for(const title of SECTION_TITLES){
-    if(secs.length>=6) break;
-    if(!have.includes(title)) secs.push({ title, points:[ 'More detailed guidance is coming based on your pillars.','Meanwhile, reflect on today’s strengths and a tiny next step you can take.' ], tags:['coming soon'] });
+/* ---------- 6섹션 보장: 부족분은 calc로 생성 ---------- */
+const SECTION_TITLES=[
+  'Your Unique Traits','Creating Balance in Life','The Influence of Ten Gods',
+  'Navigating Your Luck Cycles','Nurturing Your Wellness','Summary of Insights'
+];
+function buildSectionFromCalc(key, calc){
+  const e=calc?.elements||{}, dm=calc?.pillars?.day?.stem||'?', bl=calc?.luck?.bigLuck||[];
+  const elems = Object.entries(e).sort((a,b)=>(b[1]||0)-(a[1]||0)).map(([k,v])=>`${k} ${(v*100).toFixed(0)}%`).join(', ');
+  if(key==='Your Unique Traits'){
+    return {title:key, points:[
+      `Day Master: ${dm}. Your core temperament reflects this stem's nature.`,
+      `Your element mix: ${elems}. This blend shapes creativity, drive and stability.`,
+      `When pressure rises, act like your Day Master’s best qualities (e.g., clarity, warmth, flexibility).`,
+      `Lean on trusted allies represented by supportive stems around your chart for momentum.`
+    ], tags:['identity','day master']};
   }
-  out.sections = secs;
+  if(key==='Creating Balance in Life'){
+    const low = Object.entries(e).filter(([,v])=>v<0.18).map(([k])=>k);
+    const high = Object.entries(e).filter(([,v])=>v>0.28).map(([k])=>k);
+    return {title:key, points:[
+      `Elements trending high: ${high.join(', ')||'—'}. Consider softening these with grounding routines.`,
+      `Elements trending low: ${low.join(', ')||'—'}. Add colors/foods/activities that boost them.`,
+      `Weekly plan: 2× mindful movement, 1× creative play, 1× nature exposure to equalize qi.`,
+      `Track energy by weekday to see which elements you naturally favor or avoid.`
+    ], tags:['balance','habits']};
+  }
+  if(key==='The Influence of Ten Gods'){
+    return {title:key, points:[
+      `Notice how resource (印), output (食/傷), wealth (財), and officer (官) distribute around the pillars.`,
+      `If output is strong, channel it into teaching, writing, or craft to avoid scatter.`,
+      `If wealth is present, set clear saving rules so generosity doesn’t erode reserves.`,
+      `Partner with people who balance your weaker god(s) for smoother teamwork.`
+    ], tags:['ten gods']};
+  }
+  if(key==='Navigating Your Luck Cycles'){
+    const next = bl.find(s=>s.startAge && s.startAge>=0) || {};
+    return {title:key, points:[
+      `Current/next big-luck marker: ${next.stem||''}${next.branch||''} (starts age ${next.startAge??'…'}).`,
+      `Use the first 18–24 months of a new cycle to explore and test before locking decisions.`,
+      `When clashes arise, prefer incremental pivots over hard breaks.`,
+      `Keep a “wins and lessons” log to compound momentum inside a favorable window.`
+    ], tags:['decisions','timing']};
+  }
+  if(key==='Nurturing Your Wellness'){
+    const tip = Object.entries(e).sort((a,b)=>a[1]-b[1])[0]?.[0]||'balance';
+    return {title:key, points:[
+      `Support your base element with breath, hydration and regular sleep timing.`,
+      `If ${tip} trends low, add foods/colors/tempo that gently raise it.`,
+      `Short daily resets (3–5 minutes) restore clarity before key choices.`,
+      `Quarterly: simplify routines; remove one draining obligation.`
+    ], tags:['well-being']};
+  }
+  return {title:'Summary of Insights', points:[
+    `Lead with your Day Master’s strengths; plan around your element balance.`,
+    `Align near-term actions with the tone of your current luck window.`,
+    `Invest in relationships that complement your chart; avoid energy leaks.`,
+    `Small steady improvements beat dramatic swings for your pattern.`
+  ], tags:['summary']};
+}
+function ensureSixSections(out, calc){
+  let secs = Array.isArray(out?.sections)? out.sections.slice(0,6):[];
+  const missing = SECTION_TITLES.filter(t => !secs.find(s=>s.title===t));
+  for(const t of missing){
+    if(secs.length>=6) break;
+    secs.push(buildSectionFromCalc(t, calc));
+  }
+  out.sections = secs.slice(0,6);
   return out;
 }
-function renderDeepReading(out,meta={}){
+
+/* ---------- render deep reading ---------- */
+function renderDeepReading(out, meta={}, calc){
   const root=el('#reading'); if(!out){root.innerHTML='';return}
-  ensureSixSections(out);
+  ensureSixSections(out, calc);
   const pill = meta.fallback?'<span class="pill">Fallback</span>':meta.mocked?'<span class="pill">Mock</span>':'<span class="pill ok">Live</span>';
   const sec=(t,ps,tags=[])=>`
     <div class="card section">
@@ -169,10 +214,8 @@ function renderDeepReading(out,meta={}){
     </div>`;
   root.innerHTML=`
     <div class="card">
-      <div class="row" style="justify-content:space-between">
-        <div class="kicker">READING</div><div>${pill}</div>
-      </div>
-      <h3 class="headline">${ESC(out.title||'Saju Insights for Life Journey')}</h3>
+      <div class="row" style="justify-content:space-between"><div class="kicker">READING</div><div>${pill}</div></div>
+      <h3 class="headline">${ESC(out.title||'Understanding Your Saju: A Path to Personal Insight')}</h3>
       <ul>${(out.bullets||[]).map(b=>`<li>${ESC(b)}</li>`).join('')}</ul>
       ${out.forecastOneLiner?`<div class="muted" style="margin-top:8px"><em>${ESC(out.forecastOneLiner)}</em></div>`:''}
       ${out.actions?.[0]?`<div class="pill" style="margin-top:10px"><b>Try:</b>&nbsp;${ESC(out.actions[0])}</div>`:''}
@@ -180,113 +223,142 @@ function renderDeepReading(out,meta={}){
     ${out.sections.map(s=>sec(s.title,s.points,s.tags)).join('')}`;
 }
 
-/* ============= Topics (grid, expand-in-place) ============= */
+/* ---------- topics (의도 강화 + 재시도) ---------- */
 const TOPICS=[
-  {key:'wealth',  emoji:'💰', title:'Wealth & Money',      desc:'Income, savings, investment timing.'},
-  {key:'love',    emoji:'❤️', title:'Love & Relationships',desc:'Compatibility, harmony, meeting timing.'},
-  {key:'career',  emoji:'💼', title:'Career & Growth',      desc:'Fit, leadership vs craft, pivots.'},
-  {key:'health',  emoji:'🌿', title:'Health & Wellness',    desc:'Imbalance → care routines.'},
-  {key:'family',  emoji:'👶', title:'Family & Children',    desc:'Fertility & family dynamics.'},
-  {key:'moving',  emoji:'✈️', title:'Travel/Relocation',    desc:'Good periods, directions, cautions.'},
-  {key:'study',   emoji:'📚', title:'Learning & Skills',    desc:'What to study, deepen talent.'},
-  {key:'timing',  emoji:'⏳', title:'Timing & Luck Windows', desc:'Short-term chances & watch-outs.'},
+  {key:'wealth',emoji:'💰',title:'Wealth & Money',desc:'Income, savings, investment timing.'},
+  {key:'love',emoji:'❤️',title:'Love & Relationships',desc:'Compatibility, harmony, meeting timing.'},
+  {key:'career',emoji:'💼',title:'Career & Growth',desc:'Fit, leadership vs craft, pivots.'},
+  {key:'health',emoji:'🌿',title:'Health & Wellness',desc:'Imbalance → care routines.'},
+  {key:'family',emoji:'👶',title:'Family & Children',desc:'Fertility & family dynamics.'},
+  {key:'moving',emoji:'✈️',title:'Travel/Relocation',desc:'Good periods, directions, cautions.'},
+  {key:'study',emoji:'📚',title:'Learning & Skills',desc:'What to study, deepen talent.'},
+  {key:'timing',emoji:'⏳',title:'Timing & Luck Windows',desc:'Short-term chances & watch-outs.'},
 ];
-/* 토픽 의도 힌트(백엔드가 topic만 보더라도 의미 강화) */
-const TOPIC_HINTS={
-  wealth:'Focus on 财(wealth) stars, 正財/偏財 and money timing from luck cycles.',
-  love:'Focus on relationships via 比肩/劫財/官星 dynamics, harmony/clash, and months with good compatibility.',
-  career:'Focus on 官/印/食傷 for role fit, leadership vs craft, pivots.',
-  health:'Map element imbalance to body systems; give daily/weekly care tips.',
-  family:'Discuss children (食神/傷官) and family harmony; timing considerations.',
-  moving:'Relocation/travel timing using luck windows; note clashes to places/directions.',
-  study:'Study/skill themes via 印星 and day master strengths.',
-  timing:'Next 3–12 months windows; what to advance or avoid.',
+/* 토픽 지시문: 아주 구체적으로 */
+const STRICT_TOPIC_HINTS={
+  wealth:`ONLY discuss money/finance. Cover: income sources (正財/偏財), expense control, saving rules, investment windows (months/years), risk cautions. Output: 5–8 bullets + 1 one-liner + 1 concrete action. Avoid generic life advice.`,
+  love:`ONLY discuss romance/relationships. Cover: compatibility tone, meeting/commitment timing, communication styles, red flags. Output: 5–8 bullets + 1 one-liner + 1 actionable ritual. Do NOT talk about money/career/health.`,
+  career:`ONLY discuss career fit and moves. Map 官/印/食傷 to roles. Give pivot windows, leadership vs craft guidance, portfolio ideas. Output: 5–8 bullets + one-liner + next action. No love/health talk.`,
+  health:`ONLY discuss wellness from element imbalance. Map elements → body systems; give daily/weekly routines and “avoid” list. 5–8 bullets + one-liner + habit. No money/career.`,
+  family:`ONLY discuss family/children. Fertility windows (食神/傷官), parenting dynamics, in-law harmony timing. Bullets + one-liner + action.`,
+  moving:`ONLY discuss travel/relocation. Good periods, directions (if relevant), short vs long stays, what to prepare. Bullets + one-liner + checklist.`,
+  study:`ONLY discuss learning/skills. What to study, practice cadence, exam/project timing. Bullets + one-liner + 30-day plan.`,
+  timing:`ONLY discuss next 3–12 months timing (good/bad windows) and what to push/avoid. Bullets grouped by month/quarter + one-liner + action.`,
 };
-
+/* 결과 검증 키워드 (대상 토픽과 무관하면 재시도) */
+const TOPIC_KEYWORDS={
+  wealth:['money','income','saving','invest','budget','profit','expense','finance'],
+  love:['love','relationship','partner','compatib','romance','dating','marriage'],
+  career:['job','career','role','work','manager','lead','craft','portfolio','promotion'],
+  health:['health','wellness','sleep','exercise','diet','stress','breath','hydration'],
+  family:['child','family','parent','fertility','pregnan','home life'],
+  moving:['travel','relocat','move','city','country','visa','direction'],
+  study:['study','learn','exam','course','skill','practice'],
+  timing:['month','quarter','window','timing','period','next','avoid']
+};
+function buildCalcContext(calc){
+  if(!calc) return '';
+  const dm=calc?.pillars?.day?.stem||'?';
+  const e=calc?.elements||{};
+  const elems=Object.entries(e).map(([k,v])=>`${k}:${(v*100).toFixed(0)}%`).join(', ');
+  const luck=(calc?.luck?.bigLuck||[]).slice(0,4).map(s=>`${s.startAge}-${s.startAge+9}:${s.stem||''}${s.branch||''}`).join('; ');
+  return `DayMaster=${dm}; Elements=${elems}; BigLuck=${luck}`;
+}
+function skeleton(n=2){return Array.from({length:n}).map(()=>`<div class="skel" style="margin:6px 0"></div>`).join('')}
+function expandCard(card){card.classList.toggle('expanded')}
+function showInCard(card,html){card.querySelector('.result').innerHTML=html}
 function renderTopics(calc){
   const root=el('#topics'); const disabled=!calc?.pillars;
   root.innerHTML=`
-    <div class="card topics">
-      <div class="kicker">EXPLORE SPECIFIC FORTUNES</div>
-      <div class="grid-topics" id="topicsGrid">
-        ${TOPICS.map(t=>`
-          <div class="topic ${disabled?'topic-disabled':''}" data-topic="${t.key}">
-            <div class="emoji">${t.emoji}</div>
-            <div class="ttl">${ESC(t.title)}</div>
-            <div class="desc">${ESC(t.desc)}</div>
-            <button class="cta">See insights</button>
-            <div class="result"></div>
-          </div>`).join('')}
-      </div>
-      <div class="askRow">
-        <input id="askInput" placeholder="Or ask your own question (e.g., ‘Will switching jobs this year be good?’)"/>
-        <button id="askBtn">Ask</button>
-      </div>
-    </div>`;
+  <div class="card topics">
+    <div class="kicker">EXPLORE SPECIFIC FORTUNES</div>
+    <div class="grid-topics" id="topicsGrid">
+      ${TOPICS.map(t=>`
+        <div class="topic" data-topic="${t.key}">
+          <div class="emoji">${t.emoji}</div>
+          <div class="ttl">${ESC(t.title)}</div>
+          <div class="desc">${ESC(t.desc)}</div>
+          <button class="cta">See insights</button>
+          <div class="result"></div>
+        </div>`).join('')}
+    </div>
+    <div class="askRow"><input id="askInput" placeholder="Or ask your own question (e.g., ‘Will switching jobs this year be good?’)"/><button id="askBtn">Ask</button></div>
+  </div>`;
   if(disabled) return;
   el('#topicsGrid').addEventListener('click', onTopicCard);
   el('#askBtn').addEventListener('click', onAsk);
 }
-function skeleton(n=2){return Array.from({length:n}).map(()=>`<div class="skel" style="margin:6px 0"></div>`).join('')}
-function showInCard(card,html){card.querySelector('.result').innerHTML=html}
-function expandCard(card){card.classList.toggle('expanded')}
+function looksOnTopic(text, topic){
+  const kw=TOPIC_KEYWORDS[topic]||[]; const t=(text||'').toLowerCase();
+  return kw.some(k=>t.includes(k));
+}
+async function requestTopic(topic, calc, extra={}){
+  const body=JSON.stringify({
+    type:'topic',
+    topic,
+    topicHints:`${STRICT_TOPIC_HINTS[topic]}\n\nChartContext: ${buildCalcContext(calc)}`,
+    locale:'en-US', length:'deep',
+    pillars:calc.pillars, elements:calc.elements, tenGods:calc.tenGods, interactions:calc.interactions, luck:calc.luck,
+    ...extra
+  });
+  return fetchJSON('/api/reading-generate',{method:'POST',headers:{'Content-Type':'application/json'},body});
+}
 async function onTopicCard(e){
   const card=e.target.closest('.topic'); if(!card) return;
-  if(e.target.classList.contains('cta')||e.target.classList.contains('ttl')||e.target.classList.contains('emoji')||e.target.classList.contains('desc')){
-    expandCard(card);
-    const topic=card.getAttribute('data-topic'); const c=state.lastCalc; if(!c) return;
-    showInCard(card,skeleton(2));
-    const body=JSON.stringify({
-      type:'topic', topic, topicHints:TOPIC_HINTS[topic],
-      locale:'en-US', length:'deep',
-      pillars:c.pillars, elements:c.elements, tenGods:c.tenGods, interactions:c.interactions, luck:c.luck
-    });
-    const r=await fetchJSON('/api/reading-generate',{method:'POST',headers:{'Content-Type':'application/json'},body});
-    if(!r.ok||!r.data?.output){showInCard(card,`<div class="pill err">Failed to get topic reading.</div>`);return}
-    const o=r.data.output;
-    showInCard(card,`
-      <div class="card" style="padding:10px">
-        <div class="kicker">TOPIC RESULT</div>
-        <h3 class="headline" style="font-size:16px">${ESC(o.title||'Personalized Insight')}</h3>
-        <ul style="margin:6px 0 0">${(o.bullets||[]).slice(0,5).map(b=>`<li>${ESC(b)}</li>`).join('')}</ul>
-        ${o.forecastOneLiner?`<div class="muted" style="margin-top:6px"><em>${ESC(o.forecastOneLiner)}</em></div>`:''}
-      </div>`);
+  if(!(e.target.classList.contains('cta')||e.target.classList.contains('ttl')||e.target.classList.contains('emoji')||e.target.classList.contains('desc'))) return;
+  expandCard(card);
+  const topic=card.getAttribute('data-topic'); const c=state.lastCalc; if(!c) return;
+  showInCard(card,skeleton(2));
+  // 1st try
+  let r=await requestTopic(topic,c);
+  let out=r.data?.output, text = JSON.stringify(out||'');
+  // simple validation → 1 retry with stricter hint
+  if(!r.ok || !out || !looksOnTopic(text,topic)){
+    r=await requestTopic(topic,c,{strict:true,forceBullets:6});
+    out=r.data?.output; text=JSON.stringify(out||'');
   }
+  if(!r.ok || !out){showInCard(card,`<div class="pill err">Failed to get topic reading.</div>`);return}
+  showInCard(card,`
+    <div class="card" style="padding:10px">
+      <div class="kicker">TOPIC RESULT</div>
+      <h3 class="headline" style="font-size:16px">${ESC(out.title||'Personalized Insight')}</h3>
+      <ul style="margin:6px 0 0">${(out.bullets||[]).slice(0,8).map(b=>`<li>${ESC(b)}</li>`).join('')}</ul>
+      ${out.forecastOneLiner?`<div class="muted" style="margin-top:6px"><em>${ESC(out.forecastOneLiner)}</em></div>`:''}
+      ${out.actions?.[0]?`<div class="pill" style="margin-top:8px"><b>Try:</b>&nbsp;${ESC(out.actions[0])}</div>`:''}
+    </div>`);
 }
 async function onAsk(){
   const q=el('#askInput').value.trim(); if(!q) return;
-  const c=state.lastCalc; if(!c) return;
-  const grid=el('#topicsGrid');
-  const askCard=grid.querySelector('.topic[data-topic="timing"]')||grid.firstElementChild;
-  askCard.classList.add('expanded'); showInCard(askCard,skeleton(2));
+  const grid=el('#topicsGrid'); const card=grid.querySelector('.topic[data-topic="timing"]')||grid.firstElementChild;
+  card.classList.add('expanded'); showInCard(card,skeleton(2));
+  const c=state.lastCalc;
   const body=JSON.stringify({
     type:'question', question:q,
+    questionHints:`Answer succinctly with timing windows and clear actions. Avoid generic advice.`,
     locale:'en-US', length:'deep',
     pillars:c.pillars, elements:c.elements, tenGods:c.tenGods, interactions:c.interactions, luck:c.luck
   });
   const r=await fetchJSON('/api/reading-generate',{method:'POST',headers:{'Content-Type':'application/json'},body});
-  if(!r.ok||!r.data?.output){showInCard(askCard,`<div class="pill err">Failed to answer your question.</div>`);return}
-  const o=r.data.output;
-  showInCard(askCard,`
+  const out=r.data?.output;
+  if(!r.ok || !out){showInCard(card,`<div class="pill err">Failed to answer your question.</div>`);return}
+  showInCard(card,`
     <div class="card" style="padding:10px">
       <div class="kicker">YOUR QUESTION</div>
-      <h3 class="headline" style="font-size:16px">${ESC(o.title||'Answer')}</h3>
-      <ul style="margin:6px 0 0">${(o.bullets||[]).slice(0,6).map(b=>`<li>${ESC(b)}</li>`).join('')}</ul>
-      ${o.forecastOneLiner?`<div class="muted" style="margin-top:6px"><em>${ESC(o.forecastOneLiner)}</em></div>`:''}
+      <h3 class="headline" style="font-size:16px">${ESC(out.title||'Answer')}</h3>
+      <ul style="margin:6px 0 0">${(out.bullets||[]).slice(0,8).map(b=>`<li>${ESC(b)}</li>`).join('')}</ul>
+      ${out.forecastOneLiner?`<div class="muted" style="margin-top:6px"><em>${ESC(out.forecastOneLiner)}</em></div>`:''}
     </div>`);
 }
 
-/* ============= Flow ============= */
-el('#fillExample').addEventListener('click',()=>{
-  el('#year').value='1989';el('#month').value='08';el('#day').value='08';
-  el('#hour').value='07';el('#minute').value='30';el('#city').value='seoul';
-});
+/* ---------- flow ---------- */
+el('#fillExample').addEventListener('click',()=>{el('#year').value='1989';el('#month').value='10';el('#day').value='20';el('#hour').value='06';el('#minute').value='00';el('#city').value='seoul'});
 el('#runBtn').addEventListener('click',async()=>{
   const city=el('#city').value.trim(); if(!city){setStatus('Enter birth city.','err');return}
+  setStatus('Step 1/3: Resolving city → timezone…');
   const geo=await fetchJSON(`/api/geo-timezone?city=${encodeURIComponent(city)}`);
   if(!geo.ok||!geo.data?.timezone){setStatus('Step 1 failed (geo-timezone).','err');return}
   state.lastGeo=geo.data; const tzId=geo.data.timezone; const {lat,lng}=geo.data.location||{};
-  setStatus('Step 2/3: Calculating pillars…');
+  setStatus('Step 2/3: Calculating pillars/elements…');
   const calcBody=JSON.stringify({birthDateISO:birthISO(),birthTime:`${el('#hour').value}:${el('#minute').value}`,tzId,lat,lng,timeAccuracy:'exact'});
   const calc=await fetchJSON('/api/calc',{method:'POST',headers:{'Content-Type':'application/json'},body:calcBody});
   if(!calc.ok||!calc.data?.data){setStatus('Step 2 failed (calc).','err');return}
@@ -300,7 +372,7 @@ el('#runBtn').addEventListener('click',async()=>{
   });
   const read=await fetchJSON('/api/reading-generate',{method:'POST',headers:{'Content-Type':'application/json'},body:readBody});
   if(!read.ok||!read.data?.output){setStatus('Step 3 failed (reading).','err');return}
-  state.lastReading=read.data.output; renderDeepReading(state.lastReading,{fallback:read.data.fallback,mocked:read.data.mocked});
+  state.lastReading=read.data.output; renderDeepReading(state.lastReading,{fallback:read.data.fallback,mocked:read.data.mocked},state.lastCalc);
   renderTopics(state.lastCalc);
   setStatus(`Done • tz: ${tzId} • lat:${(+lat).toFixed?.(4)}, lng:${(+lng).toFixed?.(4)}`,'ok');
   dbgEl.textContent=['geo\n'+JSON.stringify(state.lastGeo,null,2),'calc\n'+JSON.stringify(calc.data,null,2),'reading\n'+JSON.stringify(read.data,null,2)].join('\n\n');
