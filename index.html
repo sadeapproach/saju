@@ -1,285 +1,430 @@
-// api/reading-generate.js
-// Extended reading generator that ALWAYS returns 6 sections the frontend expects.
-// - If OPENAI_API_KEY is present, it will ask the model for copy and then enrich/guard.
-// - If not, it will build high-quality deterministic prose from pillars/elements/tenGods/interactions/luck.
-// Response shape:
-// {
-//   ok: true,
-//   output: {
-//     title, bullets[], forecastOneLiner, actions[],
-//     sections: [{ id, kicker, title, p1..p5, list[], keywords[] }, ... 6 items]
-//   },
-//   mocked: boolean, fallback: boolean
-// }
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Saju-Eight • Playground (Select + Extended Reading)</title>
 
-const USE_MODEL = !!process.env.OPENAI_API_KEY;
-const OPENAI_MODEL = process.env.SAJU_OPENAI_MODEL || "gpt-4o-mini"; // small, cheap; override if you like
+  <!-- CJK font for Hanzi/Hangul -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap">
 
-function J(x){ try { return JSON.parse(x); } catch { return null; } }
-function pct(n){ return Math.round((n || 0) * 100); }
+  <style>
+    :root { --bg:#0b1220; --panel:#121a2a; --muted:#8ca1c0; --txt:#e9f0ff; --accent:#66b3ff; --ok:#49d39a; --err:#ff7a7a; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,"Noto Sans KR","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:linear-gradient(120deg,#0b1220,#0e2342);color:var(--txt)}
+    .wrap{max-width:980px;margin:40px auto;padding:0 20px}
+    .title{font-size:26px;font-weight:800;margin-bottom:8px}
+    .sub{color:var(--muted);margin-bottom:22px}
+    .card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+    input,select,button{width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:#0b1426;color:var(--txt);outline:none}
+    input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(102,179,255,.2)}
+    button{background:linear-gradient(135deg,#4da3ff,#66b3ff);color:#06101d;font-weight:700;cursor:pointer;border:none}
+    button[disabled]{opacity:.6;cursor:not-allowed}
+    .actions{display:flex;gap:10px;margin-top:12px}
+    .muted{color:var(--muted);font-size:13px}
+    .status{margin-top:8px}
+    .status.ok{color:var(--ok)} .status.err{color:var(--err)}
+    details{margin-top:10px}
+    pre{background:#081123;border:1px solid rgba(255,255,255,.08);padding:12px;border-radius:12px;overflow:auto}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);font-size:12px}
+    .pill.ok{color:var(--ok)}
 
-function nounFor(elem){
-  return {wood:"Wood",fire:"Fire",earth:"Earth",metal:"Metal",water:"Water"}[elem] || elem;
+    /* Pillars UI */
+    .pillars-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
+    @media (min-width:768px){.pillars-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+    .pillar-card{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);border-radius:16px;padding:12px}
+    .pillar-title{font-size:12px;opacity:.85;text-align:center;margin-bottom:6px}
+    .pillar-sub{font-size:11px;color:#7dd3fc;text-align:center;margin-bottom:6px}
+    .box{height:84px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:800;letter-spacing:.02em;border:1px solid #0003}
+    .subline{font-size:11px;text-align:center;color:#cfe4ff;margin-top:6px}
+    .chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:6px}
+    .chip{font-size:11px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}
+    .wood{background:#16a34a;color:#fff}.fire{background:#ef4444;color:#fff}
+    .earth{background:#f59e0b;color:#111}.metal{background:#e5e7eb;color:#111;border-color:#cbd5e1}
+    .water{background:#06b6d4;color:#fff}
+    .gauge{display:flex;height:10px;overflow:hidden;border-radius:10px;border:1px solid #2a2a2a;margin-top:12px}
+    .gauge>div{height:100%}
+
+    /* Interactions & Luck */
+    .badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+    .badge{padding:6px 10px;border-radius:999px;font-size:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05)}
+    .badge.warn{border-color:#f59e0b66;color:#f8d48b;background:#f59e0b20}
+    .badge.info{border-color:#66b3ff66;color:#bfe0ff;background:#66b3ff1a}
+    .luck{margin-top:16px}
+    .luck-bar{display:flex;gap:8px}
+    .luck-seg{flex:1;min-width:64px;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px;background:rgba(255,255,255,.05)}
+    .luck-title{font-size:12px;opacity:.85;margin-bottom:4px}
+    .luck-ganji{font-size:16px;font-weight:800}
+    .luck-god{font-size:11px;color:#cfe4ff;margin-top:2px}
+    .luck-age{font-size:11px;color:#9fb3d6;margin-top:6px}
+    .luck-now{outline:2px solid #66b3ff; box-shadow:0 0 0 4px rgba(102,179,255,.2)}
+
+    /* Extended Reading section cards */
+    .section-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:14px}
+    @media (min-width:768px){.section-grid{grid-template-columns:1fr}}
+    .section-card{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);border-radius:16px;padding:16px}
+    .section-kicker{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+    .section-title{font-weight:800;font-size:18px;margin:0 0 6px}
+    .section-body{line-height:1.6;color:#e6eeff}
+    .section-list{padding-left:18px;margin:6px 0}
+    .section-chipbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+    .section-chip{font-size:12px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="title">Saju-Eight • End-to-End Playground (Extended)</div>
+    <div class="sub">Enter birth info and city → timezone → pillars → English reading (no options; single standard).</div>
+
+    <!-- FORM (Select-based inputs) -->
+    <div class="card">
+      <div class="grid">
+        <div>
+          <label>Birth year</label>
+          <select id="year"></select>
+        </div>
+        <div>
+          <label>Birth month</label>
+          <select id="month"></select>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div>
+          <label>Birth day</label>
+          <select id="day"></select>
+        </div>
+        <div class="grid-3">
+          <div>
+            <label>Hour</label>
+            <select id="hour"></select>
+          </div>
+          <div>
+            <label>Minute</label>
+            <select id="minute"></select>
+          </div>
+          <div>
+            <label>Birth city (in English)</label>
+            <input id="city" placeholder="Seoul / New York / Tokyo" />
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="runBtn">Calculate & Generate</button>
+        <button id="fillExample" type="button">Fill Example</button>
+      </div>
+      <div id="status" class="muted status"></div>
+
+      <details>
+        <summary class="muted">What happens under the hood?</summary>
+        <ul class="muted">
+          <li>Step 1: GET <code>/api/geo-timezone?city=...</code> → <em>lat/lng</em> & <em>tzId</em></li>
+          <li>Step 2: POST <code>/api/calc</code> → pillars & elements (single standard; no options)</li>
+          <li>Step 3: POST <code>/api/reading-generate</code> → English reading JSON (extended sections)</li>
+        </ul>
+      </details>
+    </div>
+
+    <!-- OUTPUT AREAS -->
+    <div id="pillars-root"></div>
+    <div id="interactions-root"></div>
+    <div id="luck-root"></div>
+    <div class="result" id="result"></div>
+  </div>
+
+<script>
+/* -----------------------------------
+   tiny helpers
+----------------------------------- */
+const el = (q) => document.querySelector(q);
+const statusEl = el('#status');
+const resultEl = el('#result');
+const runBtn = el('#runBtn');
+function setStatus(msg, kind=''){ statusEl.textContent = msg; statusEl.className = 'muted status ' + (kind||''); }
+async function fetchJSON(url, opts={}){ const r=await fetch(url,opts); const t=await r.text(); try{return{ok:r.ok,status:r.status,data:JSON.parse(t),raw:t}}catch{return{ok:r.ok,status:r.status,data:null,raw:t}} }
+const escapeHTML = s => (s??'').toString().replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* -----------------------------------
+   selects: populate & persist
+----------------------------------- */
+const yearSel = el('#year'), monthSel = el('#month'), daySel = el('#day'), hourSel = el('#hour'), minuteSel = el('#minute'), cityInput = el('#city');
+
+function range(n1,n2){ const out=[]; for(let i=n1;i<=n2;i++) out.push(i); return out; }
+function pad2(n){ return String(n).padStart(2,'0'); }
+function daysInMonth(y,m){ return new Date(y, m, 0).getDate(); }
+
+function populateSelects(){
+  const thisYear = new Date().getFullYear();
+  range(1900, thisYear+5).forEach(y=>{ const o=document.createElement('option'); o.value=o.textContent=y; yearSel.appendChild(o); });
+  range(1,12).forEach(m=>{ const o=document.createElement('option'); o.value=pad2(m); o.textContent=pad2(m); monthSel.appendChild(o); });
+  range(0,23).forEach(h=>{ const o=document.createElement('option'); o.value=pad2(h); o.textContent=pad2(h); hourSel.appendChild(o); });
+  for(let m=0;m<60;m+=5){ const o=document.createElement('option'); o.value=pad2(m); o.textContent=pad2(m); minuteSel.appendChild(o); }
+  updateDayOptions();
 }
-function emoFor(elem){
-  return {
-    wood:"growth, creativity, planning",
-    fire:"passion, visibility, courage",
-    earth:"stability, care, patience",
-    metal:"clarity, discipline, structure",
-    water:"intuition, adaptability, wisdom"
-  }[elem] || "balance";
+function updateDayOptions(){
+  const y=Number(yearSel.value||new Date().getFullYear());
+  const m=Number(monthSel.value||1);
+  const max = daysInMonth(y,m);
+  const current = daySel.value || '01';
+  daySel.innerHTML='';
+  range(1,max).forEach(d=>{ const o=document.createElement('option'); o.value=pad2(d); o.textContent=pad2(d); daySel.appendChild(o); });
+  daySel.value = (Number(current)<=max?current:pad2(max));
 }
-function lifestyleFor(elem){
-  return {
-    wood:"green color palette, hiking, learning new skills",
-    fire:"sunlight, warm colors, dance or cardio",
-    earth:"gardening, cooking, grounding routines",
-    metal:"decluttering, journaling, breathwork",
-    water:"meditation near water, reflective writing, calm walks"
-  }[elem] || "gentle movement and mindful routines";
+yearSel.addEventListener('change', updateDayOptions);
+monthSel.addEventListener('change', updateDayOptions);
+
+/* persist */
+const KEY = 'sajueight_form_v1';
+function saveForm(){
+  const data = { y:yearSel.value,m:monthSel.value,d:daySel.value, hh:hourSel.value,mm:minuteSel.value, city:cityInput.value };
+  localStorage.setItem(KEY, JSON.stringify(data));
 }
-function healthFor(elem){
-  return {
-    wood:"liver/eyes; stretch hips & sides; sleep by 11pm",
-    fire:"heart/small intestine; keep caffeine moderate; cooling foods",
-    earth:"spleen/stomach; consistent meals; warm easy-to-digest foods",
-    metal:"lungs/skin; fresh air; breath training",
-    water:"kidneys/ears; hydrate; manage stress and sleep"
-  }[elem] || "overall balance";
+function loadForm(){
+  try{
+    const raw = localStorage.getItem(KEY); if(!raw) return;
+    const d = JSON.parse(raw);
+    if(d?.y) yearSel.value=d.y;
+    if(d?.m) monthSel.value=d.m;
+    updateDayOptions();
+    if(d?.d) daySel.value=d.d;
+    if(d?.hh) hourSel.value=d.hh;
+    if(d?.mm) minuteSel.value=d.mm;
+    if(d?.city) cityInput.value=d.city;
+  }catch{}
 }
-function guessDayMaster(pillars){
-  // pillars.day.stem exists in our calc output
-  const dm = pillars?.day?.stem || "";
-  const map = {甲:"wood",乙:"wood",丙:"fire",丁:"fire",戊:"earth",己:"earth",庚:"metal",辛:"metal",壬:"water",癸:"water"};
-  return map[dm] || null;
-}
-function topElements(elements){
-  const arr = Object.entries(elements||{}).map(([k,v])=>({k,v}));
-  arr.sort((a,b)=> (b.v||0) - (a.v||0));
-  return arr;
-}
-function need(bucket, t=0.20){ // deficient if strictly below 20%
-  return (bucket||0) < t;
-}
-function excess(bucket, t=0.30){ // strong if >= 30%
-  return (bucket||0) >= t;
-}
+[yearSel,monthSel,daySel,hourSel,minuteSel,cityInput].forEach(x=>x.addEventListener('change', saveForm));
 
-function buildDeterministicReading(payload){
-  const { pillars, elements={}, tenGods={}, interactions={}, luck } = payload || {};
+/* -----------------------------------
+   pillars rendering / interactions / luck
+----------------------------------- */
+const STEM_ELEM = {甲:"wood",乙:"wood",丙:"fire",丁:"fire",戊:"earth",己:"earth",庚:"metal",辛:"metal",壬:"water",癸:"water"};
+const BRANCH_ELEM = {子:"water",丑:"earth",寅:"wood",卯:"wood",辰:"earth",巳:"fire",午:"fire",未:"earth",申:"metal",酉:"metal",戌:"earth",亥:"water"};
+const COLOR_CLASS = {wood:"wood",fire:"fire",earth:"earth",metal:"metal",water:"water"};
+const TITLES = {hour:"Hour Pillar (시주)", day:"Day Pillar (일주)", month:"Month Pillar (월주)", year:"Year Pillar (년주)"};
 
-  // ---- Header summary
-  const dm = guessDayMaster(pillars);
-  const top = topElements(elements);
-  const topKey = top[0]?.k || dm || "balance";
-  const dmNoun = nounFor(dm || topKey);
-
-  const title = "Embracing Your Unique Journey";
-  const bullets = [
-    `Balance your elements for a harmonious life.`,
-    `Focus on nurturing relationships and meaningful connections.`,
-    `Stay open to new opportunities and hands-on experiences.`,
-    `Prioritize self-care and mindful routines to sustain energy.`
-  ];
-  const forecastOneLiner = "This is a period to align your strengths with supportive habits and clear intentions.";
-  const actions = [
-    `Try: Engage in creative outlets that express your inner voice (e.g., ${lifestyleFor(topKey)}).`
-  ];
-
-  // ---- Section 1: Traits
-  const traits = {
-    id: "traits",
-    kicker: "SECTION",
-    title: "Core Traits & Disposition (기본 성향·기질)",
-    p1: `As a Day Master represented by ${dmNoun} element, your core nature leans toward ${emoFor(dm || topKey)}.`,
-    p2: `You thrive when your daily life includes rhythms that match your temperament—this keeps your decision-making clear and your motivation steady.`,
-    p3: `Your strengths are noticeable in the way you handle challenges: you tend to learn, adapt, and then move forward with confidence.`,
-    p4: `When stressed, you may overuse your strongest element; creating small balancing rituals helps you stay centered.`
-  };
-
-  // ---- Section 2: Element Balance
-  const balanceList = [
-    `Wood ${pct(elements.wood)}%`, `Fire ${pct(elements.fire)}%`,
-    `Earth ${pct(elements.earth)}%`, `Metal ${pct(elements.metal)}%`,
-    `Water ${pct(elements.water)}%`
-  ];
-  const lack = Object.entries(elements).filter(([k,v])=>need(v)).map(([k])=>nounFor(k));
-  const strong = Object.entries(elements).filter(([k,v])=>excess(v)).map(([k])=>nounFor(k));
-  const balance = {
-    id: "balance",
-    kicker: "SECTION",
-    title: "Element Balance (오행 균형·보완)",
-    p1: `Your mix shows strengths in ${strong.length? strong.join(", "): "certain areas"} and room to nourish ${lack.length? lack.join(", "): "overall steadiness"}.`,
-    p2: `${lack.length? `Gently boost ${lack.join(", ")} with colors, activities, and environments that evoke them.` : `Maintain your current routines to protect balance.`}`,
-    p3: `${strong.length? `If a strong element runs the show for too long, schedule counter-balancing breaks to avoid burnout.` : `Keep small anchors—sleep, food, fresh air—to stay grounded.`}`,
-    p4: `Practical cues: ${nounFor(topKey)} rituals such as ${lifestyleFor(topKey)} are especially beneficial now.`,
-    list: balanceList,
-    keywords: ["balance","habits", dmNoun, ...strong.slice(0,1), ...lack.slice(0,1)].filter(Boolean)
-  };
-
-  // ---- Section 3: Ten Gods — Wealth/Career/Relationships
-  const tgDay = (tenGods?.byPillar?.day || tenGods?.day || "");
-  const tgMonth = (tenGods?.byPillar?.month || tenGods?.month || "");
-  const tgYear = (tenGods?.byPillar?.year || tenGods?.year || "");
-  const tenGodsSec = {
-    id: "tenGods",
-    kicker: "SECTION",
-    title: "Ten Gods — Wealth/Career/Relationships (십신 기반 경향)",
-    p1: `Career & learning: signs point to growth through ${tgMonth || "focused practice"} and consistent skill-building.`,
-    p2: `Wealth: look for ${tgDay || "steady"} income streams first; experiment with variable opportunities once the foundation holds.`,
-    p3: `Relationships: your ${tgYear || "social ties"} benefit from clear communication and shared goals.`,
-    p4: `Teamwork improves when you mix your strengths with someone whose element complements yours.`
-  };
-
-  // ---- Section 4: Luck cycles
-  const firstLuck = (luck?.bigLuck || [])[0];
-  const nowLuck = (luck?.bigLuck || []).find(x=>{
-    const a = x?.startAge; if(typeof a!=='number') return false;
-    const age = payload?.age;
-    return typeof age==='number' ? (age>=a && age<a+10) : false;
-  });
-  const luckSec = {
-    id: "luck",
-    kicker: "SECTION",
-    title: "Big Luck & Yearly Outlook (대운·세운 요약)",
-    p1: `Your long cycles suggest steady progress when you keep routines that amplify your strongest qualities.`,
-    p2: nowLuck ? `Current 10-year cycle (starts ${nowLuck.startAge}): ${nowLuck.stem||""}${nowLuck.branch||""} — lean into its lessons with patience.` : `Focus on building momentum for the coming cycle.`,
-    p3: firstLuck ? `Early cycle hint: ${firstLuck.stem||""}${firstLuck.branch||""} encouraged foundational skills—returning to those basics can open new doors.` : `Use the present to lay strong groundwork.`,
-    p4: `Yearly changes add flavor, but your daily habits decide the real outcome.`
-  };
-
-  // ---- Section 5: Wellness
-  const weak = topElements(elements).slice().reverse().find(x=>need(x.v,0.20))?.k || null;
-  const wellness = {
-    id: "wellness",
-    kicker: "SECTION",
-    title: "Health & Lifestyle Advice (건강·생활 조언)",
-    p1: `Keep body and mind steady with realistic sleep, simple nutrition, and fresh air.`,
-    p2: weak ? `Gently nourish ${nounFor(weak)}: ${healthFor(weak)}.` : `Maintain balance across all five phases; small routines beat big overhauls.`,
-    p3: `Stress test: if your strongest element gets overused (e.g., too much work, too much socializing), plan a brief opposite activity to reset.`,
-    p4: `Light, movement, and hydration remain the simplest levers with the biggest payoff.`,
-    keywords: ["well-being","sleep","movement","hydration"]
-  };
-
-  // ---- Section 6: Overall summary
-  const summary = {
-    id: "summary",
-    kicker: "SECTION",
-    title: "Overall Keywords & One-liner (전반 요약)",
-    p1: `This season rewards patience, steady practice, and self-honesty.`,
-    p2: `Your strengths are ${dmNoun.toLowerCase()}-style qualities—use them to shape routines that truly fit you.`,
-    p3: `Focus on what you can repeat weekly; momentum follows clarity.`,
-    p4: `A small, meaningful action repeated often will outpace a perfect plan delayed.`,
-    keywords: ["clarity","consistency","momentum"]
-  };
-
-  return {
-    ok: true,
-    output: { title, bullets, forecastOneLiner, actions, sections:[traits, balance, tenGodsSec, luckSec, wellness, summary] },
-    mocked: !USE_MODEL,
-    fallback: false
-  };
+function renderPillars(root, pillars, elements, tenGods, hiddenStems){
+  if(!pillars){ root.innerHTML = `<div class="card"><div class="muted">No pillars returned from /api/calc.</div></div>`; return; }
+  root.innerHTML = `
+    <div class="card">
+      <div class="muted" style="font-size:12px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px">FOUR PILLARS</div>
+      <div class="pillars-grid">
+        ${["hour","day","month","year"].map(k=>{
+          const p = pillars[k] || {};
+          const stemClass = COLOR_CLASS[STEM_ELEM[p.stem]] || "wood";
+          const branchClass = COLOR_CLASS[BRANCH_ELEM[p.branch]] || "earth";
+          const tg = (tenGods?.byPillar?.[k] || tenGods?.[k] || tenGods?.[`${k}Stem`]) || "";
+          const hs = hiddenStems?.[p.branch] || hiddenStems?.byBranch?.[p.branch] || [];
+          const tag = p.role ? `<div class="subline">${escapeHTML(p.role)}</div>` : '';
+          return `
+            <div class="pillar-card">
+              <div class="pillar-title">${TITLES[k]}</div>
+              ${k==="day"?'<div class="pillar-sub">Day Master (Self) / 일간(나)</div>':""}
+              <div class="box ${stemClass}">${escapeHTML(p.stem||"?")}</div>
+              <div class="box ${branchClass}" style="margin-top:8px">${escapeHTML(p.branch||"?")}</div>
+              ${tag}
+              ${tg?`<div class="subline">${escapeHTML(tg)}</div>`:''}
+              ${Array.isArray(hs)&&hs.length?`<div class="chips">${hs.map(h=>`<span class="chip">${escapeHTML(h)}</span>`).join('')}</div>`:''}
+            </div>`;
+        }).join("")}
+      </div>
+      ${elements?`<div class="gauge">${["wood","fire","earth","metal","water"].map(e=>{const pct=Math.max(2,Math.round((elements[e]||0)*100));return `<div class="${COLOR_CLASS[e]}" style="width:${pct}%"></div>`}).join("")}</div>`:""}
+    </div>`;
 }
 
-// If OPENAI key exists, we’ll ask for prose then still guarantee sections.
-async function callModel(payload){
-  const { pillars, elements, tenGods, interactions, luck } = payload || {};
-  const sys = `You are a Saju (Four Pillars) assistant. Output JSON ONLY with:
-{
- "title": "...",
- "bullets": ["...", "...", "..."],
- "forecastOneLiner": "...",
- "actions": ["..."],
- "sections": [
-   {"id":"traits","kicker":"SECTION","title":"...","p1":"...","p2":"...","p3":"...","p4":"..."},
-   {"id":"balance","kicker":"SECTION","title":"...","p1":"...","p2":"...","p3":"...","p4":"...","list":["..."],"keywords":["..."]},
-   {"id":"tenGods","kicker":"SECTION","title":"...","p1":"...","p2":"...","p3":"...","p4":"..."},
-   {"id":"luck","kicker":"SECTION","title":"...","p1":"...","p2":"...","p3":"...","p4":"..."},
-   {"id":"wellness","kicker":"SECTION","title":"...","p1":"...","p2":"...","p3":"...","p4":"...","keywords":["..."]},
-   {"id":"summary","kicker":"SECTION","title":"...","p1":"...","p2":"...","p3":"...","p4":"...","keywords":["..."]}
- ]
+function renderInteractions(root, interactions){
+  const br = interactions?.branches || {};
+  const st = interactions?.stems || {};
+  const bag = [];
+  const pushList = (arr,label,tone)=>{ if(Array.isArray(arr)&&arr.length){ arr.forEach(x=>bag.push(`<span class="badge ${tone}">${label}: ${escapeHTML(x)}</span>`)); } }
+  pushList(st.합,"Stem Harmony (간합)","info"); pushList(st.충,"Stem Clash (간충)","warn");
+  pushList(br.합,"Branch Harmony (지합)","info"); pushList(br.충,"Branch Clash (지충)","warn"); pushList(br.형,"Penalty (형)","warn"); pushList(br.파,"Break (파)","warn"); pushList(br.해,"Harm (해)","warn");
+  if(!bag.length){ root.innerHTML=""; return; }
+  root.innerHTML = `<div class="card"><div class="muted" style="font-size:12px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px">INTERACTIONS</div><div class="badges">${bag.join("")}</div></div>`;
 }
-Each paragraph must be 1–2 sentences in clear, encouraging English. Avoid medical claims; give gentle lifestyle suggestions.`;
 
-  const user = {
-    pillars,
-    elements,
-    tenGods,
-    interactions,
-    luck,
-    intent: "long_sections",
-    locale: "en-US"
-  };
+function calcAge(birthDateISO){ if(!birthDateISO) return null; const b=new Date(birthDateISO+"T00:00:00"); const n=new Date(); let a=n.getFullYear()-b.getFullYear(); const m=n.getMonth()-b.getMonth(); if(m<0||(m===0&&n.getDate()<b.getDate())) a--; return a; }
 
-  const r = await fetch("https://api.openai.com/v1/chat/completions", {
-    method:"POST",
-    headers:{
-      "Authorization":`Bearer ${process.env.OPENAI_API_KEY}`,
-      "Content-Type":"application/json"
-    },
+function renderLuck(root, luck, birthDateISO){
+  const list = luck?.bigLuck || [];
+  if(!Array.isArray(list)||!list.length){ root.innerHTML=""; return; }
+  const age = calcAge(birthDateISO);
+  root.innerHTML = `<div class="card luck"><div class="muted" style="font-size:12px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px">BIG LUCK (10-year cycles)</div><div class="luck-bar">${
+    list.map(({startAge,stem,branch,tenGod})=>{
+      const now = typeof age==='number' && age>=startAge && age<startAge+10;
+      return `<div class="luck-seg ${now?'luck-now':''}"><div class="luck-title">Age ${startAge}–${startAge+9}</div><div class="luck-ganji">${escapeHTML((stem||'')+(branch||''))}</div>${tenGod?`<div class="luck-god">${escapeHTML(tenGod)}</div>`:''}${typeof startAge==='number'?`<div class="luck-age">starts ${startAge}</div>`:''}</div>`;
+    }).join("")
+  }</div></div>`;
+}
+
+/* -----------------------------------
+   Extended Reading (6 sections) renderer
+----------------------------------- */
+const SECTION_TITLES = {
+  traits: "Core Traits & Disposition (기본 성향·기질)",
+  balance: "Element Balance (오행 균형·보완)",
+  tenGods: "Ten Gods — Wealth/Career/Relationships (십신 기반 경향)",
+  luck: "Big Luck & Yearly Outlook (대운·세운 요약)",
+  wellness: "Health & Lifestyle Advice (건강·생활 조언)",
+  summary: "Overall Keywords & One-liner (전반 요약)"
+};
+
+function renderReadingExtended(out, meta={}){
+  const pill = meta.fallback ? `<span class="pill">Fallback</span>` : meta.mocked ? `<span class="pill">Mock</span>` : `<span class="pill ok">Live</span>`;
+  const sections = Array.isArray(out.sections) ? out.sections : [];
+
+  // Header summary card (title/bullets/one-liner)
+  let headerHTML = `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="muted" style="font-size:12px;letter-spacing:.16em;text-transform:uppercase">READING</div>
+        <div>${pill}</div>
+      </div>
+      <h3 style="margin:8px 0 8px 0;font-size:20px;font-weight:800">${escapeHTML(out.title || 'Your Saju Reading')}</h3>
+      ${Array.isArray(out.bullets)&&out.bullets.length?`<ul style="padding-left:18px;margin:8px 0 0">${out.bullets.map(b=>`<li>${escapeHTML(b)}</li>`).join('')}</ul>`:''}
+      ${out.forecastOneLiner?`<div style="margin-top:8px;color:#cfe4ff;font-style:italic">${escapeHTML(out.forecastOneLiner)}</div>`:''}
+      ${Array.isArray(out.actions)&&out.actions[0]?`<div style="margin-top:10px;padding:10px 12px;background:rgba(73,211,154,.09);border:1px solid rgba(73,211,154,.25);border-radius:12px"><strong>Try:</strong> ${escapeHTML(out.actions[0])}</div>`:''}
+    </div>`;
+
+  // Section cards
+  const secHTML = sections.map(sec=>{
+    const title = sec.title || SECTION_TITLES[sec.id] || 'Insight';
+    const body = [sec.p1,sec.p2,sec.p3,sec.p4,sec.p5].filter(Boolean).map(escapeHTML).join(' ');
+    const list = Array.isArray(sec.list)&&sec.list.length? `<ul class="section-list">${sec.list.map(x=>`<li>${escapeHTML(x)}</li>`).join('')}</ul>` : '';
+    const chips = Array.isArray(sec.keywords)&&sec.keywords.length? `<div class="section-chipbar">${sec.keywords.map(k=>`<span class="section-chip">${escapeHTML(k)}</span>`).join('')}</div>` : '';
+    return `
+      <div class="section-card">
+        <div class="section-kicker">${escapeHTML(sec.kicker || 'SECTION')}</div>
+        <h4 class="section-title">${escapeHTML(title)}</h4>
+        ${body?`<div class="section-body">${body}</div>`:''}
+        ${list}
+        ${chips}
+      </div>`;
+  }).join('');
+
+  resultEl.innerHTML = headerHTML + (secHTML? `<div class="section-grid">${secHTML}</div>` : '');
+}
+
+/* fallback short renderer (only if no sections present) */
+function renderReadingFallback(output, meta={}){
+  const pill = meta.fallback ? `<span class="pill">Fallback</span>` : meta.mocked ? `<span class="pill">Mock</span>` : `<span class="pill ok">Live</span>`;
+  resultEl.innerHTML = `
+    <div class="card">
+      <div class="row" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="muted" style="font-size:12px;letter-spacing:.16em;text-transform:uppercase">READING</div>
+        <div>${pill}</div>
+      </div>
+      <h3 style="margin:8px 0 8px 0;font-size:20px;font-weight:800">${escapeHTML(output.title || 'Your Saju Reading')}</h3>
+      <ul style="padding-left:18px;margin:8px 0 0">${(output.bullets||[]).map(b=>`<li>${escapeHTML(b)}</li>`).join('')}</ul>
+      ${output.forecastOneLiner?`<div style="margin-top:8px;color:#cfe4ff;font-style:italic">${escapeHTML(output.forecastOneLiner)}</div>`:''}
+      ${Array.isArray(output.actions)&&output.actions[0]?`<div style="margin-top:10px;padding:10px 12px;background:rgba(73,211,154,.09);border:1px solid rgba(73,211,154,.25);border-radius:12px"><strong>Try:</strong> ${escapeHTML(output.actions[0])}</div>`:''}
+    </div>`;
+}
+
+/* master reading renderer */
+function renderReading(output, meta={}){
+  if (Array.isArray(output?.sections) && output.sections.length){
+    renderReadingExtended(output, meta);
+  } else {
+    renderReadingFallback(output, meta);
+  }
+}
+
+/* -----------------------------------
+   build birthDate/time + run
+----------------------------------- */
+function getBirthDateISO(){
+  const y=yearSel.value, m=monthSel.value, d=daySel.value;
+  if(!y||!m||!d) return null;
+  return `${y}-${m}-${d}`; // YYYY-MM-DD
+}
+function getBirthTime(){
+  const hh = hourSel.value || '00';
+  const mm = minuteSel.value || '00';
+  return `${hh}:${mm}`;
+}
+
+el('#fillExample').addEventListener('click', () => {
+  yearSel.value='1992'; monthSel.value='06'; updateDayOptions(); daySel.value='02';
+  hourSel.value='09'; minuteSel.value='00';
+  cityInput.value='Seoul';
+  saveForm();
+});
+
+runBtn.addEventListener('click', async () => {
+  const birthDateISO = getBirthDateISO();
+  const birthTime = getBirthTime();
+  const city = cityInput.value.trim();
+  if(!birthDateISO || !city){ setStatus('Please select birth year/month/day and enter city.', 'err'); return; }
+
+  runBtn.disabled = true;
+  setStatus('Step 1/3: Resolving city → timezone…');
+
+  const geo = await fetchJSON(`/api/geo-timezone?city=${encodeURIComponent(city)}`);
+  if (!geo.ok || !geo.data?.timezone) {
+    const hint = geo?.data?.error ? ` • ${geo.data.error}` : '';
+    setStatus(`Failed on Step 1 (geo-timezone).${hint} • Try a nearby big city (e.g., "Seoul").`, 'err');
+    runBtn.disabled=false; return;
+  }
+  const { lat, lng } = geo.data.location; const tzId = geo.data.timezone;
+
+  setStatus('Step 2/3: Calculating pillars/elements…');
+  const calcPayload = { birthDateISO, birthTime, lat, lng, tzId, timeAccuracy: 'exact' };
+  const calc = await fetchJSON('/api/calc', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(calcPayload) });
+  if (!calc.ok || !calc.data?.data) {
+    const em = calc?.data?.error || 'Unknown error';
+    setStatus(`Failed on Step 2 (calc) • ${em}`, 'err'); runBtn.disabled=false; return;
+  }
+
+  const d = calc.data.data || {};
+  const { pillars, elements, tenGods, hiddenStems, interactions, luck } = d;
+
+  renderPillars(document.getElementById('pillars-root'), pillars, elements, tenGods, hiddenStems);
+  renderInteractions(document.getElementById('interactions-root'), interactions);
+  renderLuck(document.getElementById('luck-root'), luck, birthDateISO);
+
+  setStatus('Step 3/3: Generating English reading…');
+  const read = await fetchJSON('/api/reading-generate', {
+    method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({
-      model: OPENAI_MODEL,
-      messages: [
-        {role:"system", content: sys},
-        {role:"user", content: JSON.stringify(user)}
-      ],
-      temperature: 0.7,
+      pillars, elements, tenGods, interactions,
+      type:'summary', locale:'en-US',
+      length:'long', maxBullets:6,
+      wantSections:true  // 백엔드가 섹션을 생성하도록 힌트
     })
   });
-  if(!r.ok){
-    const text = await r.text();
-    return { ok:false, error:`openai_error ${r.status}`, raw:text };
+  if (!read.ok || !read.data) {
+    const em = read?.data?.error || 'Unknown error';
+    setStatus(`Failed on Step 3 (reading) • ${em}`, 'err'); runBtn.disabled=false; return;
   }
-  const data = await r.json();
-  const text = data?.choices?.[0]?.message?.content || "{}";
-  const parsed = J(text) || {};
-  // Guard: ensure we have sections; otherwise fallback to deterministic
-  if(!Array.isArray(parsed.sections) || parsed.sections.length < 6){
-    const det = buildDeterministicReading(payload);
-    // merge model header if present
-    det.output.title = parsed.title || det.output.title;
-    det.output.bullets = Array.isArray(parsed.bullets)&&parsed.bullets.length ? parsed.bullets : det.output.bullets;
-    det.output.forecastOneLiner = parsed.forecastOneLiner || det.output.forecastOneLiner;
-    det.output.actions = Array.isArray(parsed.actions)&&parsed.actions.length ? parsed.actions : det.output.actions;
-    return { ok:true, output: det.output, mocked:false, fallback:true };
-  }
-  return { ok:true, output: parsed, mocked:false, fallback:false };
-}
+  const out = read.data.output || read.data.output;
+  renderReading(out, { fallback: read.data.fallback, mocked: read.data.mocked });
 
-export default async function handler(req, res){
-  if(req.method !== 'POST'){
-    return res.status(405).json({ ok:false, error:"Use POST" });
-  }
-  const body = typeof req.body === 'string' ? J(req.body) : req.body || {};
-  const payload = {
-    pillars: body.pillars || {},
-    elements: body.elements || {},
-    tenGods: body.tenGods || {},
-    interactions: body.interactions || {},
-    luck: body.luck || {},
-    age: body.age
-  };
+  setStatus(`Done • tz: ${tzId} • lat:${lat.toFixed(4)}, lng:${lng.toFixed(4)}`, 'ok');
 
-  try{
-    let out;
-    if(USE_MODEL){
-      out = await callModel(payload);
-      if(!out.ok) {
-        // Model failed → deterministic fallback with flag
-        const det = buildDeterministicReading(payload);
-        det.fallback = true;
-        return res.status(200).json(det);
-      }
-      return res.status(200).json(out);
-    } else {
-      const det = buildDeterministicReading(payload);
-      return res.status(200).json(det);
-    }
-  } catch (e){
-    const det = buildDeterministicReading(payload);
-    det.fallback = true;
-    det.error = e?.message || 'reading_error';
-    return res.status(200).json(det);
-  }
-}
+  resultEl.insertAdjacentHTML('beforeend', `
+    <details class="card" style="margin-top:12px">
+      <summary>Debug JSON (geo/calc/reading)</summary>
+      <pre>geo-timezone\n${JSON.stringify(geo.data, null, 2)}</pre>
+      <pre>calc\n${JSON.stringify(calc.data, null, 2)}</pre>
+      <pre>reading\n${JSON.stringify(read.data, null, 2)}</pre>
+    </details>
+  `);
+
+  saveForm();
+  runBtn.disabled=false;
+});
+
+/* -----------------------------------
+   boot
+----------------------------------- */
+populateSelects();
+loadForm();
+if(!yearSel.value){ const n=new Date(); yearSel.value=n.getFullYear(); monthSel.value=pad2(n.getMonth()+1); updateDayOptions(); daySel.value=pad2(n.getDate()); hourSel.value=pad2(n.getHours()); minuteSel.value='00'; }
+</script>
+</body>
+</html>
