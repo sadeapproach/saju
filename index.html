@@ -3,44 +3,50 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Saju-Eight • Playground (Select + Extended Reading)</title>
+  <title>Saju-Eight • End-to-End Playground (Extended • Hybrid UI)</title>
 
   <!-- CJK font for Hanzi/Hangul -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap">
 
   <style>
-    :root { --bg:#0b1220; --panel:#121a2a; --muted:#8ca1c0; --txt:#e9f0ff; --accent:#66b3ff; --ok:#49d39a; --err:#ff7a7a; }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,"Noto Sans KR","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:linear-gradient(120deg,#0b1220,#0e2342);color:var(--txt)}
-    .wrap{max-width:980px;margin:40px auto;padding:0 20px}
-    .title{font-size:26px;font-weight:800;margin-bottom:8px}
-    .sub{color:var(--muted);margin-bottom:22px}
-    .card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-    label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
-    input,select,button{width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:#0b1426;color:var(--txt);outline:none}
-    input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(102,179,255,.2)}
-    button{background:linear-gradient(135deg,#4da3ff,#66b3ff);color:#06101d;font-weight:700;cursor:pointer;border:none}
-    button[disabled]{opacity:.6;cursor:not-allowed}
-    .actions{display:flex;gap:10px;margin-top:12px}
-    .muted{color:var(--muted);font-size:13px}
-    .status{margin-top:8px}
-    .status.ok{color:var(--ok)} .status.err{color:var(--err)}
-    details{margin-top:10px}
-    pre{background:#081123;border:1px solid rgba(255,255,255,.08);padding:12px;border-radius:12px;overflow:auto}
-    .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);font-size:12px}
-    .pill.ok{color:var(--ok)}
+    :root { --bg:#0b1220; --panel:#121a2a; --muted:#6b7a90; --txt:#e9f0ff; --accent:#66b3ff; --ok:#49d39a; --err:#ff7a7a; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, "Noto Sans KR", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: linear-gradient(120deg,#0b1220,#0e2342); color:var(--txt); }
+    .wrap { max-width: 980px; margin: 40px auto 80px; padding: 0 20px; }
+    .title { font-size: 26px; font-weight: 800; letter-spacing: .2px; margin-bottom: 8px; }
+    .sub { color: var(--muted); margin-bottom: 18px; font-size: 14px; }
+    .card { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 16px; padding: 16px; box-shadow: 0 10px 40px rgba(0,0,0,.35); }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    label { font-size: 12px; color: var(--muted); display:block; margin-bottom: 6px; }
+    select, input, button { width: 100%; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,.12); background:#0b1426; color:var(--txt); outline: none; }
+    select:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(102,179,255,.2); }
+    button { background: linear-gradient(135deg,#4da3ff,#66b3ff); color:#06101d; font-weight: 700; cursor: pointer; border: none; }
+    button[disabled] { opacity: .6; cursor: not-allowed; }
+    .row { display:flex; gap:10px; align-items:center; }
+    .row > * { flex:1; }
+    .actions { display:flex; gap:10px; margin-top: 10px; }
+    .muted { color: var(--muted); font-size: 13px; }
+    .kicker { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .headline { font-size: 20px; font-weight: 800; margin: 0 0 8px; }
+    ul { padding-left: 18px; margin: 8px 0 0; }
+    .one { margin-top: 8px; font-style: italic; color:#cfe4ff; }
+    .callout { margin-top: 10px; padding: 10px 12px; background: rgba(73,211,154,.09); border: 1px solid rgba(73,211,154,.25); border-radius: 12px; }
+    details { margin-top: 12px; }
+    pre { background: #081123; border:1px solid rgba(255,255,255,.08); padding: 12px; border-radius: 12px; overflow:auto; }
+    .pill { display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); font-size:12px; }
+    .ok { color: var(--ok); } .err { color: var(--err); }
+    .result { margin-top: 16px; }
 
-    /* Pillars UI */
+    /* Pillars */
     .pillars-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
     @media (min-width:768px){.pillars-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
     .pillar-card{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);border-radius:16px;padding:12px}
-    .pillar-title{font-size:12px;opacity:.85;text-align:center;margin-bottom:6px}
+    .pillar-title{font-size:12px;opacity:.8;text-align:center;margin-bottom:6px}
     .pillar-sub{font-size:11px;color:#7dd3fc;text-align:center;margin-bottom:6px}
-    .box{height:84px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:800;letter-spacing:.02em;border:1px solid #0003}
-    .subline{font-size:11px;text-align:center;color:#cfe4ff;margin-top:6px}
+    .box{height:84px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:700;letter-spacing:.02em;border:1px solid #0003}
+    .subline{font-size:11px;text-align:center;color:#c8d6f8;margin-top:6px}
     .chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:6px}
     .chip{font-size:11px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}
     .wood{background:#16a34a;color:#fff}.fire{background:#ef4444;color:#fff}
@@ -49,39 +55,45 @@
     .gauge{display:flex;height:10px;overflow:hidden;border-radius:10px;border:1px solid #2a2a2a;margin-top:12px}
     .gauge>div{height:100%}
 
-    /* Interactions & Luck */
-    .badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-    .badge{padding:6px 10px;border-radius:999px;font-size:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05)}
-    .badge.warn{border-color:#f59e0b66;color:#f8d48b;background:#f59e0b20}
-    .badge.info{border-color:#66b3ff66;color:#bfe0ff;background:#66b3ff1a}
+    /* Luck */
     .luck{margin-top:16px}
-    .luck-bar{display:flex;gap:8px}
-    .luck-seg{flex:1;min-width:64px;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px;background:rgba(255,255,255,.05)}
+    .luck-bar{display:flex;gap:8px;flex-wrap:wrap}
+    .luck-seg{flex:1;min-width:126px;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px;background:rgba(255,255,255,.05)}
     .luck-title{font-size:12px;opacity:.85;margin-bottom:4px}
     .luck-ganji{font-size:16px;font-weight:800}
     .luck-god{font-size:11px;color:#cfe4ff;margin-top:2px}
     .luck-age{font-size:11px;color:#9fb3d6;margin-top:6px}
     .luck-now{outline:2px solid #66b3ff; box-shadow:0 0 0 4px rgba(102,179,255,.2)}
 
-    /* Extended Reading section cards */
-    .section-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:14px}
-    @media (min-width:768px){.section-grid{grid-template-columns:1fr}}
-    .section-card{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);border-radius:16px;padding:16px}
-    .section-kicker{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
-    .section-title{font-weight:800;font-size:18px;margin:0 0 6px}
-    .section-body{line-height:1.6;color:#e6eeff}
-    .section-list{padding-left:18px;margin:6px 0}
-    .section-chipbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-    .section-chip{font-size:12px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12)}
+    /* Hybrid toggle */
+    .view-toggle{display:inline-flex;border-radius:999px;border:1px solid rgba(255,255,255,.15);overflow:hidden;background:rgba(255,255,255,.05)}
+    .view-toggle button{padding:8px 14px;background:transparent;color:#cfe4ff;border:none}
+    .view-toggle button.active{background:#66b3ff;color:#07121f;font-weight:800}
+    .section-card{margin-top:12px}
+    .section-title{font-size:16px;font-weight:800;margin:0 0 6px}
+    .section-kicker{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#9db1d8}
+    .section-p{margin:6px 0 0;line-height:1.5}
+    .section-list{margin:6px 0 0 16px}
+    .badges-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+    .badge{padding:6px 10px;border-radius:999px;font-size:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05)}
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="title">Saju-Eight • End-to-End Playground (Extended)</div>
-    <div class="sub">Enter birth info and city → timezone → pillars → English reading (no options; single standard).</div>
+    <div class="sub">Enter birth info and city → timezone → pillars → English reading (no options; single standard). <span class="muted">Switch Quick/Deep below.</span></div>
 
-    <!-- FORM (Select-based inputs) -->
-    <div class="card">
+    <!-- View toggle -->
+    <div class="row" style="justify-content:space-between; margin-bottom:10px">
+      <div></div>
+      <div class="view-toggle" id="viewToggle">
+        <button data-view="quick" class="active">Quick</button>
+        <button data-view="deep">Deep</button>
+      </div>
+    </div>
+
+    <!-- Input card (select pickers) -->
+    <div class="card" id="formCard">
       <div class="grid">
         <div>
           <label>Birth year</label>
@@ -92,13 +104,12 @@
           <select id="month"></select>
         </div>
       </div>
-
       <div class="grid">
         <div>
           <label>Birth day</label>
           <select id="day"></select>
         </div>
-        <div class="grid-3">
+        <div class="row">
           <div>
             <label>Hour</label>
             <select id="hour"></select>
@@ -109,109 +120,86 @@
           </div>
           <div>
             <label>Birth city (in English)</label>
-            <input id="city" placeholder="Seoul / New York / Tokyo" />
+            <input id="city" placeholder="Seoul" value="seoul"/>
           </div>
         </div>
       </div>
-
       <div class="actions">
         <button id="runBtn">Calculate & Generate</button>
         <button id="fillExample" type="button">Fill Example</button>
       </div>
-      <div id="status" class="muted status"></div>
+      <div id="status" class="muted" style="margin-top:8px;"></div>
 
       <details>
         <summary class="muted">What happens under the hood?</summary>
         <ul class="muted">
-          <li>Step 1: GET <code>/api/geo-timezone?city=...</code> → <em>lat/lng</em> & <em>tzId</em></li>
-          <li>Step 2: POST <code>/api/calc</code> → pillars & elements (single standard; no options)</li>
-          <li>Step 3: POST <code>/api/reading-generate</code> → English reading JSON (extended sections)</li>
+          <li>Step 1: GET <code>/api/geo-timezone?city=...</code></li>
+          <li>Step 2: POST <code>/api/calc</code></li>
+          <li>Step 3: POST <code>/api/reading-generate</code></li>
         </ul>
       </details>
     </div>
 
-    <!-- OUTPUT AREAS -->
+    <!-- Outputs -->
     <div id="pillars-root"></div>
-    <div id="interactions-root"></div>
     <div id="luck-root"></div>
     <div class="result" id="result"></div>
   </div>
 
 <script>
-/* -----------------------------------
-   tiny helpers
------------------------------------ */
+/* ---------- Helpers ---------- */
 const el = (q) => document.querySelector(q);
 const statusEl = el('#status');
 const resultEl = el('#result');
 const runBtn = el('#runBtn');
-function setStatus(msg, kind=''){ statusEl.textContent = msg; statusEl.className = 'muted status ' + (kind||''); }
-async function fetchJSON(url, opts={}){ const r=await fetch(url,opts); const t=await r.text(); try{return{ok:r.ok,status:r.status,data:JSON.parse(t),raw:t}}catch{return{ok:r.ok,status:r.status,data:null,raw:t}} }
-const escapeHTML = s => (s??'').toString().replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const viewToggle = el('#viewToggle');
 
-/* -----------------------------------
-   selects: populate & persist
------------------------------------ */
-const yearSel = el('#year'), monthSel = el('#month'), daySel = el('#day'), hourSel = el('#hour'), minuteSel = el('#minute'), cityInput = el('#city');
+function setStatus(msg, type=''){ statusEl.innerHTML = msg; statusEl.className = 'muted '+(type||''); }
+async function fetchJSON(url, opts={}){ const r=await fetch(url,opts); const t=await r.text(); try{ return{ok:r.ok,status:r.status,data:JSON.parse(t),raw:t} }catch{ return{ok:r.ok,status:r.status,data:null,raw:t} } }
+function esc(s){ return (s||"").replace(/[&<>"']/g,m=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[m])); }
 
-function range(n1,n2){ const out=[]; for(let i=n1;i<=n2;i++) out.push(i); return out; }
-function pad2(n){ return String(n).padStart(2,'0'); }
-function daysInMonth(y,m){ return new Date(y, m, 0).getDate(); }
+/* ---------- View mode ---------- */
+const MODE_KEY = "saju_view_mode";
+function getMode(){ return localStorage.getItem(MODE_KEY) || "quick"; }
+function setMode(m){ localStorage.setItem(MODE_KEY, m); for(const b of viewToggle.querySelectorAll('button')) b.classList.toggle('active', b.dataset.view===m); }
+viewToggle.addEventListener('click', (e)=>{ if(e.target.tagName!=='BUTTON') return; setMode(e.target.dataset.view); });
 
-function populateSelects(){
-  const thisYear = new Date().getFullYear();
-  range(1900, thisYear+5).forEach(y=>{ const o=document.createElement('option'); o.value=o.textContent=y; yearSel.appendChild(o); });
-  range(1,12).forEach(m=>{ const o=document.createElement('option'); o.value=pad2(m); o.textContent=pad2(m); monthSel.appendChild(o); });
-  range(0,23).forEach(h=>{ const o=document.createElement('option'); o.value=pad2(h); o.textContent=pad2(h); hourSel.appendChild(o); });
-  for(let m=0;m<60;m+=5){ const o=document.createElement('option'); o.value=pad2(m); o.textContent=pad2(m); minuteSel.appendChild(o); }
-  updateDayOptions();
+// init mode UI
+setMode(getMode());
+
+/* ---------- Select pickers ---------- */
+function fillRange(sel, start, end, pad=2){
+  sel.innerHTML = "";
+  for(let v=start; v<=end; v++){
+    const o=document.createElement('option');
+    o.value = String(v).padStart(pad,'0'); o.textContent = o.value; sel.appendChild(o);
+  }
 }
-function updateDayOptions(){
-  const y=Number(yearSel.value||new Date().getFullYear());
-  const m=Number(monthSel.value||1);
-  const max = daysInMonth(y,m);
-  const current = daySel.value || '01';
-  daySel.innerHTML='';
-  range(1,max).forEach(d=>{ const o=document.createElement('option'); o.value=pad2(d); o.textContent=pad2(d); daySel.appendChild(o); });
-  daySel.value = (Number(current)<=max?current:pad2(max));
-}
-yearSel.addEventListener('change', updateDayOptions);
-monthSel.addEventListener('change', updateDayOptions);
+const now = new Date();
+fillRange(el('#year'), 1900, now.getFullYear(), 4);
+fillRange(el('#month'), 1, 12);
+fillRange(el('#day'), 1, 31);
+fillRange(el('#hour'), 0, 23);
+fillRange(el('#minute'), 0, 59);
 
-/* persist */
-const KEY = 'sajueight_form_v1';
-function saveForm(){
-  const data = { y:yearSel.value,m:monthSel.value,d:daySel.value, hh:hourSel.value,mm:minuteSel.value, city:cityInput.value };
-  localStorage.setItem(KEY, JSON.stringify(data));
-}
-function loadForm(){
-  try{
-    const raw = localStorage.getItem(KEY); if(!raw) return;
-    const d = JSON.parse(raw);
-    if(d?.y) yearSel.value=d.y;
-    if(d?.m) monthSel.value=d.m;
-    updateDayOptions();
-    if(d?.d) daySel.value=d.d;
-    if(d?.hh) hourSel.value=d.hh;
-    if(d?.mm) minuteSel.value=d.mm;
-    if(d?.city) cityInput.value=d.city;
-  }catch{}
-}
-[yearSel,monthSel,daySel,hourSel,minuteSel,cityInput].forEach(x=>x.addEventListener('change', saveForm));
+// Default
+el('#year').value = '1989';
+el('#month').value = '08';
+el('#day').value = '08';
+el('#hour').value = '07';
+el('#minute').value = '30';
 
-/* -----------------------------------
-   pillars rendering / interactions / luck
------------------------------------ */
+/* ---------- Pillars rendering (compact, same as 이전 버전) ---------- */
 const STEM_ELEM = {甲:"wood",乙:"wood",丙:"fire",丁:"fire",戊:"earth",己:"earth",庚:"metal",辛:"metal",壬:"water",癸:"water"};
 const BRANCH_ELEM = {子:"water",丑:"earth",寅:"wood",卯:"wood",辰:"earth",巳:"fire",午:"fire",未:"earth",申:"metal",酉:"metal",戌:"earth",亥:"water"};
 const COLOR_CLASS = {wood:"wood",fire:"fire",earth:"earth",metal:"metal",water:"water"};
-const TITLES = {hour:"Hour Pillar (시주)", day:"Day Pillar (일주)", month:"Month Pillar (월주)", year:"Year Pillar (년주)"};
+const TITLES = {hour:"Hour Pillar (시주)",day:"Day Pillar (일주)",month:"Month Pillar (월주)",year:"Year Pillar (년주)"};
 
 function renderPillars(root, pillars, elements, tenGods, hiddenStems){
-  if(!pillars){ root.innerHTML = `<div class="card"><div class="muted">No pillars returned from /api/calc.</div></div>`; return; }
+  if(!pillars){ root.innerHTML = `<div class="card"><div class="kicker">FOUR PILLARS</div><div class="muted">No pillars returned.</div></div>`; return; }
   root.innerHTML = `
     <div class="card">
-      <div class="muted" style="font-size:12px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px">FOUR PILLARS</div>
+      <div class="kicker">FOUR PILLARS</div>
       <div class="pillars-grid">
         ${["hour","day","month","year"].map(k=>{
           const p = pillars[k] || {};
@@ -219,16 +207,16 @@ function renderPillars(root, pillars, elements, tenGods, hiddenStems){
           const branchClass = COLOR_CLASS[BRANCH_ELEM[p.branch]] || "earth";
           const tg = (tenGods?.byPillar?.[k] || tenGods?.[k] || tenGods?.[`${k}Stem`]) || "";
           const hs = hiddenStems?.[p.branch] || hiddenStems?.byBranch?.[p.branch] || [];
-          const tag = p.role ? `<div class="subline">${escapeHTML(p.role)}</div>` : '';
+          const small = p.tenGodSmall || "";
           return `
             <div class="pillar-card">
               <div class="pillar-title">${TITLES[k]}</div>
               ${k==="day"?'<div class="pillar-sub">Day Master (Self) / 일간(나)</div>':""}
-              <div class="box ${stemClass}">${escapeHTML(p.stem||"?")}</div>
-              <div class="box ${branchClass}" style="margin-top:8px">${escapeHTML(p.branch||"?")}</div>
-              ${tag}
-              ${tg?`<div class="subline">${escapeHTML(tg)}</div>`:''}
-              ${Array.isArray(hs)&&hs.length?`<div class="chips">${hs.map(h=>`<span class="chip">${escapeHTML(h)}</span>`).join('')}</div>`:''}
+              <div class="box ${stemClass}">${p.stem || "?"}</div>
+              <div class="box ${branchClass}" style="margin-top:8px">${p.branch || "?"}</div>
+              ${small?`<div class="subline">${esc(small)}</div>`:''}
+              ${tg?`<div class="subline">${esc(tg)}</div>`:''}
+              ${Array.isArray(hs)&&hs.length?`<div class="chips">${hs.map(h=>`<span class="chip">${h}</span>`).join('')}</div>`:''}
             </div>`;
         }).join("")}
       </div>
@@ -236,195 +224,126 @@ function renderPillars(root, pillars, elements, tenGods, hiddenStems){
     </div>`;
 }
 
-function renderInteractions(root, interactions){
-  const br = interactions?.branches || {};
-  const st = interactions?.stems || {};
-  const bag = [];
-  const pushList = (arr,label,tone)=>{ if(Array.isArray(arr)&&arr.length){ arr.forEach(x=>bag.push(`<span class="badge ${tone}">${label}: ${escapeHTML(x)}</span>`)); } }
-  pushList(st.합,"Stem Harmony (간합)","info"); pushList(st.충,"Stem Clash (간충)","warn");
-  pushList(br.합,"Branch Harmony (지합)","info"); pushList(br.충,"Branch Clash (지충)","warn"); pushList(br.형,"Penalty (형)","warn"); pushList(br.파,"Break (파)","warn"); pushList(br.해,"Harm (해)","warn");
-  if(!bag.length){ root.innerHTML=""; return; }
-  root.innerHTML = `<div class="card"><div class="muted" style="font-size:12px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px">INTERACTIONS</div><div class="badges">${bag.join("")}</div></div>`;
-}
-
-function calcAge(birthDateISO){ if(!birthDateISO) return null; const b=new Date(birthDateISO+"T00:00:00"); const n=new Date(); let a=n.getFullYear()-b.getFullYear(); const m=n.getMonth()-b.getMonth(); if(m<0||(m===0&&n.getDate()<b.getDate())) a--; return a; }
-
-function renderLuck(root, luck, birthDateISO){
-  const list = luck?.bigLuck || [];
+/* ---------- Luck rendering ---------- */
+function calcAge(birthISO){ if(!birthISO) return null; const b=new Date(birthISO+"T00:00:00"); const n=new Date(); let a=n.getFullYear()-b.getFullYear(); const m=n.getMonth()-b.getMonth(); if(m<0||(m===0&&n.getDate()<b.getDate())) a--; return a; }
+function renderLuck(root, luck, birthISO){
+  const list = luck?.bigLuck || []; const age = calcAge(birthISO);
   if(!Array.isArray(list)||!list.length){ root.innerHTML=""; return; }
-  const age = calcAge(birthDateISO);
-  root.innerHTML = `<div class="card luck"><div class="muted" style="font-size:12px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px">BIG LUCK (10-year cycles)</div><div class="luck-bar">${
-    list.map(({startAge,stem,branch,tenGod})=>{
-      const now = typeof age==='number' && age>=startAge && age<startAge+10;
-      return `<div class="luck-seg ${now?'luck-now':''}"><div class="luck-title">Age ${startAge}–${startAge+9}</div><div class="luck-ganji">${escapeHTML((stem||'')+(branch||''))}</div>${tenGod?`<div class="luck-god">${escapeHTML(tenGod)}</div>`:''}${typeof startAge==='number'?`<div class="luck-age">starts ${startAge}</div>`:''}</div>`;
-    }).join("")
-  }</div></div>`;
+  root.innerHTML = `<div class="card luck">
+    <div class="kicker">BIG LUCK (10-year cycles)</div>
+    <div class="luck-bar">${
+      list.map(({startAge,stem,branch,tenGod})=>{
+        const now = typeof age==='number' && age>=startAge && age<startAge+10;
+        return `<div class="luck-seg ${now?'luck-now':''}">
+          <div class="luck-title">Age ${startAge}–${startAge+9}</div>
+          <div class="luck-ganji">${(stem||'')}${(branch||'')}</div>
+          ${tenGod?`<div class="luck-god">${esc(tenGod)}</div>`:''}
+        </div>`;
+      }).join("")
+    }</div></div>`;
 }
 
-/* -----------------------------------
-   Extended Reading (6 sections) renderer
------------------------------------ */
-const SECTION_TITLES = {
-  traits: "Core Traits & Disposition (기본 성향·기질)",
-  balance: "Element Balance (오행 균형·보완)",
-  tenGods: "Ten Gods — Wealth/Career/Relationships (십신 기반 경향)",
-  luck: "Big Luck & Yearly Outlook (대운·세운 요약)",
-  wellness: "Health & Lifestyle Advice (건강·생활 조언)",
-  summary: "Overall Keywords & One-liner (전반 요약)"
-};
-
-function renderReadingExtended(out, meta={}){
+/* ---------- Hybrid Reading rendering ---------- */
+function renderReadingQuick(out, meta={}){
+  const { badge, share } = out.cards || {};
   const pill = meta.fallback ? `<span class="pill">Fallback</span>` : meta.mocked ? `<span class="pill">Mock</span>` : `<span class="pill ok">Live</span>`;
-  const sections = Array.isArray(out.sections) ? out.sections : [];
-
-  // Header summary card (title/bullets/one-liner)
-  let headerHTML = `
+  return `
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <div class="muted" style="font-size:12px;letter-spacing:.16em;text-transform:uppercase">READING</div>
-        <div>${pill}</div>
-      </div>
-      <h3 style="margin:8px 0 8px 0;font-size:20px;font-weight:800">${escapeHTML(out.title || 'Your Saju Reading')}</h3>
-      ${Array.isArray(out.bullets)&&out.bullets.length?`<ul style="padding-left:18px;margin:8px 0 0">${out.bullets.map(b=>`<li>${escapeHTML(b)}</li>`).join('')}</ul>`:''}
-      ${out.forecastOneLiner?`<div style="margin-top:8px;color:#cfe4ff;font-style:italic">${escapeHTML(out.forecastOneLiner)}</div>`:''}
-      ${Array.isArray(out.actions)&&out.actions[0]?`<div style="margin-top:10px;padding:10px 12px;background:rgba(73,211,154,.09);border:1px solid rgba(73,211,154,.25);border-radius:12px"><strong>Try:</strong> ${escapeHTML(out.actions[0])}</div>`:''}
-    </div>`;
-
-  // Section cards
-  const secHTML = sections.map(sec=>{
-    const title = sec.title || SECTION_TITLES[sec.id] || 'Insight';
-    const body = [sec.p1,sec.p2,sec.p3,sec.p4,sec.p5].filter(Boolean).map(escapeHTML).join(' ');
-    const list = Array.isArray(sec.list)&&sec.list.length? `<ul class="section-list">${sec.list.map(x=>`<li>${escapeHTML(x)}</li>`).join('')}</ul>` : '';
-    const chips = Array.isArray(sec.keywords)&&sec.keywords.length? `<div class="section-chipbar">${sec.keywords.map(k=>`<span class="section-chip">${escapeHTML(k)}</span>`).join('')}</div>` : '';
-    return `
-      <div class="section-card">
-        <div class="section-kicker">${escapeHTML(sec.kicker || 'SECTION')}</div>
-        <h4 class="section-title">${escapeHTML(title)}</h4>
-        ${body?`<div class="section-body">${body}</div>`:''}
-        ${list}
-        ${chips}
-      </div>`;
-  }).join('');
-
-  resultEl.innerHTML = headerHTML + (secHTML? `<div class="section-grid">${secHTML}</div>` : '');
-}
-
-/* fallback short renderer (only if no sections present) */
-function renderReadingFallback(output, meta={}){
-  const pill = meta.fallback ? `<span class="pill">Fallback</span>` : meta.mocked ? `<span class="pill">Mock</span>` : `<span class="pill ok">Live</span>`;
-  resultEl.innerHTML = `
-    <div class="card">
-      <div class="row" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <div class="muted" style="font-size:12px;letter-spacing:.16em;text-transform:uppercase">READING</div>
-        <div>${pill}</div>
-      </div>
-      <h3 style="margin:8px 0 8px 0;font-size:20px;font-weight:800">${escapeHTML(output.title || 'Your Saju Reading')}</h3>
-      <ul style="padding-left:18px;margin:8px 0 0">${(output.bullets||[]).map(b=>`<li>${escapeHTML(b)}</li>`).join('')}</ul>
-      ${output.forecastOneLiner?`<div style="margin-top:8px;color:#cfe4ff;font-style:italic">${escapeHTML(output.forecastOneLiner)}</div>`:''}
-      ${Array.isArray(output.actions)&&output.actions[0]?`<div style="margin-top:10px;padding:10px 12px;background:rgba(73,211,154,.09);border:1px solid rgba(73,211,154,.25);border-radius:12px"><strong>Try:</strong> ${escapeHTML(output.actions[0])}</div>`:''}
+      <div class="row" style="justify-content:space-between"><div class="kicker">READING</div><div>${pill}</div></div>
+      <h3 class="headline">${esc(out.title || 'Your Saju Reading')}</h3>
+      <ul>${(out.bullets||[]).map(b=>`<li>${esc(b)}</li>`).join('')}</ul>
+      <div class="one">${esc(out.forecastOneLiner || '')}</div>
+      ${Array.isArray(out.actions)&&out.actions[0]?`<div class="callout"><strong>Try:</strong> ${esc(out.actions[0])}</div>`:''}
+      ${badge||(share?.headline)?`<div class="row" style="margin-top:10px">${badge?`<span class="pill">${esc(badge)}</span>`:''}${share?.headline?`<span class="muted">${esc(share.headline)} — ${esc(share.sub||'')}</span>`:''}</div>`:''}
     </div>`;
 }
-
-/* master reading renderer */
-function renderReading(output, meta={}){
-  if (Array.isArray(output?.sections) && output.sections.length){
-    renderReadingExtended(output, meta);
-  } else {
-    renderReadingFallback(output, meta);
-  }
+function renderReadingDeep(out){
+  const secs = Array.isArray(out.sections) ? out.sections : [];
+  const secHTML = secs.map(s=>`
+    <div class="card section-card">
+      <div class="section-kicker">${esc(s.kicker||'SECTION')}</div>
+      <h3 class="section-title">${esc(s.title||'')}</h3>
+      ${[s.p1,s.p2,s.p3,s.p4,s.p5].filter(Boolean).map(p=>`<p class="section-p">${esc(p)}</p>`).join('')}
+      ${Array.isArray(s.list)&&s.list.length?`<ul class="section-list">${s.list.map(li=>`<li>${esc(li)}</li>`).join('')}</ul>`:''}
+      ${Array.isArray(s.keywords)&&s.keywords.length?`<div class="badges-row">${s.keywords.map(k=>`<span class="badge">${esc(k)}</span>`).join('')}</div>`:''}
+    </div>
+  `).join('');
+  return secHTML;
 }
 
-/* -----------------------------------
-   build birthDate/time + run
------------------------------------ */
-function getBirthDateISO(){
-  const y=yearSel.value, m=monthSel.value, d=daySel.value;
-  if(!y||!m||!d) return null;
-  return `${y}-${m}-${d}`; // YYYY-MM-DD
-}
-function getBirthTime(){
-  const hh = hourSel.value || '00';
-  const mm = minuteSel.value || '00';
-  return `${hh}:${mm}`;
-}
-
+/* ---------- Example & run ---------- */
 el('#fillExample').addEventListener('click', () => {
-  yearSel.value='1992'; monthSel.value='06'; updateDayOptions(); daySel.value='02';
-  hourSel.value='09'; minuteSel.value='00';
-  cityInput.value='Seoul';
-  saveForm();
+  el('#year').value = '1989';
+  el('#month').value = '08';
+  el('#day').value = '08';
+  el('#hour').value = '07';
+  el('#minute').value = '30';
+  el('#city').value = 'seoul';
 });
 
 runBtn.addEventListener('click', async () => {
-  const birthDateISO = getBirthDateISO();
-  const birthTime = getBirthTime();
-  const city = cityInput.value.trim();
-  if(!birthDateISO || !city){ setStatus('Please select birth year/month/day and enter city.', 'err'); return; }
+  const y = el('#year').value, m = el('#month').value, d = el('#day').value;
+  const birthDateISO = `${y}-${m}-${d}`;
+  const hh = el('#hour').value, mm = el('#minute').value;
+  const birthTime = `${hh}:${mm}`;
+  const city = el('#city').value.trim();
+  if (!birthDateISO || !city) { setStatus('Please fill birth date and city.', 'err'); return; }
 
   runBtn.disabled = true;
   setStatus('Step 1/3: Resolving city → timezone…');
 
   const geo = await fetchJSON(`/api/geo-timezone?city=${encodeURIComponent(city)}`);
   if (!geo.ok || !geo.data?.timezone) {
-    const hint = geo?.data?.error ? ` • ${geo.data.error}` : '';
-    setStatus(`Failed on Step 1 (geo-timezone).${hint} • Try a nearby big city (e.g., "Seoul").`, 'err');
+    setStatus(`Failed on Step 1 (geo-timezone). <details><summary>details</summary><pre>${esc(geo.raw||'')}</pre></details>`, 'err');
     runBtn.disabled=false; return;
   }
   const { lat, lng } = geo.data.location; const tzId = geo.data.timezone;
 
   setStatus('Step 2/3: Calculating pillars/elements…');
-  const calcPayload = { birthDateISO, birthTime, lat, lng, tzId, timeAccuracy: 'exact' };
+  const calcPayload = { birthDateISO, birthTime, lat, lng, tzId, timeAccuracy:'exact' };
   const calc = await fetchJSON('/api/calc', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(calcPayload) });
   if (!calc.ok || !calc.data?.data) {
-    const em = calc?.data?.error || 'Unknown error';
-    setStatus(`Failed on Step 2 (calc) • ${em}`, 'err'); runBtn.disabled=false; return;
+    setStatus(`Failed on Step 2 (calc). <details><summary>details</summary><pre>${esc(calc.raw||'')}</pre></details>`, 'err');
+    runBtn.disabled=false; return;
   }
 
-  const d = calc.data.data || {};
-  const { pillars, elements, tenGods, hiddenStems, interactions, luck } = d;
+  const dta = calc.data.data || {};
+  const { pillars, elements, tenGods, hiddenStems, interactions, luck } = dta;
 
+  // Render upstream blocks
   renderPillars(document.getElementById('pillars-root'), pillars, elements, tenGods, hiddenStems);
-  renderInteractions(document.getElementById('interactions-root'), interactions);
   renderLuck(document.getElementById('luck-root'), luck, birthDateISO);
 
   setStatus('Step 3/3: Generating English reading…');
   const read = await fetchJSON('/api/reading-generate', {
     method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({
-      pillars, elements, tenGods, interactions,
-      type:'summary', locale:'en-US',
-      length:'long', maxBullets:6,
-      wantSections:true  // 백엔드가 섹션을 생성하도록 힌트
-    })
+    body: JSON.stringify({ pillars, elements, tenGods, interactions, luck, age: (new Date().getFullYear() - +y) })
   });
   if (!read.ok || !read.data) {
-    const em = read?.data?.error || 'Unknown error';
-    setStatus(`Failed on Step 3 (reading) • ${em}`, 'err'); runBtn.disabled=false; return;
+    setStatus(`Failed on Step 3 (reading). <details><summary>details</summary><pre>${esc(read.raw||'')}</pre></details>`, 'err');
+    runBtn.disabled=false; return;
   }
+
+  // HYBRID RENDER
   const out = read.data.output || read.data.output;
-  renderReading(out, { fallback: read.data.fallback, mocked: read.data.mocked });
+  const mode = getMode();
+  let html = renderReadingQuick(out, { fallback: read.data.fallback, mocked: read.data.mocked });
+  if(mode === 'deep') html += renderReadingDeep(out);
+  resultEl.innerHTML = html;
 
   setStatus(`Done • tz: ${tzId} • lat:${lat.toFixed(4)}, lng:${lng.toFixed(4)}`, 'ok');
-
+  // Debug
   resultEl.insertAdjacentHTML('beforeend', `
     <details class="card" style="margin-top:12px">
       <summary>Debug JSON (geo/calc/reading)</summary>
-      <pre>geo-timezone\n${JSON.stringify(geo.data, null, 2)}</pre>
-      <pre>calc\n${JSON.stringify(calc.data, null, 2)}</pre>
-      <pre>reading\n${JSON.stringify(read.data, null, 2)}</pre>
+      <pre>geo-timezone\n${esc(JSON.stringify(geo.data, null, 2))}</pre>
+      <pre>calc\n${esc(JSON.stringify(calc.data, null, 2))}</pre>
+      <pre>reading\n${esc(JSON.stringify(read.data, null, 2))}</pre>
     </details>
   `);
 
-  saveForm();
-  runBtn.disabled=false;
+  runBtn.disabled = false;
 });
-
-/* -----------------------------------
-   boot
------------------------------------ */
-populateSelects();
-loadForm();
-if(!yearSel.value){ const n=new Date(); yearSel.value=n.getFullYear(); monthSel.value=pad2(n.getMonth()+1); updateDayOptions(); daySel.value=pad2(n.getDate()); hourSel.value=pad2(n.getHours()); minuteSel.value='00'; }
 </script>
 </body>
 </html>
