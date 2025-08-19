@@ -8,8 +8,6 @@
     "lunar-javascript": "^1.6.13"
   },
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
+    "start": "node server.js"
   }
 }
