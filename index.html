@@ -15,17 +15,19 @@ body{margin:0;background:linear-gradient(120deg,#0b1220,#0e2342);color:var(--txt
 .wrap{max-width:1060px;margin:28px auto 80px;padding:0 18px}
 .h1{font-size:26px;font-weight:800;margin:6px 0 8px}
 .sub{color:var(--muted);margin-bottom:18px}
+
+/* Card */
 .card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;box-shadow:0 10px 40px rgba(0,0,0,.35);margin-top:12px}
 .section-title{font-size:12px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;margin:0 0 8px}
 .row{display:flex;gap:10px;align-items:center}
-.grid2{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 select,button,input{background:#0b1426;color:var(--txt);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 12px;outline:none}
 select:focus,input:focus{border-color:var(--accent);box-shadow:0 0 0 3px #66b3ff33}
 button{background:linear-gradient(135deg,#4da3ff,#66b3ff);color:#06101d;font-weight:800;border:none;cursor:pointer}
 button[disabled]{opacity:.6;cursor:not-allowed}
 .help{color:var(--muted);font-size:13px;margin-top:6px}
 
-/* Pillars */
+/* Pillars UI */
 .pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 .pcard{border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:10px}
 .ptitle{font-size:12px;color:#a9bce3;margin-bottom:6px;text-align:center}
@@ -35,41 +37,42 @@ button[disabled]{opacity:.6;cursor:not-allowed}
 .earth{background:#f59e0b;color:#111}.metal{background:#e5e7eb;color:#111;border-color:#cbd5e1}
 .water{background:#06b6d4;color:#fff}
 
-/* Luck */
-.luckbar{display:flex;gap:8px;overflow:auto}
-.lseg{flex:1;min-width:120px;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px;background:rgba(255,255,255,.05)}
+/* Big Luck */
+.luckbar{display:flex;gap:8px}
+.lseg{flex:1;min-width:84px;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px;background:rgba(255,255,255,.05)}
 .lh{font-size:12px;opacity:.85;margin-bottom:2px}
 .lgan{font-weight:800}
 .lnow{outline:2px solid var(--accent);box-shadow:0 0 0 4px #66b3ff33}
 
-/* Reading blocks */
+/* Reading (6 sections) */
 .block{background:#14213d;border:1px solid #2c4168;border-radius:10px;padding:12px;margin-top:10px}
-.rtitle{color:#a9d6ff;font-weight:800;margin-bottom:6px}
+.btitle{color:#a9d6ff;font-weight:800;margin-bottom:6px}
 .bul{padding-left:18px;margin:6px 0}
 .call{margin-top:10px;padding:10px 12px;background:#49d39a18;border:1px solid #49d39a55;border-radius:10px}
 
-/* Fortunes (1x8 list) */
+/* Specific Fortunes (1×8) */
 .fgrid{display:grid;grid-template-columns:1fr;gap:10px}
 .ftile{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);border-radius:12px;padding:12px}
 .ftop{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.fleft{display:flex;align-items:center;gap:12px}
-.ficon{font-size:26px}
-.fname{font-weight:800}
+.fleft{display:flex;align-items:center;gap:10px}
+.ficon{font-size:24px}
+.fname{font-weight:700}
 .fhint{font-size:12px;color:var(--muted)}
 .fcontent{margin-top:10px;display:none}
 .closewrap{display:flex;justify-content:flex-end}
-.closebtn{margin-top:14px;background:#22314c;border:1px solid #2c4168;color:#cfe2ff;padding:8px 10px;border-radius:8px}
+.closebtn{margin-top:12px;background:#22314c;border:1px solid #2c4168;color:#cfe2ff}
 
-/* Chat */
-.chat{background:#0f1a30;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;height:360px;overflow:auto}
-.msg{max-width:78%;padding:10px 12px;border-radius:10px;line-height:1.45;font-size:14px;white-space:pre-wrap}
+/* Chat (간단 유지) */
+.chat{background:#0f1a30;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;height:220px;overflow:auto}
+.msg{max-width:78%;padding:10px 12px;border-radius:10px;line-height:1.45;font-size:14px}
 .me{align-self:flex-end;background:#3a86ff;color:#081326}
 .bot{align-self:flex-start;background:#14213d;border:1px solid #2c4168}
-.inputrow{display:flex;gap:8px;margin-top:8px;align-items:center}
+.inputrow{display:flex;gap:8px;margin-top:8px}
 .text{flex:1}
 .small{font-size:12px;color:var(--muted)}
 .err{color:var(--err)}
 .ok{color:var(--ok)}
+@media(min-width:760px){.grid2{grid-template-columns:repeat(5,1fr)}}
 </style>
 </head>
 <body>
@@ -141,54 +144,86 @@ button[disabled]{opacity:.6;cursor:not-allowed}
 const Q = (s)=>document.querySelector(s);
 const S = (s)=>document.querySelectorAll(s);
 const statusEl = Q('#status'), dbgEl=Q('#dbg');
-const STEM_ELEM = {甲:"wood",乙:"wood",丙:"fire",丁:"fire",戊:"earth",己:"earth",庚:"metal",辛:"metal",壬:"water",癸:"water"};
-const BRANCH_ELEM={子:"water",丑:"earth",寅:"wood",卯:"wood",辰:"earth",巳:"fire",午:"fire",未:"earth",申:"metal",酉:"metal",戌:"earth",亥:"water"};
-const COLOR = {wood:"wood",fire:"fire",earth:"earth",metal:"metal",water:"water"};
-window.__currentChart = null; // 여기에 최신 차트를 저장
 
 function setStatus(msg,type=''){ statusEl.textContent=msg; statusEl.className='help '+(type||''); }
-async function fetchJSON(url,opt){ const r=await fetch(url,opt); const t=await r.text(); try{ return {ok:r.ok,status:r.status,data:JSON.parse(t),raw:t}; }catch{ return {ok:r.ok,status:r.status,data:null,raw:t}; } }
-function yyyy(n){return String(n).padStart(4,'0')} function dd(n){return String(n).padStart(2,'0')}
-function age(b){const d=new Date(b+"T00:00:00");const n=new Date();let a=n.getFullYear()-d.getFullYear();const m=n.getMonth()-d.getMonth(); if(m<0||(m===0&&n.getDate()<b.getDate())) a--; return a;}
+async function fetchJSON(url,opt){
+  try{
+    const r=await fetch(url,opt); const txt=await r.text();
+    let data=null; try{ data=JSON.parse(txt) }catch{}
+    return { ok:r.ok && !!data, status:r.status, data, raw:txt };
+  }catch(e){ return { ok:false, status:0, data:null, raw:String(e&&e.message||e) }; }
+}
+function yyyy(n){return String(n).padStart(4,'0')}
+function dd(n){return String(n).padStart(2,'0')}
+function age(b){const d=new Date(b+"T00:00:00");const n=new Date();let a=n.getFullYear()-d.getFullYear();const m=n.getMonth()-d.getMonth(); if(m<0||(m===0&&n.getDate()<d.getDate())) a--; return a;}
 
 /* ===== selects ===== */
 (function initSelects(){
   const y=Q('#yy'), m=Q('#mm'), d=Q('#dd'), h=Q('#hh'), mi=Q('#min');
-  for(let i=1940;i<=2026;i++){ y.add(new Option(i,i)); }
-  for(let i=1;i<=12;i++){ m.add(new Option(dd(i),dd(i))); }
-  for(let i=1;i<=31;i++){ d.add(new Option(dd(i),dd(i))); }
-  for(let i=0;i<24;i++){ h.add(new Option(dd(i),dd(i))); }
-  for(let i=0;i<60;i+=5){ mi.add(new Option(dd(i),dd(i))); }
+  for(let i=1940;i<=2025;i++){ y.appendChild(new Option(i,i)); }
+  for(let i=1;i<=12;i++){ m.appendChild(new Option(dd(i),dd(i))); }
+  for(let i=1;i<=31;i++){ d.appendChild(new Option(dd(i),dd(i))); }
+  for(let i=0;i<24;i++){ h.appendChild(new Option(dd(i),dd(i))); }
+  for(let i=0;i<60;i+=5){ mi.appendChild(new Option(dd(i),dd(i))); }
   y.value='1989'; m.value='10'; d.value='20'; h.value='06'; mi.value='00';
 })();
+</script>
 
-/* ===== renderers ===== */
-function renderPillars(pillars, elements, tenGods){
+<script>
+/* ===== lightweight Markdown (###, bullets, **bold**) ===== */
+function md(s=''){
+  if(!s) return '';
+  let t = String(s).replace(/\r\n/g,'\n').trim();
+  t = t.replace(/^### +(.+)$/gm,'<div class="btitle">$1</div>')
+       .replace(/^## +(.+)$/gm,'<div class="btitle">$1</div>')
+       .replace(/^# +(.+)$/gm,'<div class="btitle">$1</div>');
+  t = t.split(/\n\n+/).map(block=>{
+    if (/^(\-|\u2022) /.test(block.trim())) {
+      return '<ul class="bul">' + block.split('\n')
+        .map(l=>l.replace(/^(\-|\u2022) +/, ''))
+        .map(x=>`<li>${x}</li>`).join('') + '</ul>';
+    }
+    return `<p>${block}</p>`;
+  }).join('');
+  return t.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+}
+</script>
+
+<script>
+/* ===== pillars & luck renderers ===== */
+const STEM_ELEM = {甲:"wood",乙:"wood",丙:"fire",丁:"fire",戊:"earth",己:"earth",庚:"metal",辛:"metal",壬:"water",癸:"water"};
+const BRANCH_ELEM={子:"water",丑:"earth",寅:"wood",卯:"wood",辰:"earth",巳:"fire",午:"fire",未:"earth",申:"metal",酉:"metal",戌:"earth",亥:"water"};
+function colorCls(ch){ const e = STEM_ELEM[ch] || BRANCH_ELEM[ch] || 'wood'; return e; }
+
+function renderPillars(pillars, tenGods){
   const root=Q('#pillars'); root.innerHTML='';
   const order=['hour','day','month','year'];
   order.forEach(k=>{
     const p=pillars?.[k]; if(!p) return;
-    const s=COLOR[STEM_ELEM[p.stem]]||'wood';
-    const b=COLOR[BRANCH_ELEM[p.branch]]||'earth';
-    const god=(tenGods?.byPillar?.[k]||tenGods?.[k]||'');
+    const god = (tenGods?.byPillar?.[k] || tenGods?.[k] || '');
     const div=document.createElement('div');
     div.className='pcard';
+    const title = k==='day'?'Day Pillar (일주) · Day Master'
+                : k==='hour'?'Hour Pillar (시주)'
+                : k==='month'?'Month Pillar (월주)'
+                : 'Year Pillar (년주)';
     div.innerHTML=`
-      <div class="ptitle">${k==='day'?'Day Pillar (일주) · Day Master':(k==='hour'?'Hour Pillar (시주)':k==='month'?'Month Pillar (월주)':'Year Pillar (년주)')}</div>
-      <div class="box ${s}">${p.stem||'?'}</div>
-      <div class="box ${b}" style="margin-top:8px">${p.branch||'?'}</div>
+      <div class="ptitle">${title}</div>
+      <div class="box ${colorCls(p.stem)}">${p.stem||'?'}</div>
+      <div class="box ${colorCls(p.branch)}" style="margin-top:8px">${p.branch||'?'}</div>
       ${god?`<div class="subline">${god}</div>`:''}
     `;
     root.appendChild(div);
   });
 }
+
 function renderLuck(luck, birthISO){
   const root=Q('#luck'); root.innerHTML='';
   const list=luck?.bigLuck||[]; if(!list.length) return;
   const a=age(birthISO);
   list.forEach(({startAge,stem,branch,tenGod})=>{
     const seg=document.createElement('div');
-    const now = typeof a==='number' && a>=startAge && a<startAge+10;
+    const now= typeof a==='number' && a>=startAge && a<startAge+10;
     seg.className='lseg '+(now?'lnow':'');
     seg.innerHTML=`<div class="lh">Age ${startAge}–${startAge+9}</div>
       <div class="lgan">${stem||''}${branch||''}</div>
@@ -196,33 +231,59 @@ function renderLuck(luck, birthISO){
     root.appendChild(seg);
   });
 }
-function hEsc(s){return (s||'').replace(/[&<>"]/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]))}
-function renderReading6(sections){
+</script>
+
+<script>
+/* ===== 6‑section reading (robust) ===== */
+function renderReading6(sectionsIn){
   const root=Q('#reading'); root.innerHTML='';
-  const order=['core','balance','tengods','luck','wellness','summary'];
-  const titleMap={
-    core:'Your Unique Traits',
-    balance:'Creating Balance in Life',
-    tengods:'Understanding Your Ten Gods',
-    luck:'Your Luck Cycle',
-    wellness:'Wellness Suggestions',
-    summary:'Summary of Insights'
-  };
-  order.forEach(k=>{
-    const sec=sections?.[k]; if(!sec) return;
-    const div=document.createElement('div');
-    div.className='block';
-    div.innerHTML=`<div class="rtitle">${titleMap[k]||k}</div>
-      ${sec.text?`<div>${hEsc(sec.text)}</div>`:''}
-      ${Array.isArray(sec.bullets)?`<ul class="bul">${sec.bullets.map(x=>`<li>${hEsc(x)}</li>`).join('')}</ul>`:''}
-      ${sec.try?`<div class="call"><b>Try:</b> ${hEsc(sec.try)}</div>`:''}
+  const order = [
+    ['core','Your Unique Traits'],
+    ['balance','Creating Balance in Life'],
+    ['tengods','Understanding Your Ten Gods'],
+    ['luck','Your Luck Cycle'],
+    ['wellness','Wellness Suggestions'],
+    ['summary','Summary of Insights'],
+  ];
+  function pick(sec){
+    if(!sec) return { text:'', bullets:[], try:'' };
+    if (sec.text || sec.bullets || sec.try) return sec;
+    if (typeof sec === 'string') return { text: sec };
+    if (sec.intro || sec.details || sec.tips){
+      return { text: [sec.intro,sec.details,sec.tips].filter(Boolean).join('\n\n') };
+    }
+    if (Array.isArray(sec.blocks)){
+      const joined = sec.blocks.map(b=>`${b.title?`### ${b.title}\n`:''}${b.body||b.text||''}`).join('\n\n');
+      return { text: joined };
+    }
+    return { text:'' };
+  }
+  const isObj = sectionsIn && !Array.isArray(sectionsIn);
+  const blocks = Array.isArray(sectionsIn) ? sectionsIn : null;
+
+  order.forEach(([key, title], idx)=>{
+    let sec;
+    if (isObj) sec = pick(sectionsIn[key]);
+    else if (blocks) sec = pick(blocks[idx]);
+    else sec = { text:'' };
+
+    const div=document.createElement('div'); div.className='block';
+    const bodyHtml = (sec.text||sec.html) ? md(sec.text||sec.html) : '';
+    const bulletsHtml = Array.isArray(sec.bullets)&&sec.bullets.length
+      ? `<ul class="bul">${sec.bullets.map(x=>`<li>${x}</li>`).join('')}</ul>`:'';
+    div.innerHTML = `
+      <div class="btitle">${title}</div>
+      <div>${bodyHtml}${bulletsHtml}</div>
+      ${sec.try?`<div class="call"><b>Try:</b> ${sec.try}</div>`:''}
     `;
     root.appendChild(div);
   });
 }
+</script>
 
-/* Fortunes */
-const TOPICS=[
+<script>
+/* ===== Specific Fortunes (grid + expand) ===== */
+const TOPICS = [
   {key:'wealth',icon:'💰',name:'Wealth & Money',hint:'Income, savings, timing.'},
   {key:'love',icon:'❤️',name:'Love & Relationships',hint:'Compatibility, timing.'},
   {key:'career',icon:'🧰',name:'Career & Growth',hint:'Fit, leadership vs craft.'},
@@ -232,11 +293,12 @@ const TOPICS=[
   {key:'learning',icon:'📘',name:'Learning & Skills',hint:'What to study.'},
   {key:'timing',icon:'⏱️',name:'Timing & Windows',hint:'Short‑term chances.'},
 ];
+
 function mountFortuneGrid(){
   const g=Q('#fgrid'); g.innerHTML='';
   TOPICS.forEach(t=>{
     const card=document.createElement('div'); card.className='ftile'; card.dataset.key=t.key;
-    card.innerHTML=`
+    card.innerHTML = `
       <div class="ftop">
         <div class="fleft">
           <div class="ficon">${t.icon}</div>
@@ -251,65 +313,75 @@ function mountFortuneGrid(){
     `;
     g.appendChild(card);
   });
-  S('.see').forEach(btn=>{
-    btn.addEventListener('click',()=>expandTopic(btn.closest('.ftile')));
-  });
+  g.querySelectorAll('.see').forEach(b=>b.addEventListener('click',()=>expandTopic(b.closest('.ftile'))));
 }
+
 async function expandTopic(card){
-  const key=card.dataset.key, btn=card.querySelector('.see'), content=card.querySelector('.fcontent');
+  const key=card.dataset.key;
+  const btn=card.querySelector('.see');
+  const content=card.querySelector('.fcontent');
   btn.disabled=true; btn.textContent='Loading…';
   try{
-    const res=await fetchJSON('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ topic:key, chart: window.__currentChart })
-    });
-    if(!res.ok||!res.data?.ok){ throw new Error(res.data?.error||'OpenAI request failed'); }
-    const o = res.data.output || {};
-    content.innerHTML=`
-      <div class="block"><div class="rtitle">Overview</div>${hEsc(o.overview||'')}</div>
-      ${o.phases?`<div class="block"><div class="rtitle">Key Phases</div>${hEsc(o.phases)}</div>`:''}
-      ${o.watch?`<div class="block"><div class="rtitle">Watch Out</div>${hEsc(o.watch)}</div>`:''}
-      ${o.tips?`<div class="block"><div class="rtitle">Tips</div>${hEsc(o.tips)}</div>`:''}
-      <div class="closewrap"><button class="closebtn">Close</button></div>
-    `;
+    const body = { topic:key, mode:'fortune' };
+    if (window.__chartCtx) body.ctx = window.__chartCtx;
+
+    const r = await fetchJSON('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok || (!r.data?.ok && !r.data?.output)) throw 0;
+    const o = r.data.output || r.data.data || {};
+
+    const blocks=[];
+    if (o.overview||o.summary) blocks.push({title:'Overview', body:o.overview||o.summary});
+    if (o.phases||o.keyPhases) blocks.push({title:'Key Phases', body:o.phases||o.keyPhases});
+    if (o.watch||o.watchOut) blocks.push({title:'Watch Out', body:o.watch||o.watchOut});
+    if (o.tips) blocks.push({title:'Tips', body:o.tips});
+    if (Array.isArray(o.blocks)&&o.blocks.length){
+      o.blocks.forEach(b=>blocks.push({title:b.title, body:b.body||b.text||''}));
+    }
+    if (!blocks.length && (o.html||o.text)) blocks.push({title:'Overview', body:o.html||o.text});
+
+    if (!blocks.length){
+      content.innerHTML = `<div class="block">No insight returned. Try again.</div>`;
+    }else{
+      content.innerHTML = blocks.map(b=>`
+        <div class="block">
+          ${b.title?`<div class="btitle">${b.title}</div>`:''}
+          <div>${md(b.body||'')}</div>
+        </div>
+      `).join('') + `<div class="closewrap"><button class="closebtn">Close</button></div>`;
+    }
     content.style.display='block';
     btn.style.display='none';
-    content.querySelector('.closebtn').addEventListener('click',()=>{
-      content.style.display='none'; btn.style.display='inline-block';
-    });
+    content.querySelector('.closebtn').addEventListener('click',()=>{content.style.display='none'; btn.style.display='inline-block';});
   }catch(e){
-    content.innerHTML=`<div class="block err">Network / Server error<br><span class="small">${hEsc(String(e.message||e))}</span></div>`;
+    content.innerHTML=`<div class="block err">Network error — please try again.</div>`;
     content.style.display='block';
     setTimeout(()=>{content.style.display='none'},2200);
   }finally{
     btn.disabled=false; btn.textContent='See insights';
   }
 }
+</script>
 
-/* Chat */
+<script>
+/* ===== Ask (간단) ===== */
 function addMsg(text,who='bot'){
-  const p=document.createElement('div');
-  p.className='msg '+(who==='me'?'me':'bot');
-  p.textContent=text;
-  Q('#chat').appendChild(p);
-  const box=Q('#chat'); box.scrollTop=box.scrollHeight;
+  const p=document.createElement('div'); p.className='msg '+(who==='me'?'me':'bot'); p.innerHTML=md(text);
+  const box=Q('#chat'); box.appendChild(p); box.scrollTop=box.scrollHeight;
 }
 async function ask(q){
   addMsg(q,'me');
   try{
-    const res=await fetchJSON('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ q, chart: window.__currentChart })
-    });
-    if(!res.ok||!res.data?.ok){
-      addMsg("I couldn’t quite catch that. Could you rephrase your question in one clear sentence? 🙂",'bot');
-      return;
-    }
-    addMsg(res.data.output||"Here’s my take based on your chart.",'bot');
-  }catch(e){
-    addMsg("⚠️ Network error — please try again.",'bot');
-  }
+    const body={ q, mode:'chat' };
+    if (window.__chartCtx) body.ctx = window.__chartCtx;
+    const r=await fetchJSON('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok||(!r.data?.ok && !r.data?.output)){ addMsg("I couldn’t quite catch that. Could you rephrase your question? 🙂"); return; }
+    addMsg(r.data.output||"Here’s my take based on your chart.");
+  }catch{ addMsg("⚠️ Network error — please try again."); }
 }
+</script>
 
-/* ===== main ===== */
+<script>
+/* ===== main flow ===== */
 Q('#fill').addEventListener('click',()=>{
   Q('#yy').value='1989'; Q('#mm').value='10'; Q('#dd').value='20'; Q('#hh').value='06'; Q('#min').value='00';
   Q('#city').value='seoul';
@@ -334,33 +406,31 @@ Q('#run').addEventListener('click', async ()=>{
   const calc=await fetchJSON('/api/calc',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({birthDateISO,birthTime,lat,lng,tzId,timeAccuracy:'exact'})});
   if(!calc.ok||!calc.data?.data){ setStatus('Failed on Step 2 (calc).','err'); return; }
-  const d=calc.data.data||{}; const {pillars,elements,tenGods,hiddenStems,interactions,luck}=d;
-  renderPillars(pillars,elements,tenGods);
+  const d=calc.data.data||{}; const {pillars,elements,tenGods,interactions,luck}=d;
+
+  renderPillars(pillars,tenGods);
   renderLuck(luck,birthDateISO);
 
-  setStatus('Step 3/3: Generating reading…');
+  // chart context 저장 → fortunes / ask가 활용
+  window.__chartCtx = { pillars, elements, tenGods, luck, birthDateISO, tzId, lat, lng };
+
+  setStatus('Step 3/3: Generating 6‑section reading…');
   const read=await fetchJSON('/api/reading-generate',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({pillars,elements,tenGods,interactions,type:'summary',locale:'en-US',length:'long',maxBullets:6})});
   if(!read.ok||!read.data?.output){ setStatus('Failed on Step 3 (reading).','err'); return; }
 
-  // render reading
-  const sections = read.data.output?.sections || {};
-  renderReading6(sections);
-
-  // 최신 차트를 전역에 저장 → Ask/카드에서 그대로 사용
-  window.__currentChart = {
-    meta: { birthDateISO, birthTime, city, tzId },
-    pillars, elements, tenGods, hiddenStems, interactions, luck,
-    reading: { sections }
-  };
+  // 유연 파서로 렌더
+  renderReading6(read.data.output?.sections||read.data.output);
 
   setStatus(`Done • tz: ${tzId} • lat:${lat.toFixed(4)}, lng:${lng.toFixed(4)}`,'ok');
 
-  // rebuild fortunes grid (안전)
+  // topics grid 재구성(컨텍스트 반영)
   mountFortuneGrid();
 
   // debug
-  dbgEl.textContent = 'geo-timezone\n'+JSON.stringify(geo.data,null,2)+'\n\ncalc\n'+JSON.stringify(calc.data,null,2)+'\n\nreading\n'+JSON.stringify(read.data,null,2);
+  dbgEl.textContent = 'geo-timezone\n'+JSON.stringify(geo.data,null,2)
+    +'\n\ncalc\n'+JSON.stringify(calc.data,null,2)
+    +'\n\nreading\n'+JSON.stringify(read.data,null,2);
 });
 
 /* boot */
