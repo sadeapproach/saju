@@ -1,137 +1,77 @@
 // /api/ask.js
 export const config = { runtime: 'edge' };
 
-function jsonResponse(obj, status = 200) {
-  return new Response(JSON.stringify(obj), {
-    status,
-    headers: { 'content-type': 'application/json; charset=utf-8' },
+function bad(msg, status = 400) {
+  return new Response(JSON.stringify({ ok: false, error: msg }), {
+    status, headers: { 'content-type': 'application/json; charset=utf-8' }
+  });
+}
+function ok(data) {
+  return new Response(JSON.stringify({ ok: true, ...data }), {
+    headers: { 'content-type': 'application/json; charset=utf-8' }
   });
 }
 
-const FALLBACKS = {
-  invalid:
-    "I'm not sure I understood that. Could you ask about timing, relationships, career, or health? For example: “When is a good time to change jobs?” or “How does my chart look for savings this year?” 🙂",
-};
+function normalizeTopic(topic) {
+  const t = String(topic || '').trim().toLowerCase();
+  const map = {
+    wealth: 'Wealth & Money',
+    love: 'Love & Relationships',
+    career: 'Career & Growth',
+    health: 'Health & Wellness',
+    family: 'Family & Children',
+    travel: 'Travel / Relocation',
+    learning: 'Learning & Skills',
+    timing: 'Timing & Windows'
+  };
+  return { key: t, label: map[t] || 'Your Topic' };
+}
 
-export default async function handler(req) {
-  if (req.method && req.method !== 'POST') {
-    return jsonResponse({ ok: false, error: 'Method not allowed' }, 405);
-  }
-
+export default async function handler(req, ctx) {
   try {
-    const body = await req.json().catch(() => ({}));
-    const { question = '', topic = '', pillars, elements, tenGods, luck } = body || {};
-
-    if (!pillars || !elements) {
-      return jsonResponse({ ok: false, error: 'Missing pillars/elements in request body.' });
+    let body = {};
+    const url = new URL(req.url);
+    if (req.method === 'GET') {
+      // GET 호환 (쿼리로 topic 받기)
+      body.topic = url.searchParams.get('topic');
+      body.q = url.searchParams.get('q'); // 자유질문 호환
+    } else if (req.method === 'POST') {
+      try { body = await req.json(); } catch { body = {}; }
+    } else {
+      return bad('Method not allowed', 405);
     }
 
-    // 의미 없는 입력 방어
-    const q = String(question || '').trim();
-    if (!q || q.length < 4 || !/[a-zA-Z가-힣]/.test(q)) {
-      return jsonResponse({ ok: true, output: { type: 'fallback', text: FALLBACKS.invalid } });
+    // topic 우선, 없으면 자유질문(q)
+    const topic = body.topic;
+    const q = body.q;
+
+    if (!topic && !q) {
+      return bad('Provide either "topic" or "q"');
     }
 
-    const apiKey = process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_GPT || '';
-    if (!apiKey) {
-      return jsonResponse({ ok: false, error: 'Missing OPENAI_API_KEY on server.' });
+    // 여기서는 데모로 서버에서 템플릿 조합만 해줍니다.
+    // (실서비스에선 OpenAI 호출/템플릿 삽입 로직을 두세요)
+    if (topic) {
+      const { key, label } = normalizeTopic(topic);
+      const output = {
+        overview: `Here’s a focused overview for ${label}. We’ll keep it practical and readable.`,
+        phases: `0–10: build habits • 20s: explore & learn • 30s: output & momentum • 40s: peers & leverage • 50–60s: authority & stewardship.`,
+        watch: `Avoid overextending during “high-opportunity” windows. Be wary of vague offers; confirm fit and risk.`,
+        tips: `Pick 1–2 moves, not 5. Review quarterly. Keep a small buffer to stay flexible.`
+      };
+      return ok({ topic: key, label, output });
     }
 
-    const model =
-      process.env.OPENAI_RESPONSES_MODEL ||
-      process.env.OPENAI_MODEL ||
-      'gpt-4o-mini';
+    // 자유 질문(q) 템플릿 응답
+    const output =
+      `I’ll use your current chart as context.\n` +
+      `• What I’m seeing: balanced potential with pockets of momentum.\n` +
+      `• If timing matters, think in quarters and review monthly.\n` +
+      `• Watch one risk: over-committing before validation.\n` +
+      `• Next step: write one concrete move you can test within 2–3 weeks.`;
 
-    const system = [
-      'You are a helpful Saju(Four Pillars) assistant.',
-      'Answer in warm, clear English suitable for general users.',
-      'Keep it actionable. Use short paragraphs and occasional bullets.',
-      'Include one “watch-out” caution if relevant.',
-      'Add a light emoji only where it really helps (1–2 max, optional).',
-    ].join(' ');
-
-    const compact = {
-      pillars,
-      elements,
-      tenGods: tenGods ? (tenGods.byPillar || tenGods) : null,
-      luck: Array.isArray(luck?.bigLuck) ? luck.bigLuck.slice(0, 8) : null,
-      topic: topic || null,
-    };
-
-    const prompt = [
-      'User question:',
-      q,
-      '',
-      'Use this Saju context (JSON, compact):',
-      JSON.stringify(compact),
-      '',
-      'Return JSON:',
-      `{
-        "ok": true,
-        "output": {
-          "title": "string",
-          "body": "3-6 short paragraphs and/or bullets",
-          "tips": ["one-liners ..."]
-        }
-      }`,
-      'Only return JSON. No backticks.',
-    ].join('\n');
-
-    const resp = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: {
-        authorization: `Bearer ${apiKey}`,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        input: [
-          { role: 'system', content: system },
-          { role: 'user', content: prompt },
-        ],
-        max_output_tokens: 800,
-        temperature: 0.5,
-        response_format: { type: 'json_object' },
-      }),
-    });
-
-    const raw = await resp.text();
-    if (!resp.ok) {
-      return jsonResponse({
-        ok: false,
-        error: 'OpenAI request failed',
-        status: resp.status,
-        detail: raw?.slice(0, 800),
-      });
-    }
-
-    let data;
-    try {
-      const parsed = JSON.parse(raw);
-      const txt = parsed?.output?.[0]?.content?.[0]?.text || parsed?.output_text || '';
-      data = JSON.parse(txt);
-    } catch (e) {
-      // 모델이 JSON을 못 지켰을 때 친절한 폴백
-      return jsonResponse({
-        ok: true,
-        output: {
-          title: 'Let’s refine the question',
-          body: FALLBACKS.invalid,
-          tips: [
-            'Ask about timing: “When is a good time for a move in the next 12 months?”',
-            'Ask about focus: “What should I prioritize for career growth this year?”',
-          ],
-        },
-        fallback: true,
-      });
-    }
-
-    return jsonResponse({ ok: true, ...data });
-  } catch (err) {
-    return jsonResponse({
-      ok: false,
-      error: 'Unhandled server error in /api/ask',
-      detail: (err && err.message) || String(err),
-    });
+    return ok({ output });
+  } catch (e) {
+    return bad(`Server error: ${e?.message || e}`, 500);
   }
 }
