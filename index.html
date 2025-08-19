@@ -301,8 +301,14 @@ async function expandTopic(card){
   const key=card.dataset.key, btn=card.querySelector('.see'), content=card.querySelector('.fcontent');
   btn.disabled=true; btn.textContent='Loading…';
   try{
-    const r=await fetchJSON(`/api/ask?topic=${encodeURIComponent(key)}`);
-    if(!r.ok||!r.data?.ok){ renderNetworkError(content, key, r); content.style.display='block'; return; }
+    const r=await fetchJSON('/api/ask',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ topic:key })
+    });
+    if(!r.ok||!r.data?.ok){
+      renderNetworkError(content, key, r); content.style.display='block'; return;
+    }
     const o=r.data.output||{};
     content.innerHTML=`
       <div class="block"><div class="btitle">Overview</div>${hEsc(o.overview||'')}</div>
