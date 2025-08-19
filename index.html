@@ -64,23 +64,27 @@ button[disabled]{opacity:.6; cursor:not-allowed}
 .sec-head{font-size:14px; font-weight:800; margin:0 0 6px; color:#fff}
 .sec-body{font-size:14px; line-height:1.6; white-space:pre-wrap; color:#fff}
 
-/* topics (1x8, expand in‑card) */
+/* topics (1x8, collapsed = 내용 높이만큼) */
 .topic-grid{display:grid; grid-template-columns:1fr; gap:10px}
-.topic-card{border:1px solid var(--line); background:#0f1a30; border-radius:14px; padding:10px 12px;
-  display:flex; align-items:center; justify-content:space-between; aspect-ratio:3/1; position:relative; overflow:hidden}
-.topic-card.expanded{aspect-ratio:auto; align-items:flex-start; padding-bottom:14px}
-.topic-card .left{display:flex; align-items:center; gap:10px}
-.topic-emoji{font-size:18px}
+.topic-card{
+  border:1px solid var(--line); background:#0f1a30; border-radius:14px; padding:10px 12px;
+  display:flex; align-items:center; justify-content:space-between; position:relative; overflow:hidden
+}
+.topic-card.expanded{align-items:flex-start; padding-bottom:14px}
+.topic-card .left{display:flex; align-items:center; gap:12px}
+.topic-emoji{font-size:36px} /* 아이콘 2배 */
 .topic-title{font-weight:800}
 .topic-sub{font-size:12px; color:var(--muted)}
 .topic-cta{font-weight:800; color:#06101d; background:linear-gradient(135deg,#4da3ff,#66b3ff); padding:8px 10px; border-radius:10px; width:auto}
+.topic-card.expanded .topic-cta{display:none} /* 펼쳐지면 숨김 */
 .topic-content{display:none; width:100%; margin-top:10px}
 .topic-card.expanded .topic-content{display:block}
 .tc-block{border:1px solid #213250; background:#0c162e; border-radius:12px; padding:10px; margin-top:8px}
 .tc-title{font-weight:800; margin-bottom:6px}
+.topic-close{position:absolute; right:12px; bottom:12px; font-weight:800; padding:8px 10px; border-radius:10px; background:#22314c; color:#cfe2ff; border:1px solid #2c4168}
 
-/* chat (Ask) — iMessage style */
-.chat{border:1px solid var(--line); background:#0e1932; border-radius:16px; padding:12px; min-height:260px; display:flex; flex-direction:column; overflow:auto}
+/* chat (Ask) — iMessage style + 고정 높이/스크롤) */
+.chat{border:1px solid var(--line); background:#0e1932; border-radius:16px; padding:12px; height:360px; display:flex; flex-direction:column; overflow-y:auto}
 .msg{max-width:80%; padding:10px 12px; border-radius:18px; margin:6px 0; line-height:1.5; white-space:pre-wrap}
 .me{margin-left:auto; background:#1b3a70; color:#e8f0ff; border-bottom-right-radius:4px}
 .ai{margin-right:auto; background:#0f243f; color:#ffffff; border-bottom-left-radius:4px}
@@ -190,7 +194,7 @@ async function fetchJSON(url, opts={}){ const r = await fetch(url, opts); const 
 function htmlesc(s){ return (s||'').replace(/[&<>"]/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c])) }
 function msg(role, text){ const d = document.createElement('div'); d.className = 'msg '+(role==='me'?'me':'ai'); d.innerText = text; chatEl.appendChild(d); chatEl.scrollTop = chatEl.scrollHeight; }
 
-// 간단한 난해/무의미 입력 감지(짧음, 글자 없음, 한 단어, 반복문자, 모음없는 영문 런온)
+// 난해 입력 감지 & 가이드
 function isGibberish(q){
   const s=q.trim();
   if(s.length<4) return true;
@@ -308,8 +312,8 @@ drawTopics();
 function closeAllTopicCards(){
   document.querySelectorAll('.topic-card.expanded').forEach(c=>{
     c.classList.remove('expanded');
-    c.querySelector('.topic-cta').textContent='See insights';
-    c.querySelector('.topic-content').innerHTML='';
+    c.querySelector('.topic-cta').style.display='inline-block';
+    const cont=c.querySelector('.topic-content'); cont.innerHTML='';
   });
 }
 function pickBlocks(sections=[]){
@@ -363,42 +367,53 @@ async function doRun(){
   dbgEl.textContent = `geo-timezone\n${JSON.stringify(geo.data,null,2)}\n\ncalc\n${JSON.stringify(calc.data,null,2)}\n\nreading\n${JSON.stringify(reading.data,null,2)}`;
 }
 
-// Topic card expand
+// Topic card expand / close
 topicsEl.addEventListener('click', async (e)=>{
   const card = e.target.closest('.topic-card'); if(!card) return;
-  const topic = card.dataset.topic;
 
-  if(card.classList.contains('expanded')){
-    card.classList.remove('expanded'); card.querySelector('.topic-cta').textContent='See insights';
-    card.querySelector('.topic-content').innerHTML=''; return;
+  // close button
+  if(e.target.classList.contains('topic-close')){
+    card.classList.remove('expanded');
+    card.querySelector('.topic-cta').style.display='inline-block';
+    card.querySelector('.topic-content').innerHTML='';
+    return;
   }
+
+  // already expanded → ignore (close 버튼을 누르게 유도)
+  if(card.classList.contains('expanded')) return;
+
+  const topic = card.dataset.topic;
   closeAllTopicCards();
-  card.classList.add('expanded'); card.querySelector('.topic-cta').textContent='Loading…';
+  card.classList.add('expanded'); card.querySelector('.topic-cta').style.display='none';
+  card.querySelector('.topic-content').innerHTML='<div class="tc-block">Loading…</div>';
 
   const y=ySel.value, m=mSel.value, d=dSel.value, hh=hhSel.value, mm=mmSel.value, city=el('#city').value.trim();
   const birthDateISO = `${y}-${m}-${d}`; const birthTime = `${hh}:${mm}`;
 
   const geo = await fetchJSON(`/api/geo-timezone?city=${encodeURIComponent(city)}`);
-  if(!geo.ok||!geo.data?.timezone){ card.querySelector('.topic-cta').textContent='See insights'; card.querySelector('.topic-content').innerHTML='<div class="tc-block">Network error — please try again.</div>'; return; }
+  if(!geo.ok||!geo.data?.timezone){ card.querySelector('.topic-content').innerHTML='<div class="tc-block">Network error — please try again.</div><button class="topic-close">Close</button>'; return; }
   const {lat,lng} = geo.data.location; const tzId = geo.data.timezone;
 
   const calc = await fetchJSON('/api/calc',{ method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ birthDateISO, birthTime, lat, lng, tzId, timeAccuracy:'exact' }) });
-  if(!calc.ok||!calc.data?.data){ card.querySelector('.topic-cta').textContent='See insights'; card.querySelector('.topic-content').innerHTML='<div class="tc-block">Calc error — please try again.</div>'; return; }
+  if(!calc.ok||!calc.data?.data){ card.querySelector('.topic-content').innerHTML='<div class="tc-block">Calc error — please try again.</div><button class="topic-close">Close</button>'; return; }
 
   const ask = await fetchJSON('/api/ask',{ method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ topic, question:null, calc: calc.data }) });
 
-  card.querySelector('.topic-cta').textContent='See insights';
+  if(!ask.ok||!ask.data?.ok){ card.querySelector('.topic-content').innerHTML='<div class="tc-block">Server error — please try again.</div><button class="topic-close">Close</button>'; return; }
 
-  if(!ask.ok||!ask.data?.ok){ card.querySelector('.topic-content').innerHTML='<div class="tc-block">Server error — please try again.</div>'; return; }
+  const {overview, phases, watch, tips} = (function pickBlocks(sections=[]){
+    const get=(name)=>sections.find(s=>(s.label||'').toLowerCase().includes(name))?.body||'';
+    return { overview:get('overview'), phases:get('phase'), watch:get('watch'), tips:get('tip') };
+  })(ask.data.sections);
 
-  const {overview, phases, watch, tips} = pickBlocks(ask.data.sections);
   card.querySelector('.topic-content').innerHTML = `
     <div class="tc-block"><div class="tc-title">Overview</div>${htmlesc(overview||'No details yet.')}</div>
     <div class="tc-block"><div class="tc-title">Key Phases</div>${htmlesc(phases||'')}</div>
     <div class="tc-block"><div class="tc-title">Watch Out</div>${htmlesc(watch||'')}</div>
     <div class="tc-block"><div class="tc-title">Tips</div>${htmlesc(tips||'')}</div>
+    <button class="topic-close">Close</button>
   `;
 });
 
@@ -409,7 +424,6 @@ document.getElementById('askInput').addEventListener('keydown', (e)=>{ if(e.key=
 async function handleAsk(){
   const q = el('#askInput').value.trim(); if(!q) return;
 
-  // 무의미 입력 방어: 친절 가이드만 보여주고 종료
   if(isGibberish(q)){
     msg('me', q);
     friendlyAskGuide();
