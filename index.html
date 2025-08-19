@@ -1,463 +1,215 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Saju‑Eight • Playground (Extended)</title>
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap">
-
-<style>
-:root{
-  --bg:#0b1220; --panel:#121a2a; --muted:#93a4bf; --txt:#ffffff; --accent:#66b3ff;
-  --ok:#49d39a; --err:#ff8787; --line:#1d2b45;
-}
-*{box-sizing:border-box}
-body{margin:0; font-family:ui-sans-serif,system-ui,-apple-system,"Noto Sans KR","Segoe UI",Roboto,Arial;
-  background:linear-gradient(120deg,#0b1220,#0e2342); color:var(--txt)}
-.wrap{max-width:1020px; margin:32px auto 80px; padding:0 18px}
-.card{background:#0f1a30cc; border:1px solid var(--line); border-radius:16px; box-shadow:0 10px 40px #0006; padding:16px}
-.section-title{font-weight:800; letter-spacing:.02em; margin:0 0 10px}
-.muted{color:var(--muted)}
-.row{display:flex; gap:10px; align-items:center}
-.grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
-@media (max-width:720px){ .grid{grid-template-columns:1fr} }
-
-/* inputs */
-label{font-size:12px; color:var(--muted); margin-bottom:6px; display:block}
-input[type="text"], select, button, textarea{
-  width:100%; padding:11px 12px; border-radius:12px; border:1px solid #24334f;
-  background:#0b1426; color:var(--txt); outline:none
-}
-input[type="text"]:focus, select:focus, textarea:focus{border-color:var(--accent); box-shadow:0 0 0 3px #66b3ff33}
-button{background:linear-gradient(135deg,#4da3ff,#66b3ff); color:#06101d; font-weight:800; cursor:pointer; border:none}
-button[disabled]{opacity:.6; cursor:not-allowed}
-.status{font-size:13px; margin-top:8px}
-.ok{color:var(--ok)} .err{color:var(--err)} .kicker{font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:#8aa0c9; margin-bottom:6px}
-
-/* pillars */
-.pillars{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px}
-.pillar{border:1px solid var(--line); background:#0d1830; border-radius:16px; padding:12px}
-.pillar h5{margin:0 0 6px; font-size:12px; color:#bcd3ff; text-align:center}
-.box{height:76px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:42px; font-weight:800; letter-spacing:.02em; border:1px solid #00000022}
-.box + .box{margin-top:8px}
-.wood{background:#16a34a; color:#fff} .fire{background:#ef4444; color:#fff}
-.earth{background:#f59e0b; color:#111} .metal{background:#e5e7eb; color:#111; border-color:#cbd5e1}
-.water{background:#06b6d4; color:#fff}
-.sub{font-size:11px; text-align:center; color:#b3c7ff; margin-top:6px}
-
-/* element gauge */
-.gauge{display:flex; height:10px; overflow:hidden; border-radius:10px; border:1px solid #233355; margin-top:14px}
-.gauge>div{height:100%}
-
-/* big luck */
-.luck{display:flex; gap:8px; overflow-x:auto; padding-bottom:4px}
-.luck-item{min-width:120px; border:1px solid var(--line); background:#101a32; border-radius:12px; padding:10px}
-.luck-item .t{font-size:12px; opacity:.85}
-.luck-item .g{font-weight:800; margin-top:2px}
-.luck-now{outline:2px solid var(--accent); box-shadow:0 0 0 4px #66b3ff33}
-
-/* reading sections */
-.sec-grid{display:grid; grid-template-columns:1fr; gap:12px}
-.sec-card{border:1px solid var(--line); background:#0d1830; border-radius:16px; padding:14px}
-.sec-head{font-size:14px; font-weight:800; margin:0 0 6px; color:#fff}
-.sec-body{font-size:14px; line-height:1.6; white-space:pre-wrap; color:#fff}
-
-/* topics (1x8, collapsed = 내용 높이만큼) */
-.topic-grid{display:grid; grid-template-columns:1fr; gap:10px}
-.topic-card{
-  border:1px solid var(--line); background:#0f1a30; border-radius:14px; padding:10px 12px;
-  display:flex; align-items:center; justify-content:space-between; position:relative; overflow:hidden
-}
-.topic-card.expanded{align-items:flex-start; padding-bottom:14px}
-.topic-card .left{display:flex; align-items:center; gap:12px}
-.topic-emoji{font-size:36px} /* 아이콘 2배 */
-.topic-title{font-weight:800}
-.topic-sub{font-size:12px; color:var(--muted)}
-.topic-cta{font-weight:800; color:#06101d; background:linear-gradient(135deg,#4da3ff,#66b3ff); padding:8px 10px; border-radius:10px; width:auto}
-.topic-card.expanded .topic-cta{display:none} /* 펼쳐지면 숨김 */
-.topic-content{display:none; width:100%; margin-top:10px}
-.topic-card.expanded .topic-content{display:block}
-.tc-block{border:1px solid #213250; background:#0c162e; border-radius:12px; padding:10px; margin-top:8px}
-.tc-title{font-weight:800; margin-bottom:6px}
-.topic-close{position:absolute; right:12px; bottom:12px; font-weight:800; padding:8px 10px; border-radius:10px; background:#22314c; color:#cfe2ff; border:1px solid #2c4168}
-
-/* chat (Ask) — iMessage style + 고정 높이/스크롤) */
-.chat{border:1px solid var(--line); background:#0e1932; border-radius:16px; padding:12px; height:360px; display:flex; flex-direction:column; overflow-y:auto}
-.msg{max-width:80%; padding:10px 12px; border-radius:18px; margin:6px 0; line-height:1.5; white-space:pre-wrap}
-.me{margin-left:auto; background:#1b3a70; color:#e8f0ff; border-bottom-right-radius:4px}
-.ai{margin-right:auto; background:#0f243f; color:#ffffff; border-bottom-left-radius:4px}
-.askbar{display:flex; gap:10px; margin-top:10px; align-items:center}
-.input-bubble{flex:1 1 auto; background:#0b1426; border:1px solid #24334f; border-radius:18px; padding:12px 14px; color:#fff}
-.ask-mini{flex:0 0 auto; padding:10px 14px; border-radius:12px; min-width:72px}
-/* override global width:100% only inside askbar */
-.askbar .ask-mini, .askbar button{width:auto}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Saju-Eight</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #0d1b2a;
+      color: white;
+      margin: 0;
+      padding: 0;
+    }
+    .fortune-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .fortune-card {
+      background: #1b263b;
+      border-radius: 10px;
+      padding: 14px;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+    .fortune-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .fortune-icon {
+      font-size: 1.6rem; /* ✅ 아이콘 2배 크게 */
+    }
+    .see-btn {
+      background: #3a86ff;
+      border: none;
+      color: white;
+      font-weight: bold;
+      border-radius: 6px;
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+    .see-btn:hover {
+      background: #2563eb;
+    }
+    .topic-content {
+      margin-top: 12px;
+      padding: 12px;
+      background: #14213d;
+      border-radius: 8px;
+    }
+    .tc-block {
+      margin-bottom: 10px;
+    }
+    .tc-title {
+      font-weight: bold;
+      margin-bottom: 4px;
+      color: #a9d6ff;
+    }
+    .topic-close {
+      display: inline-block;
+      margin-top: 14px;   /* ✅ 위쪽 여백 */
+      align-self: flex-end;
+      font-weight: 800;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: #22314c;
+      color: #cfe2ff;
+      border: 1px solid #2c4168;
+      cursor: pointer;
+    }
+    .chat-box {
+      background: #1b263b;
+      border-radius: 10px;
+      padding: 12px;
+      height: 300px;
+      overflow-y: auto;
+      margin: 20px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .chat-msg {
+      padding: 10px;
+      border-radius: 8px;
+      max-width: 75%;
+      line-height: 1.4;
+    }
+    .chat-user {
+      background: #3a86ff;
+      align-self: flex-end;
+    }
+    .chat-bot {
+      background: #14213d;
+      border: 1px solid #2c4168;
+      align-self: flex-start;
+    }
+    .chat-input-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .chat-input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #2c4168;
+      background: #14213d;
+      color: white;
+    }
+    .chat-send {
+      background: #3a86ff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 14px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-<div class="wrap">
-
-  <!-- INPUTS -->
-  <div class="card">
-    <div class="grid">
-      <div>
-        <label>Birth year</label>
-        <select id="y"></select>
+  <h2 style="padding:20px;">Explore Specific Fortunes</h2>
+  <div class="fortune-grid">
+    <!-- Example Card -->
+    <div class="fortune-card" data-topic="wealth">
+      <div class="fortune-card-header">
+        <span class="fortune-icon">💰</span>
+        <button class="see-btn">See insights</button>
       </div>
-      <div>
-        <label>Birth month</label>
-        <select id="m"></select>
-      </div>
+      <div class="topic-content" style="display:none;"></div>
     </div>
-    <div class="grid" style="margin-top:8px">
-      <div>
-        <label>Birth day</label>
-        <select id="d"></select>
+    <div class="fortune-card" data-topic="love">
+      <div class="fortune-card-header">
+        <span class="fortune-icon">❤️</span>
+        <button class="see-btn">See insights</button>
       </div>
-      <div>
-        <label>Hour</label>
-        <select id="hh"></select>
-      </div>
+      <div class="topic-content" style="display:none;"></div>
     </div>
-    <div class="grid" style="margin-top:8px">
-      <div>
-        <label>Minute</label>
-        <select id="mm"></select>
-      </div>
-      <div>
-        <label>Birth city (in English)</label>
-        <input id="city" type="text" placeholder="Seoul / New York / Tokyo"/>
-      </div>
-    </div>
-    <div class="row" style="margin-top:12px">
-      <button id="run">Calculate & Generate</button>
-      <button id="fill">Fill Example</button>
-    </div>
-    <div id="status" class="status muted"></div>
+    <!-- 나머지 6개 카드도 같은 구조로 추가 -->
   </div>
 
-  <!-- PILLARS -->
-  <div class="card" style="margin-top:12px">
-    <div class="kicker">Four Pillars</div>
-    <div id="pillars" class="pillars"></div>
-    <div id="gauge" class="gauge" style="margin-top:10px"></div>
+  <h2 style="padding:20px;">Ask About Your Saju</h2>
+  <div class="chat-box" id="chatBox"></div>
+  <div class="chat-input-area">
+    <input id="chatInput" class="chat-input" placeholder="Type your question..."/>
+    <button id="chatSend" class="chat-send">Ask</button>
   </div>
 
-  <!-- BIG LUCK -->
-  <div class="card" style="margin-top:12px">
-    <div class="kicker">Big Luck (10‑year cycles)</div>
-    <div id="luck" class="luck"></div>
-  </div>
+  <script>
+    document.querySelectorAll(".see-btn").forEach(btn=>{
+      btn.addEventListener("click", async ()=>{
+        const card = btn.closest(".fortune-card");
+        const topic = card.dataset.topic;
+        const content = card.querySelector(".topic-content");
 
-  <!-- READING -->
-  <div class="card" style="margin-top:12px">
-    <div class="kicker">Reading</div>
-    <div id="reading-head"></div>
-    <div id="reading-sections" class="sec-grid" style="margin-top:10px"></div>
-  </div>
+        // API 호출 (예시)
+        let res = await fetch(`/api/ask?topic=${topic}`);
+        let data = await res.json();
 
-  <!-- TOPICS -->
-  <div class="card" style="margin-top:12px">
-    <div class="kicker">Explore Specific Fortunes</div>
-    <div id="topics" class="topic-grid"></div>
-  </div>
+        if(data.ok){
+          const {overview, phases, watch, tips} = data.output;
+          content.innerHTML = `
+            <div class="tc-block"><div class="tc-title">Overview</div>${overview||'No details yet.'}</div>
+            <div class="tc-block"><div class="tc-title">Key Phases</div>${phases||''}</div>
+            <div class="tc-block"><div class="tc-title">Watch Out</div>${watch||''}</div>
+            <div class="tc-block"><div class="tc-title">Tips</div>${tips||''}</div>
+            <div style="text-align:right"><button class="topic-close">Close</button></div>
+          `;
+          content.style.display="block";
+          btn.style.display="none"; // 펼쳐졌을 땐 버튼 숨김
+          content.querySelector(".topic-close").addEventListener("click", ()=>{
+            content.style.display="none";
+            btn.style.display="inline-block"; // 닫으면 다시 보임
+          });
+        }
+      });
+    });
 
-  <!-- ASK -->
-  <div class="card" style="margin-top:12px">
-    <div class="kicker">Ask About Your Saju</div>
-    <div id="chat" class="chat"></div>
-    <div class="askbar">
-      <input id="askInput" class="input-bubble" type="text" placeholder="Type your question… e.g., ‘When is a good month to move?’">
-      <button id="askBtn" class="ask-mini">Ask</button>
-    </div>
-    <div class="muted" style="font-size:12px; margin-top:6px">I’ll use your current chart as context.</div>
-  </div>
+    // --- Chat 기능 ---
+    const chatBox=document.getElementById("chatBox");
+    const chatInput=document.getElementById("chatInput");
+    const chatSend=document.getElementById("chatSend");
 
-  <details class="card" style="margin-top:12px">
-    <summary>Debug JSON (geo/calc/reading)</summary>
-    <pre id="dbg" class="muted" style="white-space:pre-wrap"></pre>
-  </details>
+    function addMsg(text,type){
+      const div=document.createElement("div");
+      div.className="chat-msg "+(type==="user"?"chat-user":"chat-bot");
+      div.innerText=text;
+      chatBox.appendChild(div);
+      chatBox.scrollTop=chatBox.scrollHeight;
+    }
 
-</div>
-
-<script>
-// ---------- helpers ----------
-const el = q => document.querySelector(q);
-const statusEl = el('#status'); const dbgEl = el('#dbg');
-const pillarsEl = el('#pillars'); const gaugeEl = el('#gauge');
-const luckEl = el('#luck'); const readingHead = el('#reading-head'); const readingSecs = el('#reading-sections');
-const topicsEl = el('#topics'); const chatEl = el('#chat');
-
-function setStatus(msg, type=''){ statusEl.textContent = msg; statusEl.className = 'status ' + (type ? type : 'muted'); }
-async function fetchJSON(url, opts={}){ const r = await fetch(url, opts); const t = await r.text(); try{return{ok:r.ok, status:r.status, data:JSON.parse(t), raw:t}}catch{return{ok:r.ok, status:r.status, data:null, raw:t}} }
-function htmlesc(s){ return (s||'').replace(/[&<>"]/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c])) }
-function msg(role, text){ const d = document.createElement('div'); d.className = 'msg '+(role==='me'?'me':'ai'); d.innerText = text; chatEl.appendChild(d); chatEl.scrollTop = chatEl.scrollHeight; }
-
-// 난해 입력 감지 & 가이드
-function isGibberish(q){
-  const s=q.trim();
-  if(s.length<4) return true;
-  const letters = s.replace(/[^A-Za-z가-힣]/g,'');
-  if(letters.length<3) return true;
-  const words = s.split(/\s+/);
-  if(words.length<2) return true;
-  if(/^(.)\1{3,}$/.test(s)) return true;
-  if(/[a-z]{4,}/i.test(s) && !/[aeiouy]/i.test(s)) return true;
-  return false;
-}
-function friendlyAskGuide(){
-  msg('ai',
-`I didn’t quite catch that 🤔  
-Try asking in a clearer way. Examples:
-
-• “When is a good month to change jobs this year?”  
-• “Any cautions if I move in the next 6 months?”  
-• “How’s my money flow vs. savings for the next 12 months?”`);
-}
-
-// selects
-const ySel = el('#y'), mSel = el('#m'), dSel = el('#d'), hhSel = el('#hh'), mmSel = el('#mm');
-
-// ---------- init ----------
-(function initSelects(){
-  const yNow = new Date().getFullYear();
-  for(let y=yNow-90; y<=yNow; y++){ ySel.insertAdjacentHTML('beforeend', `<option>${y}</option>`); }
-  for(let m=1; m<=12; m++){ mSel.insertAdjacentHTML('beforeend', `<option>${String(m).padStart(2,'0')}</option>`); }
-  for(let d=1; d<=31; d++){ dSel.insertAdjacentHTML('beforeend', `<option>${String(d).padStart(2,'0')}</option>`); }
-  for(let h=0; h<24; h++){ hhSel.insertAdjacentHTML('beforeend', `<option>${String(h).padStart(2,'0')}</option>`); }
-  for(let mm=0; mm<60; mm+=5){ mmSel.insertAdjacentHTML('beforeend', `<option>${String(mm).padStart(2,'0')}</option>`); }
-  ySel.value='1989'; mSel.value='10'; dSel.value='20'; hhSel.value='06'; mmSel.value='00'; el('#city').value='seoul';
-})();
-
-// color map
-const STEM_ELEM={甲:"wood",乙:"wood",丙:"fire",丁:"fire",戊:"earth",己:"earth",庚:"metal",辛:"metal",壬:"water",癸:"water"};
-const BRANCH_ELEM={子:"water",丑:"earth",寅:"wood",卯:"wood",辰:"earth",巳:"fire",午:"fire",未:"earth",申:"metal",酉:"metal",戌:"earth",亥:"water"};
-const COLOR_CLASS={wood:"wood",fire:"fire",earth:"earth",metal:"metal",water:"water"};
-
-// ---------- renderers ----------
-function renderPillars(pillars, elements){
-  const keys=["hour","day","month","year"];
-  pillarsEl.innerHTML = keys.map(k=>{
-    const p=pillars?.[k]; if(!p) return "";
-    const stemC = COLOR_CLASS[STEM_ELEM[p.stem]]||"wood";
-    const brC   = COLOR_CLASS[BRANCH_ELEM[p.branch]]||"earth";
-    const title = ({hour:"Hour Pillar (시주)",day:"Day Pillar (일주)",month:"Month Pillar (월주)",year:"Year Pillar (년주)"}[k]);
-    const sub = (k==="day") ? 'Day Master (Self) / 일간(나)' : '';
-    return `<div class="pillar">
-      <h5>${title}</h5>
-      ${sub?`<div class="sub">${sub}</div>`:''}
-      <div class="box ${stemC}">${p.stem||'?'}</div>
-      <div class="box ${brC}">${p.branch||'?'}</div>
-    </div>`;
-  }).join('');
-  const order=["wood","fire","earth","metal","water"];
-  gaugeEl.innerHTML = order.map(e=>{
-    const pct=Math.max(2,Math.round((elements?.[e]||0)*100));
-    return `<div class="${COLOR_CLASS[e]}" style="width:${pct}%"></div>`;
-  }).join('');
-}
-function calcAge(bISO){ const b=new Date(bISO+"T00:00:00"); const n=new Date(); let a=n.getFullYear()-b.getFullYear(); const m=n.getMonth()-b.getMonth(); if(m<0||(m===0&&n.getDate()<b.getDate())) a--; return a; }
-function renderLuck(bigLuck, birthISO){
-  const age = calcAge(birthISO);
-  if(!Array.isArray(bigLuck)) { luckEl.innerHTML=''; return; }
-  luckEl.innerHTML = bigLuck.map(({startAge, stem, branch, tenGod})=>{
-    const now = typeof age==='number' && age>=startAge && age<startAge+10;
-    return `<div class="luck-item ${now?'luck-now':''}">
-      <div class="t">Age ${startAge}–${startAge+9}</div>
-      <div class="g">${(stem||'')}${(branch||'')}</div>
-      <div class="t">${tenGod||''}</div>
-    </div>`;
-  }).join('');
-}
-function renderReadingHead(o){
-  const bullets = (o.bullets||[]).map(b=>`• ${htmlesc(b)}`).join('<br>');
-  const one = o.forecastOneLiner ? `<div class="muted" style="margin-top:6px">${htmlesc(o.forecastOneLiner)}</div>` : '';
-  const tryy = (o.actions && o.actions[0]) ? `<div class="card" style="margin-top:10px; background:#0f2a22; border-color:#174f3f;">Try: ${htmlesc(o.actions[0])}</div>` : '';
-  readingHead.innerHTML = `<div class="section-title">${htmlesc(o.title||'Your Saju Reading')}</div><div>${bullets}</div>${one}${tryy}`;
-}
-function sectionCard(title, body){ return `<div class="sec-card"><div class="sec-head">${htmlesc(title)}</div><div class="sec-body">${htmlesc(body)}</div></div>` }
-function renderReadingSections(sections){
-  if(!Array.isArray(sections)){ readingSecs.innerHTML=''; return; }
-  readingSecs.innerHTML = sections.map(s=>sectionCard(s.label||'Section', s.body||'')).join('');
-}
-
-// topics
-const TOPICS = [
-  {key:'wealth', emoji:'💰', title:'Wealth & Money', sub:'Income, savings, timing.'},
-  {key:'love', emoji:'❤️', title:'Love & Relationships', sub:'Compatibility, timing.'},
-  {key:'career', emoji:'📦', title:'Career & Growth', sub:'Fit, pivots, leadership.'},
-  {key:'health', emoji:'🌿', title:'Health & Wellness', sub:'Imbalance → care.'},
-  {key:'family', emoji:'👶', title:'Family & Children', sub:'Fertility & dynamics.'},
-  {key:'travel', emoji:'✈️', title:'Travel / Relocation', sub:'Good periods, cautions.'},
-  {key:'learning', emoji:'📘', title:'Learning & Skills', sub:'What to study.'},
-  {key:'timing', emoji:'⏱️', title:'Timing & Windows', sub:'Short‑term chances.'},
-];
-function drawTopics(){
-  topicsEl.innerHTML = TOPICS.map(t=>`
-    <div class="topic-card" data-topic="${t.key}">
-      <div class="left">
-        <span class="topic-emoji">${t.emoji}</span>
-        <div>
-          <div class="topic-title">${t.title}</div>
-          <div class="topic-sub">${t.sub}</div>
-        </div>
-      </div>
-      <div class="topic-cta">See insights</div>
-      <div class="topic-content"></div>
-    </div>
-  `).join('');
-}
-drawTopics();
-function closeAllTopicCards(){
-  document.querySelectorAll('.topic-card.expanded').forEach(c=>{
-    c.classList.remove('expanded');
-    c.querySelector('.topic-cta').style.display='inline-block';
-    const cont=c.querySelector('.topic-content'); cont.innerHTML='';
-  });
-}
-function pickBlocks(sections=[]){
-  const get=(name)=>sections.find(s=>(s.label||'').toLowerCase().includes(name))?.body||'';
-  return { overview:get('overview'), phases:get('phase'), watch:get('watch'), tips:get('tip') };
-}
-
-// ---------- main flow ----------
-document.getElementById('fill').addEventListener('click', ()=>{
-  ySel.value='1989'; mSel.value='10'; dSel.value='20'; hhSel.value='06'; mmSel.value='00'; el('#city').value='seoul';
-});
-document.getElementById('run').addEventListener('click', doRun);
-
-async function doRun(){
-  const y=ySel.value, m=mSel.value, d=dSel.value, hh=hhSel.value, mm=mmSel.value;
-  const city=el('#city').value.trim();
-  if(!city){ setStatus('Please enter a birth city.','err'); return; }
-
-  const birthDateISO = `${y}-${m}-${d}`;
-  const birthTime = `${hh}:${mm}`;
-
-  setStatus('Step 1/3: Resolving city → timezone…');
-  const geo = await fetchJSON(`/api/geo-timezone?city=${encodeURIComponent(city)}`);
-  if(!geo.ok || !geo.data?.timezone){ setStatus('Failed on Step 1 (geo-timezone).','err'); return; }
-  const {lat,lng} = geo.data.location; const tzId = geo.data.timezone;
-
-  setStatus('Step 2/3: Calculating pillars/elements…');
-  const calc = await fetchJSON('/api/calc',{
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ birthDateISO, birthTime, lat, lng, tzId, timeAccuracy:'exact' })
-  });
-  if(!calc.ok || !calc.data?.data){ setStatus('Failed on Step 2 (calc).','err'); return; }
-  const dCalc = calc.data.data || {};
-  renderPillars(dCalc.pillars, dCalc.elements);
-  renderLuck(dCalc.luck?.bigLuck, birthDateISO);
-
-  setStatus('Step 3/3: Generating English reading…');
-  const reading = await fetchJSON('/api/reading-generate',{
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({
-      pillars:dCalc.pillars, elements:dCalc.elements, tenGods:dCalc.tenGods,
-      interactions:dCalc.interactions, luck:dCalc.luck, locale:'en-US', length:'long'
-    })
-  });
-  if(!reading.ok || !reading.data?.output){ setStatus('Failed on Step 3 (reading).','err'); return; }
-  const out = reading.data.output;
-  renderReadingHead(out);
-  renderReadingSections(out.sections);
-
-  setStatus(`Done • tz: ${tzId} • lat:${lat.toFixed(4)}, lng:${lng.toFixed(4)}`,'ok');
-  dbgEl.textContent = `geo-timezone\n${JSON.stringify(geo.data,null,2)}\n\ncalc\n${JSON.stringify(calc.data,null,2)}\n\nreading\n${JSON.stringify(reading.data,null,2)}`;
-}
-
-// Topic card expand / close
-topicsEl.addEventListener('click', async (e)=>{
-  const card = e.target.closest('.topic-card'); if(!card) return;
-
-  // close button
-  if(e.target.classList.contains('topic-close')){
-    card.classList.remove('expanded');
-    card.querySelector('.topic-cta').style.display='inline-block';
-    card.querySelector('.topic-content').innerHTML='';
-    return;
-  }
-
-  // already expanded → ignore (close 버튼을 누르게 유도)
-  if(card.classList.contains('expanded')) return;
-
-  const topic = card.dataset.topic;
-  closeAllTopicCards();
-  card.classList.add('expanded'); card.querySelector('.topic-cta').style.display='none';
-  card.querySelector('.topic-content').innerHTML='<div class="tc-block">Loading…</div>';
-
-  const y=ySel.value, m=mSel.value, d=dSel.value, hh=hhSel.value, mm=mmSel.value, city=el('#city').value.trim();
-  const birthDateISO = `${y}-${m}-${d}`; const birthTime = `${hh}:${mm}`;
-
-  const geo = await fetchJSON(`/api/geo-timezone?city=${encodeURIComponent(city)}`);
-  if(!geo.ok||!geo.data?.timezone){ card.querySelector('.topic-content').innerHTML='<div class="tc-block">Network error — please try again.</div><button class="topic-close">Close</button>'; return; }
-  const {lat,lng} = geo.data.location; const tzId = geo.data.timezone;
-
-  const calc = await fetchJSON('/api/calc',{ method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ birthDateISO, birthTime, lat, lng, tzId, timeAccuracy:'exact' }) });
-  if(!calc.ok||!calc.data?.data){ card.querySelector('.topic-content').innerHTML='<div class="tc-block">Calc error — please try again.</div><button class="topic-close">Close</button>'; return; }
-
-  const ask = await fetchJSON('/api/ask',{ method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ topic, question:null, calc: calc.data }) });
-
-  if(!ask.ok||!ask.data?.ok){ card.querySelector('.topic-content').innerHTML='<div class="tc-block">Server error — please try again.</div><button class="topic-close">Close</button>'; return; }
-
-  const {overview, phases, watch, tips} = (function pickBlocks(sections=[]){
-    const get=(name)=>sections.find(s=>(s.label||'').toLowerCase().includes(name))?.body||'';
-    return { overview:get('overview'), phases:get('phase'), watch:get('watch'), tips:get('tip') };
-  })(ask.data.sections);
-
-  card.querySelector('.topic-content').innerHTML = `
-    <div class="tc-block"><div class="tc-title">Overview</div>${htmlesc(overview||'No details yet.')}</div>
-    <div class="tc-block"><div class="tc-title">Key Phases</div>${htmlesc(phases||'')}</div>
-    <div class="tc-block"><div class="tc-title">Watch Out</div>${htmlesc(watch||'')}</div>
-    <div class="tc-block"><div class="tc-title">Tips</div>${htmlesc(tips||'')}</div>
-    <button class="topic-close">Close</button>
-  `;
-});
-
-// Ask chat
-document.getElementById('askBtn').addEventListener('click', handleAsk);
-document.getElementById('askInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); handleAsk(); } });
-
-async function handleAsk(){
-  const q = el('#askInput').value.trim(); if(!q) return;
-
-  if(isGibberish(q)){
-    msg('me', q);
-    friendlyAskGuide();
-    el('#askInput').value='';
-    return;
-  }
-
-  msg('me', q); el('#askInput').value='';
-
-  const y=ySel.value, m=mSel.value, d=dSel.value, hh=hhSel.value, mm=mmSel.value, city=el('#city').value.trim();
-  const birthDateISO = `${y}-${m}-${d}`; const birthTime = `${hh}:${mm}`;
-
-  const geo = await fetchJSON(`/api/geo-timezone?city=${encodeURIComponent(city)}`);
-  if(!geo.ok||!geo.data?.timezone){ msg('ai','Network error — please try again.'); return; }
-  const {lat,lng} = geo.data.location; const tzId = geo.data.timezone;
-
-  const calc = await fetchJSON('/api/calc',{ method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ birthDateISO, birthTime, lat, lng, tzId, timeAccuracy:'exact' }) });
-  if(!calc.ok||!calc.data?.data){ msg('ai','Network error — please try again.'); return; }
-
-  const ask = await fetchJSON('/api/ask',{ method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ topic:null, question:q, calc:calc.data }) });
-  if(!ask.ok||!ask.data?.ok){ msg('ai','Server error — please try again.'); return; }
-
-  const s = ask.data.sections||[];
-  const get=(name)=>s.find(x=>(x.label||'').toLowerCase().includes(name))?.body||'';
-  const text = [
-    get('overview') && `Overview\n${get('overview')}`,
-    get('phase') && `Key Phases\n${get('phase')}`,
-    get('watch') && `Watch Out\n${get('watch')}`,
-    get('tip') && `Tips\n${get('tip')}`,
-  ].filter(Boolean).join('\n\n');
-  msg('ai', text || 'Here is what I see based on your chart. (No additional details returned.)');
-}
-</script>
+    chatSend.addEventListener("click", async ()=>{
+      const q=chatInput.value.trim();
+      if(!q) return;
+      addMsg(q,"user");
+      chatInput.value="";
+      try {
+        let res=await fetch("/api/ask",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({q})});
+        let data=await res.json();
+        if(data.ok){
+          addMsg(data.output,"bot");
+        } else {
+          addMsg("Sorry, I couldn't understand that. Could you rephrase? 🙂","bot");
+        }
+      } catch(e){
+        addMsg("⚠️ Network error, please try again.","bot");
+      }
+    });
+  </script>
 </body>
 </html>
