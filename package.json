@@ -4,9 +4,12 @@
   "private": true,
   "type": "commonjs",
   "dependencies": {
-    "lunar-javascript": "^1.6.13",
     "dayjs": "^1.11.11",
-    "dayjs-plugin-utc": "^0.1.2",
-    "dayjs-plugin-timezone": "^0.1.2"
+    "lunar-javascript": "^1.6.13"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   }
 }
