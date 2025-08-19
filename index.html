@@ -350,76 +350,134 @@ function mdFortune(s){ return (typeof s==='string'?s:String(s||''))
   .replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')
   .replace(/^(\-|\u2022) (.+)$/gm,'• $2'); }
 
+/* 얇은 util */
+function countElementsFromPillars(pillars){
+  const map={wood:0,fire:0,earth:0,metal:0,water:0};
+  const push=(ch)=>{const e=STEM_ELEM[ch]||BRANCH_ELEM[ch]; if(e) map[e]++;};
+  if(!pillars) return map;
+  ['hour','day','month','year'].forEach(k=>{
+    const p=pillars[k]; if(!p) return; push(p.stem); push(p.branch);
+  });
+  return map;
+}
+function currentLuckInfo(luck, birthISO){
+  const a=age(birthISO); let cur=null,next=null;
+  const list=luck?.bigLuck||[];
+  for(const seg of list){
+    if(a>=seg.startAge && a<seg.startAge+10) cur=seg;
+  }
+  if(cur){
+    next=list.find(x=>x.startAge===cur.startAge+10)||null;
+  }else{
+    next=list[0]||null;
+  }
+  return {cur,next,age:a};
+}
+
 /* 다양한 백엔드 응답에서 표시 가능한 블록을 추출 */
 function extractFortuneBlocks(o){
   if (!o) return [];
+  const nonEmpty = (v)=> typeof v==='string' ? v.trim() : !!v;
+  const asText = (v)=>{
+    if(!v) return '';
+    if(typeof v==='string') return v.trim();
+    if(Array.isArray(v)) return v.map(x=>asText(x)).filter(Boolean).map(x=>`• ${x}`).join('\n');
+    return (v.text||v.body||v.html||v.markdown||v.content||'').toString().trim();
+  };
+  const pushIf=(arr,title,val)=>{const t=asText(val); if(t) arr.push({title,body:t});};
+
   const blocks=[];
-  const getStr = (v)=> typeof v==='string' ? v :
-    (v && typeof v==='object' && (v.text||v.body||v.html||v.markdown||v.content)) ? (v.text||v.body||v.html||v.markdown||v.content) : '';
+  pushIf(blocks,'Overview', o.overview||o.summary||o.intro||o.description||o.explainer||o.content||o.answer||o.result);
+  pushIf(blocks,'Key Phases', o.phases||o.keyPhases||o.key_points||o.keyPoints||o.points);
+  pushIf(blocks,'Watch Out', o.watch||o.watchOut||o.cautions||o.risks||o.pitfalls||o.avoid);
+  pushIf(blocks,'Tips', o.tips||o.recommendations||o.advice||o.actions);
 
-  // 1) 대표 키 매핑
-  const topMap = [
-    ['Overview', o.overview || o.summary || o.intro || o.description || o.explainer || o.content || o.answer || o.result],
-    ['Key Phases', o.phases || o.keyPhases || o.key_points || o.keyPoints || o.points],
-    ['Watch Out', o.watch || o.watchOut || o.cautions || o.risks || o.pitfalls || o.avoid],
-    ['Tips', o.tips || o.recommendations || o.advice || o.actions],
-  ];
-  topMap.forEach(([title,val])=>{
-    if (!val) return;
-    if (Array.isArray(val)) {
-      const text = val.map(v=> (typeof v==='string'?v:getStr(v)) ).filter(Boolean).map(v=>`• ${v}`).join('\n');
-      if (text) blocks.push({title, body:text});
-    } else {
-      const text = getStr(val) || (typeof val==='object' ? JSON.stringify(val,null,2) : String(val));
-      if (text) blocks.push({title, body:text});
-    }
-  });
-
-  // 2) sections.* 형태
   if (o.sections && typeof o.sections==='object'){
-    const order = ['overview','phases','watch','tips','summary','intro'];
-    order.forEach(k=>{
-      const sec = o.sections[k];
-      if (!sec) return;
-      const text = getStr(sec) || (Array.isArray(sec?.bullets) ? sec.bullets.map(x=>`• ${x}`).join('\n') : '');
-      if (text) {
-        const titleMap = {overview:'Overview',phases:'Key Phases',watch:'Watch Out',tips:'Tips'};
-        blocks.push({title: titleMap[k] || (k.charAt(0).toUpperCase()+k.slice(1)), body:text});
-      }
-    });
+    const M=o.sections;
+    pushIf(blocks,'Overview', M.overview);
+    pushIf(blocks,'Key Phases', M.phases);
+    pushIf(blocks,'Watch Out', M.watch);
+    pushIf(blocks,'Tips', M.tips);
   }
+  if (Array.isArray(o.cards)) o.cards.forEach(c=>pushIf(blocks, c.title||c.kicker||'Insight', c.body||c.text||c));
+  if (Array.isArray(o.blocks)) o.blocks.forEach(b=>pushIf(blocks, b.title||'Insight', b.body||b.text||b));
 
-  // 3) cards 배열
-  if (Array.isArray(o.cards)){
-    o.cards.forEach(c=>{
-      const title = c.title || c.kicker || 'Insight';
-      const body  = getStr(c) || getStr(c.body) || getStr(c.text);
-      if (body) blocks.push({title, body});
-    });
-  }
-
-  // 4) blocks 배열
-  if (Array.isArray(o.blocks)){
-    o.blocks.forEach(b=>{
-      const title = b.title || 'Insight';
-      const body  = getStr(b) || getStr(b.body) || getStr(b.text);
-      if (body) blocks.push({title, body});
-    });
-  }
-
-  // 5) 텍스트 단일 필드
   if (!blocks.length){
     const raw = o.markdown || o.html || o.text || o.content || o.answer || o.result;
-    if (typeof raw==='string' && raw.trim()) {
-      blocks.push({title:'Overview', body:raw});
-    }
+    if (typeof raw==='string' && raw.trim()) blocks.push({title:'Overview', body:raw.trim()});
   }
 
-  // 6) 마지막 수단: RAW 노출(디버깅)
-  if (!blocks.length){
-    blocks.push({title:'Raw', body:'(No standard fields detected)\n\n```json\n'+JSON.stringify(o,null,2)+'\n```'});
-  }
   return blocks;
+}
+
+/* 응답이 비거나 빈 문자열만 있으면 차트 컨텍스트로 합성 */
+function synthesizeFortune(frontKey, ctx){
+  const out=[];
+  const pillars=ctx?.pillars||{};
+  const em=countElementsFromPillars(pillars);
+  const dom=Object.entries(em).sort((a,b)=>b[1]-a[1])[0]?.[0]||'';
+  const {cur,next,age}=currentLuckInfo(ctx?.luck, ctx?.birthDateISO);
+  const curStr = cur ? `${cur.startAge}–${cur.startAge+9} (${cur.stem||''}${cur.branch||''})` : 'N/A';
+  const nxtStr = next ? `${next.startAge}–${next.startAge+9} (${next.stem||''}${next.branch||''})` : 'N/A';
+
+  const open = `This is a practical snapshot built from your chart context (age ${age}). Dominant element looks like **${dom || 'mixed'}**. Current luck decade: **${curStr}**, next: **${nxtStr}**.`;
+
+  const topicHints = {
+    wealth: {
+      phases: `• When Output/Influence dominates (like ${cur?.tenGod||'certain decades'}), lean into visibility and pitching.\n• ${next?`Next decade ${nxtStr} may favor switching vehicles or new income lines.`:''}`,
+      watch:  `• Avoid over‑leveraging during Metal‑leaning months if cashflow is uneven.\n• Keep an emergency buffer (3–6 months).`,
+      tips:   `• Budget by **quarters**; review monthly.\n• Batch big expenses outside peak busy months.\n• Track one KPI: saving rate or debt‑to‑income.`
+    },
+    love: {
+      phases:`• Social/Peer‑heavy luck windows support dating & networking.\n• Quiet months are better for clarifying non‑negotiables.`,
+      watch:`• Don’t make lifetime decisions under short “high” transits.\n• Balance work/output so energy is left for relationships.`,
+      tips:`• Plan **low‑friction** dates; prioritize routine over intensity.\n• Review expectations every quarter; communicate early.`
+    },
+    career: {
+      phases:`• Output decades (식상) → build portfolio & ship.\n• Authority decades (관) → step up to leadership and process.`,
+      watch:`• Don’t overcommit across cycles; protect recovery weeks.\n• Say “no” to roles that drain your day‑master element.`,
+      tips:`• One focus per quarter.\n• Keep a brag doc; update after each delivery.\n• Practice weekly “demo”.`
+    },
+    health: {
+      phases:`• Earth‑heavy periods: support digestion & regularity.\n• Fire‑heavy: hydrate/sleep; calm the nervous system.`,
+      watch:`• Overwork during Output spikes → track fatigue.\n• Mind late nights around month changes.`,
+      tips:`• Daily walk ⭐\n• Sleep window anchor.\n• Quarterly labs if you push hard at work.`
+    },
+    family: {
+      phases:`• Stable Earth/Metal months favor planning & paperwork.\n• Water/Wood months are smoother for transitions.`,
+      watch:`• Don’t compress major moves with career sprints.\n• Share logistics early with family.`,
+      tips:`• Create a shared calendar.\n• Budget a “buffer week” for any big change.`
+    },
+    travel: {
+      phases:`• Move/relocation: aim for steady‑support months (fewer surprises).\n• Short trips fit well in Output‑light weeks.`,
+      watch:`• Avoid back‑to‑back obligations within 7 days of moving.\n• Double‑check docs in Mercury‑style retro cycles.`,
+      tips:`• Batch paperwork; keep copies in cloud.\n• Pad 1–2 buffer days around the move.`
+    },
+    learning: {
+      phases:`• Resource decades (인성) are ideal for deep study.\n• Peer/output decades → learn by shipping.`,
+      watch:`• Beware course hopping; set an outcome per quarter.`,
+      tips:`• Pick **one stack**.\n• Weekly 2×90 min focus sessions.\n• Publish a mini‑project monthly.`
+    },
+    timing: {
+      phases:`• Use the **current luck decade** tailwinds (${curStr}).\n• Micro‑windows: quiet weeks after new moons or post‑holiday lulls.`,
+      watch:`• Don’t force starts during family/health spikes.\n• Respect your recovery weeks.`,
+      tips:`• Plan by quarters; preview the next 6 weeks every Sunday.\n• Keep a small “optionality” buffer.`
+    }
+  }[frontKey]||topicHintsDefault();
+
+  function topicHintsDefault(){
+    return {
+      phases:`• Ride stable months for starts; use noisy months for drafts.\n• Align big calls with your recovery patterns.`,
+      watch:`• Avoid stacking multiple firsts in one week.`,
+      tips:`• Quarter plan, weekly review, daily minimums.`
+    };
+  }
+
+  out.push({title:'Overview', body:open});
+  out.push({title:'Key Phases', body:topicHints.phases});
+  out.push({title:'Watch Out', body:topicHints.watch});
+  out.push({title:'Tips', body:topicHints.tips});
+  return out;
 }
 
 /* API 시도: 여러 파라미터 별칭까지 */
@@ -486,9 +544,16 @@ async function expandTopic(card){
 
   try{
     const res = await callFortuneAPI(key);
-    if(!res.ok){ showFortuneError(content, 'Specific Fortune', res.lastResp||{}); return; }
+    let blocks = [];
+    if (res.ok){
+      blocks = extractFortuneBlocks(res.out||[]);
+    }
+    // 의미있는 블록이 없거나 빈 문자열뿐이면 합성
+    const meaningful = blocks.some(b=> (b.body||'').trim().length>0 );
+    if (!meaningful){
+      blocks = synthesizeFortune(key, window.__chartCtx || {});
+    }
 
-    const blocks = extractFortuneBlocks(res.out || {});
     content.innerHTML =
       blocks.map(b=>`
         <div class="block">
@@ -513,17 +578,51 @@ if (document.querySelector('#fgrid')) { mountFortuneGrid(); }
 </script>
 
 <script>
-/* ---------- ask ---------- */
+/* ---------- ask (일관 톤 템플릿 주입) ---------- */
 function addMsg(text,who='bot'){
   const p=document.createElement('div'); p.className='msg '+(who==='me'?'me':'bot'); p.innerHTML=md(text);
   const box=Q('#chat'); box.appendChild(p); box.scrollTop=box.scrollHeight;
 }
+
+function summarizeChart(ctx){
+  if(!ctx) return 'No chart context.';
+  const p=ctx.pillars||{};
+  const hour=`${p.hour?.stem||''}${p.hour?.branch||''}`.trim();
+  const day =`${p.day?.stem||''}${p.day?.branch||''}`.trim();
+  const month=`${p.month?.stem||''}${p.month?.branch||''}`.trim();
+  const year=`${p.year?.stem||''}${p.year?.branch||''}`.trim();
+  const em=countElementsFromPillars(p);
+  const dom=Object.entries(em).sort((a,b)=>b[1]-a[1])[0]?.[0]||'mixed';
+  const {cur}=currentLuckInfo(ctx.luck, ctx.birthDateISO);
+  const luckStr = cur? `${cur.startAge}–${cur.startAge+9} ${cur.stem||''}${cur.branch||''} (${cur.tenGod||''})` : 'N/A';
+  return `Pillars: Hour ${hour}, Day ${day}, Month ${month}, Year ${year}. Dominant element: ${dom}. Current luck decade: ${luckStr}.`;
+}
+
+function buildAskPrompt(q, ctx){
+  const summary=summarizeChart(ctx);
+  return [
+    'You are a Saju/Bazi guide. Tone: clear, warm, practical. Avoid jargon; if needed, explain briefly.',
+    'Format:',
+    '• Direct answer first (2–4 sentences).',
+    '• Then 3–5 bullets of actionable tips.',
+    '• Add 1 “Timing” hint only if relevant.',
+    '',
+    'Chart context:',
+    summary,
+    '',
+    'User question:',
+    q
+  ].join('\n');
+}
+
 async function ask(q){
   addMsg(q,'me');
   try{
-    let r = await fetchJSON('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q,mode:'chat',ctx:window.__chartCtx||null})});
+    const payload = { q: buildAskPrompt(q, window.__chartCtx||null), mode:'chat', ctx:window.__chartCtx||null };
+    let r = await fetchJSON('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     if(!r.ok || (!r.data?.ok && !r.data?.output)){
-      r = await fetchJSON(`/api/ask?q=${encodeURIComponent(q)}`); // GET 폴백
+      // 폴백 GET
+      r = await fetchJSON(`/api/ask?q=${encodeURIComponent(payload.q)}`);
     }
     if(!r.ok||(!r.data?.ok && !r.data?.output)){ addMsg("I couldn’t quite catch that. Could you rephrase your question? 🙂"); return; }
     addMsg(r.data.output||"Here’s my take based on your chart.");
