@@ -62,23 +62,31 @@ button[disabled]{opacity:.6; cursor:not-allowed}
 .sec-grid{display:grid; grid-template-columns:1fr; gap:12px}
 .sec-card{border:1px solid var(--line); background:#0d1830; border-radius:16px; padding:14px}
 .sec-head{font-size:14px; font-weight:800; margin:0 0 6px}
-.sec-body{font-size:14px; line-height:1.6; white-space:pre-wrap; color:#fff} /* 요구: 모든 섹션 폰트 화이트 */
+.sec-body{font-size:14px; line-height:1.6; white-space:pre-wrap; color:#fff} /* 모든 섹션 본문 white */
 
-/* topics 1x8, aspect 3:1 */
+/* topics 1x8, aspect 3:1 + expandable */
 .topic-grid{display:grid; grid-template-columns:1fr; gap:10px}
-.topic-card{border:1px solid var(--line); background:#0f1a30; border-radius:14px; padding:10px 12px; display:flex; align-items:center; justify-content:space-between; aspect-ratio:3/1}
+.topic-card{border:1px solid var(--line); background:#0f1a30; border-radius:14px; padding:10px 12px;
+  display:flex; align-items:center; justify-content:space-between; aspect-ratio:3/1; position:relative; overflow:hidden}
+.topic-card.expanded{aspect-ratio:auto; align-items:flex-start; padding-bottom:14px}
 .topic-card .left{display:flex; align-items:center; gap:10px}
 .topic-emoji{font-size:18px}
 .topic-title{font-weight:800}
 .topic-sub{font-size:12px; color:var(--muted)}
+.topic-cta{font-weight:800; color:#06101d; background:linear-gradient(135deg,#4da3ff,#66b3ff); padding:8px 10px; border-radius:10px}
+.topic-content{display:none; width:100%; margin-top:10px}
+.topic-card.expanded .topic-content{display:block}
+.tc-block{border:1px solid #213250; background:#0c162e; border-radius:12px; padding:10px; margin-top:8px}
+.tc-title{font-weight:800; margin-bottom:6px}
 
-/* chat (Ask) */
-.chat{border:1px solid var(--line); background:#0e1932; border-radius:16px; padding:12px}
-.msg{max-width:80%; padding:10px 12px; border-radius:14px; margin:6px 0; line-height:1.5; white-space:pre-wrap}
-.me{margin-left:auto; background:#1b3a70; color:#e8f0ff}
-.ai{margin-right:auto; background:#0f243f; color:#ffffff}
-.askbar{display:flex; gap:8px; margin-top:8px}
-.hint{font-size:12px; color:var(--muted); margin-top:6px}
+/* chat (Ask) — iPhone style */
+.chat{border:1px solid var(--line); background:#0e1932; border-radius:16px; padding:12px; min-height:260px; display:flex; flex-direction:column; overflow:auto}
+.msg{max-width:80%; padding:10px 12px; border-radius:18px; margin:6px 0; line-height:1.5; white-space:pre-wrap}
+.me{margin-left:auto; background:#1b3a70; color:#e8f0ff; border-bottom-right-radius:4px}
+.ai{margin-right:auto; background:#0f243f; color:#ffffff; border-bottom-left-radius:4px}
+.askbar{display:flex; gap:8px; margin-top:10px}
+.input-bubble{flex:1; background:#0b1426; border:1px solid #24334f; border-radius:18px; padding:10px 12px; color:#fff}
+.ask-mini{padding:8px 10px; border-radius:10px}
 
 /* misc */
 .kicker{font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:#8aa0c9; margin-bottom:6px}
@@ -147,11 +155,10 @@ button[disabled]{opacity:.6; cursor:not-allowed}
     <div id="reading-sections" class="sec-grid" style="margin-top:10px"></div>
   </div>
 
-  <!-- TOPICS 1x8 -->
+  <!-- TOPICS 1x8 (expand in-card) -->
   <div class="card" style="margin-top:12px">
     <div class="kicker">Explore Specific Fortunes</div>
     <div id="topics" class="topic-grid"></div>
-    <div id="topic-result" class="sec-grid" style="margin-top:12px"></div>
   </div>
 
   <!-- ASK -->
@@ -159,10 +166,10 @@ button[disabled]{opacity:.6; cursor:not-allowed}
     <div class="kicker">Ask About Your Saju</div>
     <div id="chat" class="chat"></div>
     <div class="askbar">
-      <input id="askInput" placeholder="e.g., When is a good time to change jobs?">
-      <button id="askBtn">Ask</button>
+      <input id="askInput" class="input-bubble" placeholder="iMessage style — type your question…">
+      <button id="askBtn" class="ask-mini">Ask</button>
     </div>
-    <div class="hint">I'll use your current chart as context.</div>
+    <div class="muted" style="font-size:12px; margin-top:6px">I’ll use your current chart as context.</div>
   </div>
 
   <!-- DEBUG -->
@@ -179,13 +186,11 @@ const el = q => document.querySelector(q);
 const statusEl = el('#status'); const dbgEl = el('#dbg');
 const pillarsEl = el('#pillars'); const gaugeEl = el('#gauge');
 const luckEl = el('#luck'); const readingHead = el('#reading-head'); const readingSecs = el('#reading-sections');
-const topicsEl = el('#topics'); const topicResultEl = el('#topic-result');
-const chatEl = el('#chat');
+const topicsEl = el('#topics'); const chatEl = el('#chat');
 
 function setStatus(msg, type=''){ statusEl.textContent = msg; statusEl.className = 'status ' + (type ? type : 'muted'); }
 async function fetchJSON(url, opts={}){ const r = await fetch(url, opts); const t = await r.text(); try{return{ok:r.ok, status:r.status, data:JSON.parse(t), raw:t}}catch{return{ok:r.ok, status:r.status, data:null, raw:t}} }
 function htmlesc(s){ return (s||'').replace(/[&<>"]/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c])) }
-function sectionCard(title, body){ return `<div class="sec-card"><div class="sec-head">${htmlesc(title)}</div><div class="sec-body">${htmlesc(body)}</div></div>` }
 function msg(role, text){ const d = document.createElement('div'); d.className = 'msg '+(role==='me'?'me':'ai'); d.innerText = text; chatEl.appendChild(d); chatEl.scrollTop = chatEl.scrollHeight; }
 
 // ---------- selects ----------
@@ -255,13 +260,13 @@ function renderReadingHead(o){
     ${tryy}
   `;
 }
-
+function sectionCard(title, body){ return `<div class="sec-card"><div class="sec-head">${htmlesc(title)}</div><div class="sec-body">${htmlesc(body)}</div></div>` }
 function renderReadingSections(sections){
   if(!Array.isArray(sections)){ readingSecs.innerHTML=''; return; }
   readingSecs.innerHTML = sections.map(s=>sectionCard(s.label||'Section', s.body||'')).join('');
 }
 
-// topics (1x8)
+// topics data
 const TOPICS = [
   {key:'wealth', emoji:'💰', title:'Wealth & Money', sub:'Income, savings, timing.'},
   {key:'love', emoji:'❤️', title:'Love & Relationships', sub:'Compatibility, timing.'},
@@ -272,27 +277,46 @@ const TOPICS = [
   {key:'learning', emoji:'📘', title:'Learning & Skills', sub:'What to study.'},
   {key:'timing', emoji:'⏱️', title:'Timing & Windows', sub:'Short‑term chances.'},
 ];
-function drawTopics(){ topicsEl.innerHTML = TOPICS.map(t=>`
-  <button class="topic-card" data-topic="${t.key}">
-    <div class="left">
-      <span class="topic-emoji">${t.emoji}</span>
-      <div>
-        <div class="topic-title">${t.title}</div>
-        <div class="topic-sub">${t.sub}</div>
+
+function drawTopics(){
+  topicsEl.innerHTML = TOPICS.map(t=>`
+    <div class="topic-card" data-topic="${t.key}">
+      <div class="left">
+        <span class="topic-emoji">${t.emoji}</span>
+        <div>
+          <div class="topic-title">${t.title}</div>
+          <div class="topic-sub">${t.sub}</div>
+        </div>
       </div>
+      <div class="topic-cta">See insights</div>
+      <div class="topic-content"></div>
     </div>
-    <div style="font-weight:800; color:#06101d; background:linear-gradient(135deg,#4da3ff,#66b3ff); padding:8px 10px; border-radius:10px">See insights</div>
-  </button>
-`).join(''); }
+  `).join('');
+}
 drawTopics();
 
-// render ask/ topic result sections
-function renderTopicBlocks(payload){
-  const list = payload?.sections || [];
-  topicResultEl.innerHTML = list.map(s=>sectionCard(s.label||'Section', s.body||'')).join('');
+function closeAllTopicCards(){
+  document.querySelectorAll('.topic-card.expanded').forEach(c=>{
+    c.classList.remove('expanded');
+    c.querySelector('.topic-cta').textContent='See insights';
+    c.querySelector('.topic-content').innerHTML='';
+  });
+}
+
+// map ask sections to labeled blocks
+function pickBlocks(sections=[]){
+  const get=(name)=>sections.find(s=>(s.label||'').toLowerCase().includes(name))?.body||'';
+  return {
+    overview: get('overview'),
+    phases:   get('phase'),
+    watch:    get('watch'),
+    tips:     get('tip'),
+  };
 }
 
 // ---------- main flow ----------
+const ySel = el('#y'), mSel = el('#m'), dSel = el('#d'), hhSel = el('#hh'), mmSel = el('#mm');
+
 el('#fill').addEventListener('click', ()=>{
   ySel.value='1989'; mSel.value='10'; dSel.value='20'; hhSel.value='06'; mmSel.value='00'; el('#city').value='seoul';
 });
@@ -337,28 +361,44 @@ el('#run').addEventListener('click', async ()=>{
   dbgEl.textContent = `geo-timezone\n${JSON.stringify(geo.data,null,2)}\n\ncalc\n${JSON.stringify(calc.data,null,2)}\n\nreading\n${JSON.stringify(reading.data,null,2)}`;
 });
 
-// topic click → /api/ask
+// Topic card expand in place
 topicsEl.addEventListener('click', async (e)=>{
-  const btn = e.target.closest('.topic-card'); if(!btn) return;
-  const topic = btn.dataset.topic;
-  // calc 데이터를 디버그 패널에서 꺼내오긴 어려우므로, 간단히 다시 계산 요청하도록 구현(사용성 OK)
+  const card = e.target.closest('.topic-card'); if(!card) return;
+  const topic = card.dataset.topic;
+
+  // toggle (if already open → close)
+  if(card.classList.contains('expanded')){ card.classList.remove('expanded'); card.querySelector('.topic-cta').textContent='See insights'; card.querySelector('.topic-content').innerHTML=''; return; }
+
+  closeAllTopicCards(); // close others
+  card.classList.add('expanded'); card.querySelector('.topic-cta').textContent='Loading…';
+
+  // fetch context (quick calc)
   const y=ySel.value, m=mSel.value, d=dSel.value, hh=hhSel.value, mm=mmSel.value, city=el('#city').value.trim();
   const birthDateISO = `${y}-${m}-${d}`; const birthTime = `${hh}:${mm}`;
 
-  setStatus('Fetching topic insights…');
   const geo = await fetchJSON(`/api/geo-timezone?city=${encodeURIComponent(city)}`);
-  if(!geo.ok||!geo.data?.timezone){ setStatus('Topic failed: geo error','err'); return; }
+  if(!geo.ok||!geo.data?.timezone){ card.querySelector('.topic-cta').textContent='See insights'; card.querySelector('.topic-content').innerHTML='<div class="tc-block">Network error — please try again.</div>'; return; }
   const {lat,lng} = geo.data.location; const tzId = geo.data.timezone;
+
   const calc = await fetchJSON('/api/calc',{ method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ birthDateISO, birthTime, lat, lng, tzId, timeAccuracy:'exact' }) });
-  if(!calc.ok||!calc.data?.data){ setStatus('Topic failed: calc error','err'); return; }
+  if(!calc.ok||!calc.data?.data){ card.querySelector('.topic-cta').textContent='See insights'; card.querySelector('.topic-content').innerHTML='<div class="tc-block">Calc error — please try again.</div>'; return; }
 
   const ask = await fetchJSON('/api/ask',{ method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ topic, question:null, calc: calc.data }) });
-  if(!ask.ok||!ask.data?.ok){ setStatus('Topic failed: ask error','err'); return; }
 
-  renderTopicBlocks(ask.data);
-  setStatus('Topic loaded.','ok');
+  card.querySelector('.topic-cta').textContent='See insights';
+
+  if(!ask.ok||!ask.data?.ok){ card.querySelector('.topic-content').innerHTML='<div class="tc-block">Server error — please try again.</div>'; return; }
+
+  const {overview, phases, watch, tips} = pickBlocks(ask.data.sections);
+
+  card.querySelector('.topic-content').innerHTML = `
+    <div class="tc-block"><div class="tc-title">Overview</div>${htmlesc(overview||'No details yet.')}</div>
+    <div class="tc-block"><div class="tc-title">Key Phases</div>${htmlesc(phases||'')}</div>
+    <div class="tc-block"><div class="tc-title">Watch Out</div>${htmlesc(watch||'')}</div>
+    <div class="tc-block"><div class="tc-title">Tips</div>${htmlesc(tips||'')}</div>
+  `;
 });
 
 // Ask chat
@@ -366,29 +406,32 @@ el('#askBtn').addEventListener('click', async ()=>{
   const q = el('#askInput').value.trim(); if(!q) return;
   msg('me', q); el('#askInput').value='';
 
-  // 가져올 컨텍스트(간단 재계산)
+  // context
   const y=ySel.value, m=mSel.value, d=dSel.value, hh=hhSel.value, mm=mmSel.value, city=el('#city').value.trim();
   const birthDateISO = `${y}-${m}-${d}`; const birthTime = `${hh}:${mm}`;
 
   const geo = await fetchJSON(`/api/geo-timezone?city=${encodeURIComponent(city)}`);
   if(!geo.ok||!geo.data?.timezone){ msg('ai','Network error — please try again.'); return; }
   const {lat,lng} = geo.data.location; const tzId = geo.data.timezone;
+
   const calc = await fetchJSON('/api/calc',{ method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ birthDateISO, birthTime, lat, lng, tzId, timeAccuracy:'exact' }) });
   if(!calc.ok||!calc.data?.data){ msg('ai','Network error — please try again.'); return; }
 
   const ask = await fetchJSON('/api/ask',{ method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ topic:null, question:q, calc:calc.data }) });
-  if(!ask.ok||!ask.data?.ok){ msg('ai','Network error — please try again.'); return; }
+  if(!ask.ok||!ask.data?.ok){ msg('ai','Server error — please try again.'); return; }
 
-  // 답변 합성(Overview/Phases/WatchOut/Tips)
+  // 합성해서 한 덩어리 답변
   const s = ask.data.sections||[];
-  const text = s.map(x=>{
-    const head = x.label||'';
-    const body = x.body||'';
-    return `${head}\n${body}`;
-  }).join('\n\n');
-  msg('ai', text);
+  const get=(name)=>s.find(x=>(x.label||'').toLowerCase().includes(name))?.body||'';
+  const text = [
+    get('overview') && `Overview\n${get('overview')}`,
+    get('phase') && `Key Phases\n${get('phase')}`,
+    get('watch') && `Watch Out\n${get('watch')}`,
+    get('tip') && `Tips\n${get('tip')}`,
+  ].filter(Boolean).join('\n\n');
+  msg('ai', text || 'Here is what I see based on your chart. (No additional details returned.)');
 });
 </script>
 </body>
