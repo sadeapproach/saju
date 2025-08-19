@@ -1,413 +1,369 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Saju-Eight • End-to-End Playground (Extended + Chat)</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Saju‑Eight • End‑to‑End Playground (Extended)</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap">
 
   <style>
-    :root{--bg:#0b1220;--panel:#121a2a;--muted:#6b7a90;--txt:#e9f0ff;--accent:#66b3ff;--ok:#49d39a;--err:#ff7a7a}
+    :root { --bg:#0b1220; --panel:#121a2a; --muted:#6b7a90; --txt:#e9f0ff; --accent:#66b3ff; --ok:#49d39a; --err:#ff7a7a; }
     *{box-sizing:border-box}
     body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,"Noto Sans KR","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:linear-gradient(120deg,#0b1220,#0e2342);color:var(--txt)}
-    .wrap{max-width:1040px;margin:42px auto;padding:0 18px}
-    .title{font-size:26px;font-weight:800;margin-bottom:8px}
-    .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
-    .card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
-    .grid{display:grid;gap:10px}
-    .grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
-    label{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}
-    select,input{width:100%;height:42px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:#0b1426;color:var(--txt);padding:0 12px;outline:none}
-    select:focus,input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(102,179,255,.2)}
-    .row{display:flex;gap:10px}
-    .row>*{flex:1}
-    button{height:42px;border:none;border-radius:12px;background:linear-gradient(135deg,#4da3ff,#66b3ff);color:#06101d;font-weight:800;cursor:pointer}
+    .wrap{max-width:980px;margin:36px auto;padding:0 16px}
+    .card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px 16px;box-shadow:0 10px 40px rgba(0,0,0,.35);margin-top:12px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .controls{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+    label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+    input,select,button,textarea{width:100%;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:#0b1426;color:var(--txt);outline:none}
+    button{background:linear-gradient(135deg,#4da3ff,#66b3ff);color:#06101d;font-weight:700;cursor:pointer;border:none}
     button[disabled]{opacity:.6;cursor:not-allowed}
     .muted{color:var(--muted);font-size:13px}
-    .kicker{font-size:11px;letter-spacing:.16em;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
-    .headline{font-size:18px;font-weight:800;margin:0 0 8px}
-    details{margin-top:10px}
-    pre{background:#081123;border:1px solid rgba(255,255,255,.08);padding:12px;border-radius:12px;overflow:auto}
-
-    /* Pillars */
-    .pillars{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-    .pillar{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);border-radius:16px;padding:12px}
-    .pillar h5{margin:0 0 6px;font-size:12px;color:#9fb3d6;text-align:center}
-    .tag{font-size:11px;color:#7dd3fc;text-align:center;margin-bottom:6px}
-    .box{height:78px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:42px;font-weight:800;border:1px solid #0003}
-    .wood{background:#16a34a;color:#fff}.fire{background:#ef4444;color:#fff}
-    .earth{background:#f59e0b;color:#111}.metal{background:#e5e7eb;color:#111;border-color:#cbd5e1}
-    .water{background:#06b6d4;color:#fff}
-    .gauge{display:flex;height:10px;overflow:hidden;border-radius:10px;border:1px solid #293042;margin-top:12px}
+    .kicker{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+    .headline{font-size:20px;font-weight:800;margin:0 0 6px}
+    .row{display:flex;gap:10px;align-items:center}
+    .row-sb{display:flex;gap:10px;align-items:center;justify-content:space-between}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);font-size:12px}
+    .ok{color:var(--ok)} .err{color:var(--err)}
+    ul{padding-left:18px;margin:8px 0 0}
+    .gauge{display:flex;height:10px;overflow:hidden;border-radius:10px;border:1px solid #2a2a2a;margin-top:12px}
     .gauge>div{height:100%}
-
-    /* Big Luck */
-    .luck{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
-    .luck-seg{flex:1;min-width:140px;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:8px 10px;background:rgba(255,255,255,.05)}
-    .luck-now{outline:2px solid #66b3ff;box-shadow:0 0 0 4px rgba(102,179,255,.2)}
-    .seg-t{font-size:12px;color:#bcd0f2}
-    .seg-g{font-size:15px;font-weight:800;margin-top:2px}
-    .seg-s{font-size:11px;color:#9fb3d6;margin-top:2px}
-
-    /* Reading sections */
-    .section{margin-top:12px}
-    .callout{margin-top:10px;padding:10px 12px;background:rgba(73,211,154,.09);border:1px solid rgba(73,211,154,.25);border-radius:12px}
-
-    /* Topic grid */
-    .topics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-    @media(min-width:860px){.topics{grid-template-columns:repeat(4,1fr)}}
-    .topic{border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px;background:rgba(255,255,255,.04)}
-    .topic h4{margin:0 0 4px;font-size:14px}
-    .topic p{margin:0 0 8px;color:#9fb3d6;font-size:12px}
-
-    /* Chat (iMessage-like) */
-    .chat-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px;margin-top:16px}
-    .chat-log{height:280px;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:8px;background:rgba(0,0,0,.25);border-radius:12px;border:1px solid rgba(255,255,255,.06)}
-    .chat-row{display:flex}
-    .chat-bubble{max-width:75%;padding:10px 12px;border-radius:16px;font-size:14px;line-height:1.45}
-    .chat-user{justify-content:flex-end}
-    .chat-user .chat-bubble{background:#4da3ff;color:#08111f;border-bottom-right-radius:6px}
-    .chat-ai .chat-bubble{background:#1b2336;border:1px solid rgba(255,255,255,.08);color:#e7efff;border-bottom-left-radius:6px}
-    .chat-input{display:flex;gap:8px;margin-top:10px}
-    .chat-input input{flex:1;height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:#0b1426;color:#e9f0ff;padding:0 12px;outline:none}
-    .chat-input button{min-width:88px;border:none;border-radius:12px;background:linear-gradient(135deg,#4da3ff,#66b3ff);color:#06101d;font-weight:700;cursor:pointer}
+    .wood{background:#16a34a}.fire{background:#ef4444}.earth{background:#f59e0b;color:#111}.metal{background:#e5e7eb;color:#111;border-color:#cbd5e1}.water{background:#06b6d4}
+    .pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    .pillar{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);border-radius:16px;padding:12px}
+    .pillar-title{font-size:12px;opacity:.8;text-align:center;margin-bottom:6px}
+    .box{height:70px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:700;border:1px solid #0003}
+    .chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:6px}
+    .chip{font-size:11px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}
+    .topics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    @media (max-width:780px){.controls{grid-template-columns:repeat(2,1fr)}.topics{grid-template-columns:repeat(2,1fr)}.pillars{grid-template-columns:repeat(2,1fr)}}
+    .topic{padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.04)}
+    .topic h4{margin:0 0 6px;font-size:14px}
+    .topic small{display:block;color:var(--muted);margin-bottom:8px}
+    .askbox{display:grid;grid-template-columns:1fr 80px;gap:8px;margin-top:8px}
+    .chat{display:flex;flex-direction:column;gap:8px;margin-top:8px;max-height:300px;overflow:auto}
+    .msg{padding:10px 12px;border-radius:12px;max-width:80%}
+    .me{align-self:flex-end;background:#2a3955}
+    .ai{align-self:flex-start;background:#162033}
+    .errline{color:var(--err);font-size:13px;margin-top:6px}
+    .toast{position:fixed;right:16px;bottom:16px;background:#162033;border:1px solid rgba(255,255,255,.12);color:var(--txt);padding:10px 12px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
   </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="title">Saju-Eight • End-to-End Playground (Extended)</div>
-  <div class="sub">Enter birth → timezone → pillars → 6-section English reading. Explore topic cards, then ask follow-ups in chat.</div>
+  <div class="wrap">
+    <!-- Controls -->
+    <div class="card">
+      <div class="controls">
+        <div><label>Birth year</label><select id="ySel"></select></div>
+        <div><label>Birth month</label><select id="mSel"></select></div>
+        <div><label>Birth day</label><select id="dSel"></select></div>
+        <div><label>Hour</label><select id="hSel"></select></div>
+        <div><label>Minute</label><select id="minSel"></select></div>
+      </div>
+      <div class="grid" style="margin-top:8px">
+        <div><label>Birth city (in English)</label><input id="city" placeholder="Seoul / New York / Tokyo" /></div>
+        <div>
+          <label>&nbsp;</label>
+          <div class="row"><button id="runBtn">Calculate & Generate</button><button id="fillExample" type="button" style="background:#7fb3ff;color:#081123">Fill Example</button></div>
+        </div>
+      </div>
+      <div id="status" class="muted" style="margin-top:8px;"></div>
+      <details style="margin-top:6px"><summary class="muted">What happens under the hood?</summary>
+        <ul class="muted">
+          <li>GET <code>/api/geo-timezone</code> → tzId</li>
+          <li>POST <code>/api/calc</code> → pillars, elements, luck ...</li>
+          <li>POST <code>/api/reading-generate</code> → English reading</li>
+        </ul>
+      </details>
+    </div>
 
-  <!-- FORM -->
-  <div class="card">
-    <div class="grid grid-4">
-      <div><label>Birth year</label><select id="year"></select></div>
-      <div><label>Birth month</label><select id="month"></select></div>
-      <div><label>Birth day</label><select id="day"></select></div>
-      <div><label>Hour</label><select id="hour"></select></div>
+    <!-- Pillars -->
+    <div id="pillarsCard" class="card" style="display:none"></div>
+
+    <!-- Big Luck -->
+    <div id="luckCard" class="card" style="display:none"></div>
+
+    <!-- Reading -->
+    <div id="readingCard" class="card" style="display:none"></div>
+
+    <!-- Topic grid -->
+    <div id="topicsCard" class="card" style="display:none"></div>
+
+    <!-- Ask (chat) -->
+    <div id="askCard" class="card" style="display:none">
+      <div class="kicker">Ask about your Saju</div>
+      <div class="muted">Ask me anything about timing, relationships, career, or health. I’ll use your current chart as context.</div>
+      <div id="chat" class="chat"></div>
+      <div class="askbox">
+        <input id="askInput" placeholder="e.g., When is a good time to change jobs?" />
+        <button id="askBtn">Ask</button>
+      </div>
+      <div id="askErr" class="errline" style="display:none"></div>
     </div>
-    <div class="grid grid-4" style="margin-top:10px">
-      <div><label>Minute</label><select id="minute"></select></div>
-      <div><label>Birth city (in English)</label><input id="city" placeholder="Seoul / New York / Tokyo"/></div>
-      <div class="row" style="align-items:end"><button id="calcBtn">Calculate & Generate</button></div>
-      <div class="row" style="align-items:end"><button id="fillBtn" type="button">Fill Example</button></div>
-    </div>
-    <div id="status" class="muted" style="margin-top:8px"></div>
-    <details style="margin-top:6px"><summary class="muted">What happens under the hood?</summary>
-      <ul class="muted">
-        <li>Step 1: <code>/api/geo-timezone</code> → geocode + tzId</li>
-        <li>Step 2: <code>/api/calc</code> → pillars / elements / ten gods / luck</li>
-        <li>Step 3: <code>/api/reading-generate</code> → 6 English sections (or synthesized if missing)</li>
-      </ul>
+
+    <!-- Debug -->
+    <details class="card"><summary>Debug JSON (geo/calc/reading)</summary>
+      <pre id="dbgGeo" class="muted"></pre>
+      <pre id="dbgCalc" class="muted"></pre>
+      <pre id="dbgRead" class="muted"></pre>
     </details>
   </div>
 
-  <!-- FOUR PILLARS -->
-  <div id="pillarsCard" class="card" style="margin-top:14px">
-    <div class="kicker">FOUR PILLARS</div>
-    <div id="pillarsRoot" class="pillars"></div>
-    <div id="gaugeRoot" class="gauge" style="margin-top:12px"></div>
-  </div>
-
-  <!-- BIG LUCK -->
-  <div id="luckCard" class="card" style="margin-top:12px">
-    <div class="kicker">BIG LUCK (10-year cycles)</div>
-    <div id="luckRoot" class="luck"></div>
-  </div>
-
-  <!-- READING (summary + 6 sections) -->
-  <div id="readingCard" class="card" style="margin-top:12px">
-    <div class="kicker">READING</div>
-    <h3 class="headline" id="readTitle">Your Saju Reading</h3>
-    <ul id="readBullets"></ul>
-    <div class="callout" id="readTry" style="display:none"></div>
-  </div>
-
-  <div id="sections"></div>
-
-  <!-- TOPIC GRID -->
-  <div class="card" style="margin-top:12px">
-    <div class="kicker">EXPLORE SPECIFIC FORTUNES</div>
-    <div class="topics">
-      <div class="topic"><h4>💰 Wealth & Money</h4><p>Income, savings, timing.</p><button id="tWealth">See insights</button></div>
-      <div class="topic"><h4>❤️ Love & Relationships</h4><p>Compatibility, meeting timing.</p><button id="tLove">See insights</button></div>
-      <div class="topic"><h4>🧱 Career & Growth</h4><p>Fit, leadership vs craft, pivots.</p><button id="tCareer">See insights</button></div>
-      <div class="topic"><h4>🌿 Health & Wellness</h4><p>Imbalance → care routines.</p><button id="tHealth">See insights</button></div>
-      <div class="topic"><h4>👶 Family & Children</h4><p>Fertility & family dynamics.</p><button id="tFamily">See insights</button></div>
-      <div class="topic"><h4>✈️ Travel / Relocation</h4><p>Good periods, cautions.</p><button id="tTravel">See insights</button></div>
-      <div class="topic"><h4>📚 Learning & Skills</h4><p>What to study, deepen talent.</p><button id="tLearn">See insights</button></div>
-      <div class="topic"><h4>⏱️ Timing & Windows</h4><p>Short-term chances.</p><button id="tTiming">See insights</button></div>
-    </div>
-  </div>
-
-  <!-- CHAT Q&A -->
-  <div class="chat-card" id="chatCard">
-    <div class="kicker">ASK ABOUT YOUR SAJU</div>
-    <div id="chatLog" class="chat-log">
-      <div class="chat-row chat-ai">
-        <div class="chat-bubble">Ask me anything about your Saju — timing, relationships, career, or health. I’ll use your current chart as context.</div>
-      </div>
-    </div>
-    <div class="chat-input">
-      <input id="chatInput" placeholder="e.g., When is a good time to change jobs?"/>
-      <button id="chatSend">Ask</button>
-    </div>
-    <div id="chatError" class="muted" style="margin-top:6px"></div>
-  </div>
-
-  <details class="card" style="margin-top:12px">
-    <summary>Debug JSON (geo/calc/reading)</summary>
-    <pre id="dbgGeo"></pre>
-    <pre id="dbgCalc"></pre>
-    <pre id="dbgRead"></pre>
-  </details>
-</div>
+  <div id="toast" class="toast" style="display:none"></div>
 
 <script>
-/* ---------- helpers ---------- */
+/* ---------- Utilities ---------- */
 const el = q => document.querySelector(q);
-const setStatus = (msg, type='') => { const s=el('#status'); s.textContent=msg; s.className='muted '+type; };
-async function fetchJSON(url,opts={}){const r=await fetch(url,opts);const t=await r.text();try{return{ok:r.ok,status:r.status,data:JSON.parse(t),raw:t}}catch{return{ok:r.ok,status:r.status,data:null,raw:t}}}
-const STEM_ELEM={甲:"wood",乙:"wood",丙:"fire",丁:"fire",戊:"earth",己:"earth",庚:"metal",辛:"metal",壬:"water",癸:"water"};
+const statusEl = el('#status');
+const toastEl  = el('#toast');
+function showToast(msg){ toastEl.textContent = msg; toastEl.style.display='block'; setTimeout(()=>toastEl.style.display='none', 2200); }
+function setStatus(msg,type=''){ statusEl.innerHTML = msg; statusEl.className='muted '+(type||''); }
+
+/* 안전 파서: JSON 아닐 때도 raw 보존 */
+async function safeFetchJSON(url, opts={}){
+  let r, t;
+  try{
+    r = await fetch(url, opts);
+    t = await r.text();
+  }catch(e){
+    return { ok:false, status:0, data:null, raw:String(e||'fetch_failed') };
+  }
+  let data = null;
+  try{ data = JSON.parse(t); }catch{ /* keep null */ }
+  return { ok: r.ok && !!data, status:r.status, data, raw:t };
+}
+
+/* ---------- Selects (YM D H m) ---------- */
+(function initSelectors(){
+  const ySel = el('#ySel'), mSel = el('#mSel'), dSel = el('#dSel'), hSel = el('#hSel'), minSel = el('#minSel');
+  const now = new Date().getFullYear();
+  for(let y=now; y>=1900; y--) ySel.insertAdjacentHTML('beforeend', `<option>${y}</option>`);
+  for(let m=1;m<=12;m++) mSel.insertAdjacentHTML('beforeend', `<option>${String(m).padStart(2,'0')}</option>`);
+  for(let d=1;d<=31;d++) dSel.insertAdjacentHTML('beforeend', `<option>${String(d).padStart(2,'0')}</option>`);
+  for(let h=0;h<24;h++) hSel.insertAdjacentHTML('beforeend', `<option>${String(h).padStart(2,'0')}</option>`);
+  for(let i=0;i<60;i+=5) minSel.insertAdjacentHTML('beforeend', `<option>${String(i).padStart(2,'0')}</option>`);
+
+  // defaults
+  ySel.value = '1992'; mSel.value = '06'; dSel.value='02'; hSel.value='09'; minSel.value='00';
+})();
+
+/* ---------- Renderers ---------- */
+const STEM_ELEM = {甲:"wood",乙:"wood",丙:"fire",丁:"fire",戊:"earth",己:"earth",庚:"metal",辛:"metal",壬:"water",癸:"water"};
 const BRANCH_ELEM={子:"water",丑:"earth",寅:"wood",卯:"wood",辰:"earth",巳:"fire",午:"fire",未:"earth",申:"metal",酉:"metal",戌:"earth",亥:"water"};
-const COLOR={wood:"wood",fire:"fire",earth:"earth",metal:"metal",water:"water"};
-const TITLES={hour:"Hour Pillar (시주)",day:"Day Pillar (일주)",month:"Month Pillar (월주)",year:"Year Pillar (년주)"};
-function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]))}
+const COLOR_CLASS={wood:"wood",fire:"fire",earth:"earth",metal:"metal",water:"water"};
 
-/* ---------- selects ---------- */
-(function initSelects(){
-  const y=el('#year'), m=el('#month'), d=el('#day'), h=el('#hour'), n=el('#minute');
-  const now=new Date().getFullYear();
-  for(let Y=1930;Y<=now;Y++){const o=document.createElement('option');o.value=Y;o.textContent=Y;y.appendChild(o)}
-  for(let i=1;i<=12;i++){const v=String(i).padStart(2,'0');const o=document.createElement('option');o.value=v;o.textContent=v;m.appendChild(o)}
-  for(let i=1;i<=31;i++){const v=String(i).padStart(2,'0');const o=document.createElement('option');o.value=v;o.textContent=v;d.appendChild(o)}
-  for(let i=0;i<24;i++){const v=String(i).padStart(2,'0');const o=document.createElement('option');o.value=v;o.textContent=v;h.appendChild(o)}
-  for(let i of [0,5,10,15,20,25,30,35,40,45,50,55]){const v=String(i).padStart(2,'0');const o=document.createElement('option');o.value=v;o.textContent=v;n.appendChild(o)}
-  // default
-  const def=new Date(); y.value=def.getFullYear(); m.value=String(def.getMonth()+1).padStart(2,'0'); d.value=String(def.getDate()).padStart(2,'0'); h.value="06"; n.value="00";
-})();
-
-/* ---------- UI renderers ---------- */
-function renderPillars(pillars,elements){
-  const root=el('#pillarsRoot'); root.innerHTML='';
-  ["hour","day","month","year"].forEach(k=>{
-    const p=pillars?.[k]; if(!p) return;
-    const stemClass=COLOR[STEM_ELEM[p.stem]]||"wood";
-    const brClass=COLOR[BRANCH_ELEM[p.branch]]||"earth";
-    const card=document.createElement('div'); card.className='pillar';
-    card.innerHTML=`
-      <h5>${TITLES[k]}</h5>
-      ${k==="day"?'<div class="tag">Day Master (Self) / 일간(나)</div>':''}
-      <div class="box ${stemClass}">${p.stem}</div>
-      <div class="box ${brClass}" style="margin-top:8px">${p.branch}</div>`;
-    root.appendChild(card);
-  });
-  const g=el('#gaugeRoot');
-  if(!elements){g.innerHTML='';return;}
-  const bars=["wood","fire","earth","metal","water"].map(e=>{
-    const pct=Math.max(2,Math.round((elements[e]||0)*100));
-    return `<div class="${COLOR[e]}" style="width:${pct}%"></div>`;
-  }).join('');
-  g.innerHTML=bars;
+function renderPillars(pillars,elements,tenGods,hiddenStems){
+  const root = el('#pillarsCard');
+  if(!pillars){ root.style.display='none'; return; }
+  root.style.display='block';
+  root.innerHTML = `
+    <div class="kicker">FOUR PILLARS</div>
+    <div class="pillars">
+      ${["hour","day","month","year"].map(k=>{
+        const p = pillars[k]; if(!p) return '';
+        const stemClass = COLOR_CLASS[STEM_ELEM[p.stem]]||'wood';
+        const brClass   = COLOR_CLASS[BRANCH_ELEM[p.branch]]||'earth';
+        const tg = (tenGods?.byPillar?.[k] || tenGods?.[k] || tenGods?.[k+'Stem']) || '';
+        const hs = hiddenStems?.[p.branch] || hiddenStems?.byBranch?.[p.branch] || [];
+        const title = ({hour:'Hour Pillar (시주)',day:'Day Pillar (일주)',month:'Month Pillar (월주)',year:'Year Pillar (년주)'}[k]);
+        return `
+          <div class="pillar">
+            <div class="pillar-title">${title}</div>
+            ${k==='day'?'<div class="muted" style="text-align:center;margin-bottom:6px">Day Master (Self) / 일간(나)</div>':''}
+            <div class="box ${stemClass}">${p.stem}</div>
+            <div class="box ${brClass}" style="margin-top:8px">${p.branch}</div>
+            ${tg?`<div class="chips"><span class="chip">${tg}</span></div>`:''}
+            ${Array.isArray(hs)&&hs.length?`<div class="chips">${hs.map(h=>`<span class="chip">${h}</span>`).join('')}</div>`:''}
+          </div>`;
+      }).join('')}
+    </div>
+    ${elements?`<div class="gauge" style="margin-top:10px">${["wood","fire","earth","metal","water"].map(e=>{const pct=Math.max(2,Math.round((elements[e]||0)*100));return `<div class="${COLOR_CLASS[e]}" style="width:${pct}%"></div>`}).join('')}</div>`:''}
+  `;
 }
 
-function renderLuck(luck,birthISO){
-  const age=calcAge(birthISO); const root=el('#luckRoot'); root.innerHTML='';
-  const list=Array.isArray(luck?.bigLuck)?luck.bigLuck:[];
-  list.forEach(seg=>{
-    const now = typeof age==='number' && age>=seg.startAge && age<seg.startAge+10;
-    const div=document.createElement('div'); div.className='luck-seg'+(now?' luck-now':'');
-    div.innerHTML=`<div class="seg-t">Age ${seg.startAge}–${seg.startAge+9}</div>
-      <div class="seg-g">${(seg.stem||'')+(seg.branch||'')}</div>
-      ${seg.tenGod?`<div class="seg-s">${seg.tenGod}</div>`:''}`;
-    root.appendChild(div);
-  });
+function renderLuck(luck,birthDateISO){
+  const root = el('#luckCard');
+  const list = luck?.bigLuck || [];
+  if(!Array.isArray(list)||!list.length){ root.style.display='none'; return; }
+  root.style.display='block';
+  const age = (function(b){const d=new Date(b+'T00:00:00');const n=new Date();let a=n.getFullYear()-d.getFullYear();const m=n.getMonth()-d.getMonth();if(m<0||(m===0&&n.getDate()<d.getDate()))a--;return a})(birthDateISO);
+  root.innerHTML = `
+    <div class="kicker">BIG LUCK (10-year cycles)</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${list.map(({startAge,stem,branch,tenGod})=>{
+        const now = typeof age==='number' && age>=startAge && age<startAge+10;
+        return `<div style="flex:1;min-width:110px;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:8px;background:rgba(255,255,255,.05);${now?'outline:2px solid #66b3ff;box-shadow:0 0 0 4px rgba(102,179,255,.2)':''}">
+          <div class="muted">Age ${startAge}–${startAge+9}</div>
+          <div style="font-weight:800;font-size:16px;margin-top:2px">${(stem||'')+(branch||'')}</div>
+          ${tenGod?`<div class="muted" style="font-size:12px;margin-top:2px">${tenGod}</div>`:''}
+        </div>`
+      }).join('')}
+    </div>`;
 }
-function calcAge(iso){if(!iso) return null; const b=new Date(iso+'T00:00:00'); const n=new Date(); let a=n.getFullYear()-b.getFullYear(); const m=n.getMonth()-b.getMonth(); if(m<0||(m===0&&n.getDate()<b.getDate())) a--; return a;}
 
-function renderReading6(sections){
-  const root=el('#sections'); root.innerHTML='';
-  const order=[
-    ["core","Your Unique Traits"],
-    ["balance","Finding Balance in Life"],
-    ["tengods","Understanding Your Ten Gods"],
-    ["luck","Your Luck Cycle"],
-    ["wellness","Wellness Suggestions"],
-    ["summary","Summary of Insights"]
+function renderReading(output, meta={}){
+  const root = el('#readingCard'); root.style.display='block';
+  const pill = meta.fallback?'<span class="pill">Fallback</span>':meta.mocked?'<span class="pill">Mock</span>':'<span class="pill ok">Live</span>';
+  root.innerHTML = `
+    <div class="row-sb">
+      <div class="kicker">READING</div>
+      <div>${pill}</div>
+    </div>
+    <h3 class="headline">${output.title || 'Your Saju Reading'}</h3>
+    ${Array.isArray(output.bullets)?`<ul>${output.bullets.map(b=>`<li>${b}</li>`).join('')}</ul>`:''}
+    ${output.forecastOneLiner?`<div class="muted" style="margin-top:8px">${output.forecastOneLiner}</div>`:''}
+    ${Array.isArray(output.sections)?output.sections.map(s=>`
+      <div style="margin-top:10px">
+        <div class="kicker">SECTION</div>
+        <div style="font-weight:800;margin-bottom:4px">${s.title||''}</div>
+        <div class="muted">${(s.body||'').replace(/\n/g,'<br>')}</div>
+      </div>`).join(''):''}
+  `;
+}
+
+function renderTopics(){
+  const root = el('#topicsCard'); root.style.display='block';
+  const topics = [
+    {key:'wealth', icon:'💰', title:'Wealth & Money', sub:'Income, savings, timing.'},
+    {key:'love', icon:'❤️', title:'Love & Relationships', sub:'Compatibility, meeting timing.'},
+    {key:'career', icon:'🧭', title:'Career & Growth', sub:'Fit, leadership vs craft, pivots.'},
+    {key:'health', icon:'🌿', title:'Health & Wellness', sub:'Imbalance → care routines.'},
+    {key:'family', icon:'👶', title:'Family & Children', sub:'Fertility & family dynamics.'},
+    {key:'travel', icon:'✈️', title:'Travel / Relocation', sub:'Good periods, cautions.'},
+    {key:'learning', icon:'📚', title:'Learning & Skills', sub:'What to study, deepen talent.'},
+    {key:'timing', icon:'⏱️', title:'Timing & Windows', sub:'Short‑term chances.'},
   ];
-  order.forEach(([k,title])=>{
-    const t=sections?.[k]; if(!t) return;
-    const box=document.createElement('div'); box.className='card section';
-    box.innerHTML=`<div class="kicker">SECTION</div><h3 class="headline">${esc(title)}</h3><div style="white-space:pre-wrap;opacity:.95">${esc(t)}</div>`;
-    root.appendChild(box);
+  root.innerHTML = `
+    <div class="kicker">EXPLORE SPECIFIC FORTUNES</div>
+    <div class="topics">
+      ${topics.map(t=>`
+        <div class="topic">
+          <h4>${t.icon} ${t.title}</h4>
+          <small>${t.sub}</small>
+          <button data-topic="${t.key}" class="seeBtn">See insights</button>
+          <div id="topic-${t.key}" class="muted" style="white-space:pre-wrap;margin-top:8px"></div>
+        </div>`).join('')}
+    </div>`;
+  root.querySelectorAll('.seeBtn').forEach(btn=>{
+    btn.addEventListener('click', ()=> handleTopic(btn.getAttribute('data-topic')));
   });
 }
 
-/* ---------- synthesize 6 sections if backend doesn't send them ---------- */
-function synthesizeSections(ctx,out){
-  // very lightweight rule-based write-up (>=4 sentences each)
-  const dm = ctx?.pillars?.day?.stem || '';
-  const dmElem = STEM_ELEM[dm]||'';
-  const elem = ctx?.elements||{};
-  const top = Object.entries(elem).sort((a,b)=>b[1]-a[1]).map(([k])=>k);
-  const hi = top[0]||'', lo = top[4]||'';
-  const luckNow = (ctx?.luck?.bigLuck||[]).find(({startAge})=>{
-    const a=calcAge(ctx?.birthDateISO); return typeof a==='number'&&a>=startAge&&a<startAge+10;
-  });
-
-  const elemWord = e=>({wood:'Wood',fire:'Fire',earth:'Earth',metal:'Metal',water:'Water'}[e]||e);
-  const dmText = dm ? `As a Day Master represented by ${dm} (${elemWord(dmElem)}), you tend to express the qualities of ${dmElem}.` : '';
-  const core = [
-    `${dmText} Your chart shows a blend of strengths you can apply in daily life.`,
-    `You naturally lean toward ${elemWord(hi)} qualities right now, while ${elemWord(lo)} appears comparatively quieter.`,
-    `This combination can shape how you communicate, plan, and make decisions.`,
-    `Leaning into your strengths while gently developing the quieter areas will keep you balanced and effective.`
-  ].join(' ');
-
-  const balance = [
-    `Your elemental balance highlights ${elemWord(hi)} as a leading force with room to cultivate ${elemWord(lo)}.`,
-    `Build balance through simple routines: colors, environments, or activities associated with ${elemWord(lo)}.`,
-    `For example, choose hobbies, foods, or nature time that symbolize this element to steadily nourish it.`,
-    `Small, consistent changes will keep your energy stable across relationships and work.`
-  ].join(' ');
-
-  const tg = ctx?.tenGods?.summary || 'Your Ten Gods suggest how you relate to power, resources, expression, and support.';
-  const tengods = [
-    tg,
-    `Notice which roles feel most natural—leading, collaborating, researching, or crafting—and align your efforts with them.`,
-    `Use supportive roles around you to complement your style and avoid doing everything alone.`,
-    `As your circumstances shift, your Ten Gods profile becomes a helpful compass for choosing next steps.`
-  ].join(' ');
-
-  const luck = [
-    luckNow ? `Your current 10-year cycle (Age ${luckNow.startAge}–${luckNow.startAge+9}) emphasizes ${(luckNow.tenGod||'growth and learning').toLowerCase()}.` : `Your luck cycles move in 10-year phases; each brings different opportunities.`,
-    `Treat each phase like a theme year: double down on what is supported and keep experiments lightweight elsewhere.`,
-    `Mark gentle checkpoints each quarter to adjust plans to real-world feedback.`,
-    `This rhythm will help you ride momentum without burning out.`
-  ].join(' ');
-
-  const wellness = [
-    `Well-being stabilizes when the quieter element—${elemWord(lo)}—gets steady attention.`,
-    `Pair focused work with grounding breaks to keep mental clarity and emotional ease.`,
-    `Sleep, hydration, and light movement form the base; a tiny habit every day beats a big burst once a month.`,
-    `As balance improves, you’ll notice clearer thinking and more consistent energy.`
-  ].join(' ');
-
-  const summary = [
-    `In short, lead with ${elemWord(hi)} while nurturing ${elemWord(lo)}.`,
-    `Use your Ten Gods strengths to choose roles that fit; invite support for the rest.`,
-    `Follow the current luck theme with a simple quarterly rhythm.`,
-    `Consistency over intensity will help your talents compound over time.`
-  ].join(' ');
-
-  return { core, balance, tengods, luck, wellness, summary };
+function pushMsg(role,text){
+  const c = el('#chat'); const div = document.createElement('div');
+  div.className = 'msg '+(role==='user'?'me':'ai'); div.textContent = text; c.appendChild(div); c.scrollTop = c.scrollHeight;
 }
 
-/* ---------- Chat (Ask) ---------- */
-(function chatInit(){
-  const log=el('#chatLog'), input=el('#chatInput'), send=el('#chatSend'), err=el('#chatError');
-  function add(role,text){
-    const row=document.createElement('div'); row.className='chat-row '+(role==='user'?'chat-user':'chat-ai');
-    const b=document.createElement('div'); b.className='chat-bubble'; b.textContent=text; row.appendChild(b);
-    log.appendChild(row); log.scrollTop=log.scrollHeight;
-  }
-  async function ask(){
-    const q=input.value.trim(); if(!q) return; add('user',q); input.value=''; err.textContent='';
-    const ctx=window.__latestCalcContext||null;
-    if(!ctx){ add('assistant','Please run “Calculate & Generate” first so I can read your chart.'); return; }
-    try{
-      const r=await fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q,context:ctx})});
-      const j=await r.json();
-      if(!j.ok){ err.textContent='Failed to get an answer. Try again.'; add('assistant','Hmm, I couldn’t reach the assistant. Please try again.'); return; }
-      add('assistant',j.answer);
-    }catch(e){ err.textContent=e?.message||'Network error'; add('assistant','Network error — please try again.'); }
-  }
-  send.addEventListener('click',ask);
-  input.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); ask(); }});
-})();
+function askError(msg){ const e=el('#askErr'); e.textContent = msg; e.style.display='block'; setTimeout(()=>e.style.display='none',2500); }
 
-/* ---------- Topic buttons → inject prompt to chat ---------- */
-const topicBtns = [
-  ['#tWealth', "Based on my chart, what are the next 6–12 months like for income and savings? Include helpful timing windows if any."],
-  ['#tLove', "From my Saju chart, what can I expect in love & relationships this year? Any good timing to meet someone or strengthen a bond?"],
-  ['#tCareer', "According to my chart, what career path or pivot fits me better now — leadership vs craft? Any suggested timing to make a change?"],
-  ['#tHealth', "Looking at my elements, what lifestyle or wellness routines should I focus on for better balance?"],
-  ['#tFamily', "Any insights around family/children based on my chart? Consider both dynamics and timing."],
-  ['#tTravel', "Is there a favorable period for travel or relocation in the next 12 months? Any cautions?"],
-  ['#tLearn', "What should I study or upskill next to play to my strengths?"],
-  ['#tTiming', "What short-term timing windows look promising for a small personal goal or launch?"]
-];
-topicBtns.forEach(([sel, prompt])=>{
-  const btn=el(sel); if(!btn) return;
-  btn.addEventListener('click',()=>{ el('#chatInput').value=prompt; el('#chatSend').click(); });
+/* ---------- Global chart cache ---------- */
+let G = { geo:null, calc:null, read:null };
+
+/* ---------- Button actions ---------- */
+el('#fillExample').addEventListener('click', ()=>{
+  el('#ySel').value='1989'; el('#mSel').value='10'; el('#dSel').value='20'; el('#hSel').value='06'; el('#minSel').value='00';
+  el('#city').value='seoul';
 });
 
-/* ---------- main flow ---------- */
-el('#fillBtn').addEventListener('click',()=>{
-  el('#year').value='1989'; el('#month').value='10'; el('#day').value='20'; el('#hour').value='06'; el('#minute').value='00'; el('#city').value='seoul';
-});
+el('#runBtn').addEventListener('click', runAll);
+el('#askBtn').addEventListener('click', doAsk);
 
-el('#calcBtn').addEventListener('click', async ()=>{
-  const Y=el('#year').value, M=el('#month').value, D=el('#day').value;
-  const birthDateISO = `${Y}-${M}-${D}`;
-  const birthTime = `${el('#hour').value}:${el('#minute').value}`;
+async function runAll(){
+  const y=el('#ySel').value, m=el('#mSel').value, d=el('#dSel').value;
+  const hh=el('#hSel').value, mm=el('#minSel').value;
   const city = el('#city').value.trim();
-  if(!city){ setStatus('Please enter a birth city (English).','err'); return; }
+  if(!y || !m || !d || !city){ setStatus('Please fill Y/M/D and city.','err'); return; }
 
-  // Step 1: geo-timezone
+  const birthDateISO = `${y}-${m}-${d}`;
+  const birthTime = `${hh}:${mm}`;
+
+  // Step 1
   setStatus('Step 1/3: Resolving city → timezone…');
-  const geo = await fetchJSON(`/api/geo-timezone?city=${encodeURIComponent(city)}`);
-  el('#dbgGeo').textContent = `geo-timezone\n${geo.raw}`;
-  if(!geo.ok||!geo.data?.timezone){ setStatus('Failed on Step 1 (geo-timezone).','err'); return; }
+  const geo = await safeFetchJSON(`/api/geo-timezone?city=${encodeURIComponent(city)}`);
+  el('#dbgGeo').textContent = 'geo-timezone\n'+(geo.data?JSON.stringify(geo.data,null,2):geo.raw);
+  if(!geo.ok || !geo.data?.timezone){ setStatus('Failed on Step 1 (geo-timezone).','err'); showToast(geo.data?.error||'Network error'); return; }
   const { lat, lng } = geo.data.location; const tzId = geo.data.timezone;
 
-  // Step 2: calc
+  // Step 2
   setStatus('Step 2/3: Calculating pillars/elements…');
-  const calcPayload = { birthDateISO, birthTime, tzId, lat, lng, timeAccuracy:'exact' };
-  const calc = await fetchJSON('/api/calc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(calcPayload)});
-  el('#dbgCalc').textContent = `calc\n${calc.raw}`;
-  if(!calc.ok||!calc.data?.data){ setStatus('Failed on Step 2 (calc).','err'); return; }
+  const calc = await safeFetchJSON('/api/calc',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ birthDateISO, birthTime, lat, lng, tzId, timeAccuracy:'exact' })
+  });
+  el('#dbgCalc').textContent = 'calc\n'+(calc.data?JSON.stringify(calc.data,null,2):calc.raw);
+  if(!calc.ok || !calc.data?.data){ setStatus('Failed on Step 2 (calc).','err'); showToast(calc.data?.error||'Server error'); return; }
 
-  const d = calc.data.data||{};
-  const { pillars, elements, luck, tenGods, hiddenStems, interactions } = d;
-  renderPillars(pillars,elements);
-  renderLuck(luck,birthDateISO);
+  const dcalc = calc.data.data || {};
+  const { pillars, elements, tenGods, hiddenStems, interactions, luck } = dcalc;
+  renderPillars(pillars, elements, tenGods, hiddenStems);
+  renderLuck(luck, birthDateISO);
 
-  // Ask 컨텍스트 저장 (chat에서 사용)
-  window.__latestCalcContext = {
-    birthDateISO, birthTime, tzId, lat, lng,
-    pillars, elements, tenGods, hiddenStems, interactions, luck
-  };
-
-  // Step 3: reading (long / 6 sections)
+  // Step 3
   setStatus('Step 3/3: Generating English reading…');
-  const read = await fetchJSON('/api/reading-generate',{
-    method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      pillars,elements,tenGods,interactions,
-      type:'summary',locale:'en-US',length:'long',maxBullets:6,
-      wantSections:true
+  const read = await safeFetchJSON('/api/reading-generate', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ pillars, elements, tenGods, interactions, type:'summary', locale:'en-US', length:'long', maxBullets:6 })
+  });
+  el('#dbgRead').textContent = 'reading\n'+(read.data?JSON.stringify(read.data,null,2):read.raw);
+  if(!read.ok || !read.data?.output){ setStatus('Failed on Step 3 (reading).','err'); showToast(read.data?.error||'LLM error'); return; }
+
+  renderReading(read.data.output, { fallback: read.data.fallback, mocked: read.data.mocked });
+  renderTopics();
+  el('#askCard').style.display='block';
+
+  setStatus(`Done • tz: ${tzId} • lat:${lat.toFixed(4)}, lng:${lng.toFixed(4)}`, 'ok');
+
+  // cache for topic/ask
+  G = { geo:geo.data, calc:dcalc, read:read.data, meta:{ birthDateISO, birthTime, tzId } };
+}
+
+async function handleTopic(topicKey){
+  if(!G?.calc?.pillars){ showToast('Run Calculate first.'); return; }
+  const target = el(`#topic-${topicKey}`); target.textContent = 'Loading…';
+  const resp = await safeFetchJSON('/api/topic-insight', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      topic: topicKey,
+      pillars: G.calc.pillars,
+      elements: G.calc.elements,
+      tenGods: G.calc.tenGods,
+      interactions: G.calc.interactions,
+      luck: G.calc.luck,
+      locale:'en-US'
     })
   });
-  el('#dbgRead').textContent = `reading\n${read.raw}`;
-  if(!read.ok||!read.data){ setStatus('Failed on Step 3 (reading).','err'); return; }
+  if(!resp.ok){ target.textContent = `⚠️ ${resp.data?.error || 'Network error'}\n${resp.raw?.slice(0,160)}`; return; }
+  target.textContent = resp.data.output || '(empty)';
+}
 
-  const out = read.data.output || {};
-  el('#readTitle').textContent = out.title || 'Your Saju Reading';
-  el('#readBullets').innerHTML = (out.bullets||[]).map(b=>`<li>${b}</li>`).join('');
-  if(out.actions&&out.actions[0]){ el('#readTry').style.display='block'; el('#readTry').innerHTML=`<strong>Try:</strong> ${out.actions[0]}`; }
-  else { el('#readTry').style.display='none'; }
+async function doAsk(){
+  const q = el('#askInput').value.trim();
+  if(!q) return;
+  if(!G?.calc?.pillars){ askError('Run Calculate first.'); return; }
+  pushMsg('user', q);
+  el('#askInput').value='';
 
-  // ✅ 섹션: 서버 → 없으면 프론트 합성
-  const sectionsFromServer = read.data.sections || out.sections;
-  const sections = sectionsFromServer || synthesizeSections(window.__latestCalcContext, out);
-  renderReading6(sections);
+  const resp = await safeFetchJSON('/api/ask', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      question: q,
+      pillars: G.calc.pillars,
+      elements: G.calc.elements,
+      tenGods: G.calc.tenGods,
+      interactions: G.calc.interactions,
+      luck: G.calc.luck,
+      locale:'en-US'
+    })
+  });
 
-  setStatus(`Done • tz: ${tzId} • lat:${(+lat).toFixed(4)}, lng:${(+lng).toFixed(4)}`,'ok');
-});
+  if(!resp.ok){
+    pushMsg('assistant', `⚠️ ${resp.data?.error || 'Network error'}\n${(resp.raw||'').slice(0,180)}`);
+    return;
+  }
+  pushMsg('assistant', resp.data.output || '(empty)');
+}
 </script>
 </body>
 </html>
