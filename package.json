@@ -7,3 +7,12 @@
     "tz-lookup": "6.1.25"
   }
 }
+
+{
+  "dependencies": {
+    "lunar-javascript": "^1.6.13",
+    "dayjs": "^1.11.11",
+    "dayjs-plugin-utc": "^0.1.2",
+    "dayjs-plugin-timezone": "^0.1.2"
+  }
+}
