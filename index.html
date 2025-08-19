@@ -284,20 +284,35 @@ function renderReading6(sectionsIn){
 </script>
 
 <script>
-/* ---------- fortunes (GET 우선, POST 폴백) ---------- */
-const TOPICS=[
-  {key:'wealth',icon:'💰',name:'Wealth & Money',hint:'Income, savings, timing.'},
-  {key:'love',icon:'❤️',name:'Love & Relationships',hint:'Compatibility, timing.'},
-  {key:'career',icon:'🧰',name:'Career & Growth',hint:'Fit, leadership vs craft.'},
-  {key:'health',icon:'🌿',name:'Health & Wellness',hint:'Imbalance → care.'},
-  {key:'family',icon:'👶',name:'Family & Children',hint:'Fertility & dynamics.'},
-  {key:'travel',icon:'✈️',name:'Travel / Relocation',hint:'Good periods, cautions.'},
-  {key:'learning',icon:'📘',name:'Learning & Skills',hint:'What to study.'},
-  {key:'timing',icon:'⏱️',name:'Timing & Windows',hint:'Short‑term chances.'},
+/* ---------- Specific Fortunes: 강력 폴백 버전 ---------- */
+
+/** 프론트 키 → 백엔드가 좋아할 듯한 다양한 별칭들 */
+const TOPIC_ALIASES = {
+  wealth:        ['wealth','money','finance','wealth_money'],
+  love:          ['love','relationships','love_relationships','romance'],
+  career:        ['career','growth','career_growth'],
+  health:        ['health','wellness','health_wellness'],
+  family:        ['family','children','family_children'],
+  travel:        ['travel','relocation','travel_relocation','move'],
+  learning:      ['learning','skills','learning_skills','study'],
+  timing:        ['timing','windows','timing_windows','luck_windows'],
+};
+
+/** UI 메타 */
+const TOPICS = [
+  {key:'wealth',   icon:'💰', name:'Wealth & Money',       hint:'Income, savings, timing.'},
+  {key:'love',     icon:'❤️', name:'Love & Relationships', hint:'Compatibility, timing.'},
+  {key:'career',   icon:'🧰', name:'Career & Growth',      hint:'Fit, leadership vs craft.'},
+  {key:'health',   icon:'🌿', name:'Health & Wellness',    hint:'Imbalance → care.'},
+  {key:'family',   icon:'👶', name:'Family & Children',    hint:'Fertility & dynamics.'},
+  {key:'travel',   icon:'✈️', name:'Travel / Relocation',  hint:'Good periods, cautions.'},
+  {key:'learning', icon:'📘', name:'Learning & Skills',    hint:'What to study.'},
+  {key:'timing',   icon:'⏱️', name:'Timing & Windows',     hint:'Short‑term chances.'},
 ];
 
 function mountFortuneGrid(){
-  const g=Q('#fgrid'); g.innerHTML='';
+  const g=document.querySelector('#fgrid'); if(!g) return;
+  g.innerHTML='';
   TOPICS.forEach(t=>{
     const card=document.createElement('div'); card.className='ftile'; card.dataset.key=t.key;
     card.innerHTML=`
@@ -315,56 +330,127 @@ function mountFortuneGrid(){
     `;
     g.appendChild(card);
   });
-  g.querySelectorAll('.see').forEach(b=>b.addEventListener('click',()=>expandTopic(b.closest('.ftile'))));
+  g.querySelectorAll('.see').forEach(btn=>{
+    btn.addEventListener('click',()=>expandTopic(btn.closest('.ftile')));
+  });
 }
 
+/** 카드 안에 깔끔하게 에러 보여주기 */
+function showFortuneError(content, label, resp){
+  const message = (resp && resp.data && (resp.data.error||resp.data.message))
+               || (resp && resp.raw) || 'Network error — please try again.';
+  const status  = resp && resp.status ? `status: ${resp.status}` : '';
+  content.innerHTML = `
+    <div class="block" style="border-color:#f59e0b80">
+      <div class="btitle">${label}</div>
+      <div class="err">Network / Server error</div>
+      <div class="small" style="margin-top:6px">${status}</div>
+      <pre class="small" style="white-space:pre-wrap;margin-top:8px;background:#0b1426;border:1px solid rgba(255,255,255,.08);padding:8px;border-radius:8px">${String(message).slice(0,1200)}</pre>
+      <div class="closewrap"><button class="closebtn">Close</button></div>
+    </div>`;
+  content.style.display='block';
+  const close=content.querySelector('.closebtn');
+  if(close) close.addEventListener('click',()=>{content.style.display='none';});
+}
+
+/** 마크다운 가볍게 */
+function mdFortune(s){ return (typeof s==='string'?s:String(s||''))
+  .replace(/\r\n/g,'\n').trim()
+  .replace(/^### +(.+)$/gm,'<div class="btitle">$1</div>')
+  .replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')
+  .replace(/^(\-|\u2022) (.+)$/gm,'• $2'); }
+
+/** 여러 조합으로 API를 두들겨서 되는 것에 맞춘다 */
+async function callFortuneAPI(frontKey){
+  const ctx = window.__chartCtx || null;
+  const names = TOPIC_ALIASES[frontKey] || [frontKey];
+
+  const attempts = [];
+
+  // 1) /api/ask GET with different param names
+  names.forEach(n=>{
+    attempts.push({m:'GET', url:`/api/ask?topic=${encodeURIComponent(n)}&mode=fortune`});
+    attempts.push({m:'GET', url:`/api/ask?category=${encodeURIComponent(n)}&mode=fortune`});
+  });
+
+  // 2) /api/fortune GET (있다면)
+  names.forEach(n=>{
+    attempts.push({m:'GET', url:`/api/fortune?topic=${encodeURIComponent(n)}`});
+    attempts.push({m:'GET', url:`/api/fortune?category=${encodeURIComponent(n)}`});
+  });
+
+  // 3) /api/ask POST
+  names.forEach(n=>{
+    attempts.push({m:'POST', url:'/api/ask', body:{topic:n, mode:'fortune', ctx}});
+    attempts.push({m:'POST', url:'/api/ask', body:{category:n, mode:'fortune', ctx}});
+  });
+
+  // 4) /api/fortune POST
+  names.forEach(n=>{
+    attempts.push({m:'POST', url:'/api/fortune', body:{topic:n, ctx}});
+    attempts.push({m:'POST', url:'/api/fortune', body:{category:n, ctx}});
+  });
+
+  // 실제 시도
+  for (const a of attempts){
+    try{
+      const opt = a.m==='POST'
+        ? {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(a.body||{})}
+        : {};
+      const r = await fetchJSON(a.url, opt);
+      if (r.ok && (r.data?.ok!==false) && (r.data?.output || r.data?.data)){
+        const out = r.data.output || r.data.data;
+        return {ok:true, out, meta:a};
+      }
+      // 계속 시도
+    }catch(e){ /* skip */ }
+  }
+  return {ok:false, error:'all attempts failed'};
+}
+
+/** 카드 확장 */
 async function expandTopic(card){
   const key=card.dataset.key;
   const btn=card.querySelector('.see');
   const content=card.querySelector('.fcontent');
   btn.disabled=true; btn.textContent='Loading…';
-  try{
-    // GET 우선
-    let r = await fetchJSON(`/api/ask?topic=${encodeURIComponent(key)}`);
-    // 실패 또는 메서드 제한 → POST 폴백
-    if(!r.ok || (!r.data?.ok && !r.data?.output)){
-      const body = { topic:key, mode:'fortune' };
-      if (window.__chartCtx) body.ctx = window.__chartCtx;
-      r = await fetchJSON('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    }
-    if(!r.ok || (!r.data?.ok && !r.data?.output)) throw 0;
-    const o = r.data.output || r.data.data || {};
 
+  try{
+    const res = await callFortuneAPI(key);
+    if(!res.ok){ showFortuneError(content, 'Specific Fortune', res.lastResp||{}); return; }
+
+    const o = res.out || {};
     const blocks=[];
     if (o.overview||o.summary) blocks.push({title:'Overview', body:o.overview||o.summary});
     if (o.phases||o.keyPhases) blocks.push({title:'Key Phases', body:o.phases||o.keyPhases});
     if (o.watch||o.watchOut) blocks.push({title:'Watch Out', body:o.watch||o.watchOut});
     if (o.tips) blocks.push({title:'Tips', body:o.tips});
-    if (Array.isArray(o.blocks)&&o.blocks.length){
-      o.blocks.forEach(b=>blocks.push({title:b.title, body:b.body||b.text||''}));
-    }
+    if (Array.isArray(o.blocks)&&o.blocks.length) o.blocks.forEach(b=>blocks.push({title:b.title, body:b.body||b.text||''}));
     if (!blocks.length && (o.html||o.text)) blocks.push({title:'Overview', body:o.html||o.text});
 
     if (!blocks.length){
-      content.innerHTML = `<div class="block">No insight returned. Try again.</div>`;
+      content.innerHTML = `<div class="block">No insight returned for <b>${key}</b>. Try another topic.</div>`;
     }else{
       content.innerHTML = blocks.map(b=>`
         <div class="block">
           ${b.title?`<div class="btitle">${b.title}</div>`:''}
-          <div>${md(b.body||'')}</div>
-        </div>
-      `).join('') + `<div class="closewrap"><button class="closebtn">Close</button></div>`;
+          <div>${mdFortune(b.body||'')}</div>
+        </div>`).join('')
+        + `<div class="closewrap"><button class="closebtn">Close</button></div>`;
     }
     content.style.display='block';
     btn.style.display='none';
     content.querySelector('.closebtn').addEventListener('click',()=>{content.style.display='none'; btn.style.display='inline-block';});
   }catch(e){
-    content.innerHTML=`<div class="block err">Network error — please try again.</div>`;
-    content.style.display='block';
-    setTimeout(()=>{content.style.display='none'},2200);
+    showFortuneError(content, 'Specific Fortune', {raw:String(e)});
   }finally{
     btn.disabled=false; btn.textContent='See insights';
   }
+}
+
+/* 페이지 최초 1회만 다시 심어주면 됨 */
+if (document.querySelector('#fgrid')) {
+  mountFortuneGrid();
 }
 </script>
 
