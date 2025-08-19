@@ -357,5 +357,140 @@ Q('#run').addEventListener('click', async ()=>{
 mountFortuneGrid();
 addMsg("Hi! Ask me anything about timing, relationships, career, or health. I’ll use your current chart as context.",'bot');
 </script>
+  ...
+<!-- 기존 스크립트들 -->
+<script>/* ... your app scripts ... */</script>
+
+<!-- ↓↓↓ 여기에 그대로 붙여넣기 ↓↓↓ -->
+<script>
+/**
+ * Network-safe fetchJSON + pretty error renderer (drop-in)
+ * - 기존 window.fetchJSON을 이 안전 버전으로 교체
+ * - 어디서든 renderNetworkError(container, label, resp) 호출 가능
+ * - resp 형태: { ok:boolean, status:number, data:object|null, raw:string }
+ */
+(function () {
+  // 스타일이 없을 경우를 대비한 최소 스타일(있으면 무시됨)
+  const style = document.createElement('style');
+  style.textContent = `
+    .sx-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px}
+    .sx-kicker{font-size:12px;letter-spacing:.16em;text-transform:uppercase;opacity:.7;margin-bottom:6px}
+    .sx-err{color:#f8d48b}
+    .sx-pre{white-space:pre-wrap;opacity:.85;margin-top:6px;background:#0b1426;border:1px solid rgba(255,255,255,.08);padding:8px;border-radius:8px;max-height:220px;overflow:auto}
+  `;
+  document.head.appendChild(style);
+
+  // 기존 fetchJSON 보관(있다면)
+  const _prevFetchJSON = window.fetchJSON;
+
+  /**
+   * 안전한 fetchJSON: 항상 {ok, status, data, raw}로 반환
+   * - HTTP 200이더라도 JSON 파싱 실패하면 ok=false
+   * - 네트워크 예외도 ok=false
+   */
+  async function safeFetchJSON(url, opts = {}) {
+    try {
+      const r = await fetch(url, opts);
+      const text = await r.text();
+      let data = null;
+      try { data = JSON.parse(text); } catch { /* ignore parse error */ }
+      return { ok: r.ok && !!data, status: r.status, data, raw: text };
+    } catch (e) {
+      return { ok: false, status: 0, data: null, raw: String(e && e.message || e) };
+    }
+  }
+
+  // 전역 교체 (기존 함수가 있어도 덮어씀)
+  window.fetchJSON = safeFetchJSON;
+
+  /**
+   * 예쁜 에러 표시기
+   * @param {HTMLElement} container - 에러를 표시할 DOM
+   * @param {string} label - 섹션 라벨(예: 'READING', 'Wealth & Money')
+   * @param {object} resp - fetchJSON 반환 객체
+   * @param {object} [opt] - 옵션 {hint?:string}
+   */
+  window.renderNetworkError = function renderNetworkError(container, label, resp, opt = {}) {
+    if (!container) return;
+    const msg = (resp && resp.data && resp.data.error)
+      || (resp && resp.raw)
+      || 'Network error — please try again.';
+
+    const hint = opt.hint
+      ? `<div style="margin-top:8px;opacity:.75">${opt.hint}</div>`
+      : '';
+
+    container.innerHTML = `
+      <div class="sx-card" style="border-color:#f59e0b80">
+        <div class="sx-kicker">${label || 'ERROR'}</div>
+        <div class="sx-err">Network / Server error</div>
+        ${resp?.status ? `<div style="opacity:.8;margin-top:4px">status: ${resp.status}</div>` : ''}
+        <div class="sx-pre">${String(msg).slice(0, 1200)}</div>
+        ${hint}
+      </div>
+    `;
+  };
+
+  /**
+   * 편의 함수: 실패 응답이면 자동 렌더링
+   * @param {HTMLElement} container
+   * @param {string} label
+   * @param {object} resp
+   * @returns {boolean} true면 에러 렌더링 완료(상위 로직 중단), false면 계속 진행
+   */
+  window.renderErrorIfNeeded = function (container, label, resp) {
+    if (!resp || !resp.ok || (resp.data && resp.data.ok === false)) {
+      window.renderNetworkError(container, label, resp);
+      return true;
+    }
+    return false;
+  };
+
+  /**
+   * 전역 미처리 예외/Promise 거부를 콘솔과 토스트로 알려줌(선택)
+   * 원치 않으면 아래 리스너 둘을 지워도 됨.
+   */
+  function toast(msg) {
+    try {
+      const el = document.createElement('div');
+      el.textContent = msg;
+      el.style.cssText = `
+        position:fixed;left:50%;transform:translateX(-50%);
+        bottom:20px;max-width:90vw;z-index:99999;
+        background:#2b1b1b;color:#ffd7d7;border:1px solid #ff7a7a66;
+        padding:8px 12px;border-radius:8px;font-size:12px;opacity:.98
+      `;
+      document.body.appendChild(el);
+      setTimeout(()=>el.remove(), 3500);
+    } catch {}
+  }
+  window.addEventListener('unhandledrejection', (e) => {
+    console.error('[Unhandled rejection]', e.reason);
+    toast('A background error occurred. Check console.');
+  });
+  window.addEventListener('error', (e) => {
+    console.error('[Window error]', e.error || e.message);
+    // toast('A script error occurred. Check console.');
+  });
+
+  // 디버그 헬퍼: 최근 실패 응답을 저장(필요 시 콘솔에서 확인)
+  window.__lastApiError = null;
+  const _fetchJSONProbe = window.fetchJSON;
+  window.fetchJSON = async function wrappedFetchJSON(url, opts) {
+    const r = await _fetchJSONProbe(url, opts);
+    if (!r.ok || (r.data && r.data.ok === false)) {
+      window.__lastApiError = { url, opts, resp: r };
+    }
+    return r;
+  };
+
+  // 사용 가이드(콘솔에 1회)
+  try {
+    console.info(
+      '[Saju Error Helper] fetchJSON patched. Use renderNetworkError(container, label, resp) when resp.ok === false.'
+    );
+  } catch {}
+})();
+</script>
 </body>
 </html>
