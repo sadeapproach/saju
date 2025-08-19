@@ -1,369 +1,395 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Saju‑Eight • End‑to‑End Playground (Extended)</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Saju‑Eight • Playground (Extended)</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap">
 
-  <style>
-    :root { --bg:#0b1220; --panel:#121a2a; --muted:#6b7a90; --txt:#e9f0ff; --accent:#66b3ff; --ok:#49d39a; --err:#ff7a7a; }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,"Noto Sans KR","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:linear-gradient(120deg,#0b1220,#0e2342);color:var(--txt)}
-    .wrap{max-width:980px;margin:36px auto;padding:0 16px}
-    .card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px 16px;box-shadow:0 10px 40px rgba(0,0,0,.35);margin-top:12px}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .controls{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
-    label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
-    input,select,button,textarea{width:100%;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:#0b1426;color:var(--txt);outline:none}
-    button{background:linear-gradient(135deg,#4da3ff,#66b3ff);color:#06101d;font-weight:700;cursor:pointer;border:none}
-    button[disabled]{opacity:.6;cursor:not-allowed}
-    .muted{color:var(--muted);font-size:13px}
-    .kicker{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
-    .headline{font-size:20px;font-weight:800;margin:0 0 6px}
-    .row{display:flex;gap:10px;align-items:center}
-    .row-sb{display:flex;gap:10px;align-items:center;justify-content:space-between}
-    .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);font-size:12px}
-    .ok{color:var(--ok)} .err{color:var(--err)}
-    ul{padding-left:18px;margin:8px 0 0}
-    .gauge{display:flex;height:10px;overflow:hidden;border-radius:10px;border:1px solid #2a2a2a;margin-top:12px}
-    .gauge>div{height:100%}
-    .wood{background:#16a34a}.fire{background:#ef4444}.earth{background:#f59e0b;color:#111}.metal{background:#e5e7eb;color:#111;border-color:#cbd5e1}.water{background:#06b6d4}
-    .pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-    .pillar{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);border-radius:16px;padding:12px}
-    .pillar-title{font-size:12px;opacity:.8;text-align:center;margin-bottom:6px}
-    .box{height:70px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:700;border:1px solid #0003}
-    .chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:6px}
-    .chip{font-size:11px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}
-    .topics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-    @media (max-width:780px){.controls{grid-template-columns:repeat(2,1fr)}.topics{grid-template-columns:repeat(2,1fr)}.pillars{grid-template-columns:repeat(2,1fr)}}
-    .topic{padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.04)}
-    .topic h4{margin:0 0 6px;font-size:14px}
-    .topic small{display:block;color:var(--muted);margin-bottom:8px}
-    .askbox{display:grid;grid-template-columns:1fr 80px;gap:8px;margin-top:8px}
-    .chat{display:flex;flex-direction:column;gap:8px;margin-top:8px;max-height:300px;overflow:auto}
-    .msg{padding:10px 12px;border-radius:12px;max-width:80%}
-    .me{align-self:flex-end;background:#2a3955}
-    .ai{align-self:flex-start;background:#162033}
-    .errline{color:var(--err);font-size:13px;margin-top:6px}
-    .toast{position:fixed;right:16px;bottom:16px;background:#162033;border:1px solid rgba(255,255,255,.12);color:var(--txt);padding:10px 12px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
-  </style>
+<style>
+:root{
+  --bg:#0b1220; --panel:#121a2a; --muted:#93a4bf; --txt:#ffffff; --accent:#66b3ff;
+  --ok:#49d39a; --err:#ff8787; --line:#1d2b45;
+}
+*{box-sizing:border-box}
+body{margin:0; font-family:ui-sans-serif,system-ui,-apple-system,"Noto Sans KR","Segoe UI",Roboto,Arial;
+  background:linear-gradient(120deg,#0b1220,#0e2342); color:var(--txt)}
+.wrap{max-width:1020px; margin:32px auto 80px; padding:0 18px}
+.card{background:#0f1a30cc; border:1px solid var(--line); border-radius:16px; box-shadow:0 10px 40px #0006; padding:16px}
+.section-title{font-weight:800; letter-spacing:.02em; margin:0 0 10px}
+.muted{color:var(--muted)}
+.row{display:flex; gap:10px; align-items:center}
+.grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+@media (max-width:720px){ .grid{grid-template-columns:1fr} }
+
+/* inputs */
+label{font-size:12px; color:var(--muted); margin-bottom:6px; display:block}
+input, select, button, textarea{
+  width:100%; padding:11px 12px; border-radius:12px; border:1px solid #24334f;
+  background:#0b1426; color:var(--txt); outline:none
+}
+input:focus, select:focus, textarea:focus{border-color:var(--accent); box-shadow:0 0 0 3px #66b3ff33}
+button{background:linear-gradient(135deg,#4da3ff,#66b3ff); color:#06101d; font-weight:800; cursor:pointer; border:none}
+button[disabled]{opacity:.6; cursor:not-allowed}
+.status{font-size:13px; margin-top:8px}
+.ok{color:var(--ok)} .err{color:var(--err)}
+
+/* pillars */
+.pillars{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px}
+.pillar{border:1px solid var(--line); background:#0d1830; border-radius:16px; padding:12px}
+.pillar h5{margin:0 0 6px; font-size:12px; color:#bcd3ff; text-align:center}
+.box{height:76px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:42px; font-weight:800; letter-spacing:.02em; border:1px solid #00000022}
+.box + .box{margin-top:8px}
+.wood{background:#16a34a; color:#fff} .fire{background:#ef4444; color:#fff}
+.earth{background:#f59e0b; color:#111} .metal{background:#e5e7eb; color:#111; border-color:#cbd5e1}
+.water{background:#06b6d4; color:#fff}
+.sub{font-size:11px; text-align:center; color:#b3c7ff; margin-top:6px}
+
+/* element gauge */
+.gauge{display:flex; height:10px; overflow:hidden; border-radius:10px; border:1px solid #233355; margin-top:14px}
+.gauge>div{height:100%}
+
+/* big luck */
+.luck{display:flex; gap:8px; overflow-x:auto; padding-bottom:4px}
+.luck-item{min-width:120px; border:1px solid var(--line); background:#101a32; border-radius:12px; padding:10px}
+.luck-item .t{font-size:12px; opacity:.85}
+.luck-item .g{font-weight:800; margin-top:2px}
+.luck-now{outline:2px solid var(--accent); box-shadow:0 0 0 4px #66b3ff33}
+
+/* reading sections */
+.sec-grid{display:grid; grid-template-columns:1fr; gap:12px}
+.sec-card{border:1px solid var(--line); background:#0d1830; border-radius:16px; padding:14px}
+.sec-head{font-size:14px; font-weight:800; margin:0 0 6px}
+.sec-body{font-size:14px; line-height:1.6; white-space:pre-wrap; color:#fff} /* 요구: 모든 섹션 폰트 화이트 */
+
+/* topics 1x8, aspect 3:1 */
+.topic-grid{display:grid; grid-template-columns:1fr; gap:10px}
+.topic-card{border:1px solid var(--line); background:#0f1a30; border-radius:14px; padding:10px 12px; display:flex; align-items:center; justify-content:space-between; aspect-ratio:3/1}
+.topic-card .left{display:flex; align-items:center; gap:10px}
+.topic-emoji{font-size:18px}
+.topic-title{font-weight:800}
+.topic-sub{font-size:12px; color:var(--muted)}
+
+/* chat (Ask) */
+.chat{border:1px solid var(--line); background:#0e1932; border-radius:16px; padding:12px}
+.msg{max-width:80%; padding:10px 12px; border-radius:14px; margin:6px 0; line-height:1.5; white-space:pre-wrap}
+.me{margin-left:auto; background:#1b3a70; color:#e8f0ff}
+.ai{margin-right:auto; background:#0f243f; color:#ffffff}
+.askbar{display:flex; gap:8px; margin-top:8px}
+.hint{font-size:12px; color:var(--muted); margin-top:6px}
+
+/* misc */
+.kicker{font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:#8aa0c9; margin-bottom:6px}
+.hidden{display:none}
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <!-- Controls -->
-    <div class="card">
-      <div class="controls">
-        <div><label>Birth year</label><select id="ySel"></select></div>
-        <div><label>Birth month</label><select id="mSel"></select></div>
-        <div><label>Birth day</label><select id="dSel"></select></div>
-        <div><label>Hour</label><select id="hSel"></select></div>
-        <div><label>Minute</label><select id="minSel"></select></div>
+<div class="wrap">
+
+  <!-- INPUTS -->
+  <div class="card">
+    <div class="grid">
+      <div>
+        <label>Birth year</label>
+        <select id="y"></select>
       </div>
-      <div class="grid" style="margin-top:8px">
-        <div><label>Birth city (in English)</label><input id="city" placeholder="Seoul / New York / Tokyo" /></div>
-        <div>
-          <label>&nbsp;</label>
-          <div class="row"><button id="runBtn">Calculate & Generate</button><button id="fillExample" type="button" style="background:#7fb3ff;color:#081123">Fill Example</button></div>
-        </div>
+      <div>
+        <label>Birth month</label>
+        <select id="m"></select>
       </div>
-      <div id="status" class="muted" style="margin-top:8px;"></div>
-      <details style="margin-top:6px"><summary class="muted">What happens under the hood?</summary>
-        <ul class="muted">
-          <li>GET <code>/api/geo-timezone</code> → tzId</li>
-          <li>POST <code>/api/calc</code> → pillars, elements, luck ...</li>
-          <li>POST <code>/api/reading-generate</code> → English reading</li>
-        </ul>
-      </details>
     </div>
-
-    <!-- Pillars -->
-    <div id="pillarsCard" class="card" style="display:none"></div>
-
-    <!-- Big Luck -->
-    <div id="luckCard" class="card" style="display:none"></div>
-
-    <!-- Reading -->
-    <div id="readingCard" class="card" style="display:none"></div>
-
-    <!-- Topic grid -->
-    <div id="topicsCard" class="card" style="display:none"></div>
-
-    <!-- Ask (chat) -->
-    <div id="askCard" class="card" style="display:none">
-      <div class="kicker">Ask about your Saju</div>
-      <div class="muted">Ask me anything about timing, relationships, career, or health. I’ll use your current chart as context.</div>
-      <div id="chat" class="chat"></div>
-      <div class="askbox">
-        <input id="askInput" placeholder="e.g., When is a good time to change jobs?" />
-        <button id="askBtn">Ask</button>
+    <div class="grid" style="margin-top:8px">
+      <div>
+        <label>Birth day</label>
+        <select id="d"></select>
       </div>
-      <div id="askErr" class="errline" style="display:none"></div>
+      <div>
+        <label>Hour</label>
+        <select id="hh"></select>
+      </div>
     </div>
-
-    <!-- Debug -->
-    <details class="card"><summary>Debug JSON (geo/calc/reading)</summary>
-      <pre id="dbgGeo" class="muted"></pre>
-      <pre id="dbgCalc" class="muted"></pre>
-      <pre id="dbgRead" class="muted"></pre>
-    </details>
+    <div class="grid" style="margin-top:8px">
+      <div>
+        <label>Minute</label>
+        <select id="mm"></select>
+      </div>
+      <div>
+        <label>Birth city (in English)</label>
+        <input id="city" placeholder="Seoul / New York / Tokyo"/>
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button id="run">Calculate & Generate</button>
+      <button id="fill">Fill Example</button>
+    </div>
+    <div id="status" class="status muted"></div>
   </div>
 
-  <div id="toast" class="toast" style="display:none"></div>
+  <!-- PILLARS -->
+  <div class="card" style="margin-top:12px">
+    <div class="kicker">Four Pillars</div>
+    <div id="pillars" class="pillars"></div>
+    <div id="gauge" class="gauge" style="margin-top:10px"></div>
+  </div>
+
+  <!-- BIG LUCK -->
+  <div class="card" style="margin-top:12px">
+    <div class="kicker">Big Luck (10‑year cycles)</div>
+    <div id="luck" class="luck"></div>
+  </div>
+
+  <!-- READING -->
+  <div class="card" style="margin-top:12px">
+    <div class="kicker">Reading</div>
+    <div id="reading-head"></div>
+    <div id="reading-sections" class="sec-grid" style="margin-top:10px"></div>
+  </div>
+
+  <!-- TOPICS 1x8 -->
+  <div class="card" style="margin-top:12px">
+    <div class="kicker">Explore Specific Fortunes</div>
+    <div id="topics" class="topic-grid"></div>
+    <div id="topic-result" class="sec-grid" style="margin-top:12px"></div>
+  </div>
+
+  <!-- ASK -->
+  <div class="card" style="margin-top:12px">
+    <div class="kicker">Ask About Your Saju</div>
+    <div id="chat" class="chat"></div>
+    <div class="askbar">
+      <input id="askInput" placeholder="e.g., When is a good time to change jobs?">
+      <button id="askBtn">Ask</button>
+    </div>
+    <div class="hint">I'll use your current chart as context.</div>
+  </div>
+
+  <!-- DEBUG -->
+  <details class="card" style="margin-top:12px">
+    <summary>Debug JSON (geo/calc/reading)</summary>
+    <pre id="dbg" class="muted" style="white-space:pre-wrap"></pre>
+  </details>
+
+</div>
 
 <script>
-/* ---------- Utilities ---------- */
+// ---------- helpers ----------
 const el = q => document.querySelector(q);
-const statusEl = el('#status');
-const toastEl  = el('#toast');
-function showToast(msg){ toastEl.textContent = msg; toastEl.style.display='block'; setTimeout(()=>toastEl.style.display='none', 2200); }
-function setStatus(msg,type=''){ statusEl.innerHTML = msg; statusEl.className='muted '+(type||''); }
+const statusEl = el('#status'); const dbgEl = el('#dbg');
+const pillarsEl = el('#pillars'); const gaugeEl = el('#gauge');
+const luckEl = el('#luck'); const readingHead = el('#reading-head'); const readingSecs = el('#reading-sections');
+const topicsEl = el('#topics'); const topicResultEl = el('#topic-result');
+const chatEl = el('#chat');
 
-/* 안전 파서: JSON 아닐 때도 raw 보존 */
-async function safeFetchJSON(url, opts={}){
-  let r, t;
-  try{
-    r = await fetch(url, opts);
-    t = await r.text();
-  }catch(e){
-    return { ok:false, status:0, data:null, raw:String(e||'fetch_failed') };
-  }
-  let data = null;
-  try{ data = JSON.parse(t); }catch{ /* keep null */ }
-  return { ok: r.ok && !!data, status:r.status, data, raw:t };
-}
+function setStatus(msg, type=''){ statusEl.textContent = msg; statusEl.className = 'status ' + (type ? type : 'muted'); }
+async function fetchJSON(url, opts={}){ const r = await fetch(url, opts); const t = await r.text(); try{return{ok:r.ok, status:r.status, data:JSON.parse(t), raw:t}}catch{return{ok:r.ok, status:r.status, data:null, raw:t}} }
+function htmlesc(s){ return (s||'').replace(/[&<>"]/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c])) }
+function sectionCard(title, body){ return `<div class="sec-card"><div class="sec-head">${htmlesc(title)}</div><div class="sec-body">${htmlesc(body)}</div></div>` }
+function msg(role, text){ const d = document.createElement('div'); d.className = 'msg '+(role==='me'?'me':'ai'); d.innerText = text; chatEl.appendChild(d); chatEl.scrollTop = chatEl.scrollHeight; }
 
-/* ---------- Selects (YM D H m) ---------- */
-(function initSelectors(){
-  const ySel = el('#ySel'), mSel = el('#mSel'), dSel = el('#dSel'), hSel = el('#hSel'), minSel = el('#minSel');
-  const now = new Date().getFullYear();
-  for(let y=now; y>=1900; y--) ySel.insertAdjacentHTML('beforeend', `<option>${y}</option>`);
-  for(let m=1;m<=12;m++) mSel.insertAdjacentHTML('beforeend', `<option>${String(m).padStart(2,'0')}</option>`);
-  for(let d=1;d<=31;d++) dSel.insertAdjacentHTML('beforeend', `<option>${String(d).padStart(2,'0')}</option>`);
-  for(let h=0;h<24;h++) hSel.insertAdjacentHTML('beforeend', `<option>${String(h).padStart(2,'0')}</option>`);
-  for(let i=0;i<60;i+=5) minSel.insertAdjacentHTML('beforeend', `<option>${String(i).padStart(2,'0')}</option>`);
-
-  // defaults
-  ySel.value = '1992'; mSel.value = '06'; dSel.value='02'; hSel.value='09'; minSel.value='00';
+// ---------- selects ----------
+const ySel = el('#y'), mSel = el('#m'), dSel = el('#d'), hhSel = el('#hh'), mmSel = el('#mm');
+(function initSelects(){
+  const yNow = new Date().getFullYear();
+  for(let y=yNow-90; y<=yNow; y++){ ySel.insertAdjacentHTML('beforeend', `<option>${y}</option>`); }
+  for(let m=1; m<=12; m++){ mSel.insertAdjacentHTML('beforeend', `<option>${String(m).padStart(2,'0')}</option>`); }
+  for(let d=1; d<=31; d++){ dSel.insertAdjacentHTML('beforeend', `<option>${String(d).padStart(2,'0')}</option>`); }
+  for(let h=0; h<24; h++){ hhSel.insertAdjacentHTML('beforeend', `<option>${String(h).padStart(2,'0')}</option>`); }
+  for(let mm=0; mm<60; mm+=5){ mmSel.insertAdjacentHTML('beforeend', `<option>${String(mm).padStart(2,'0')}</option>`); }
+  // example
+  ySel.value='1989'; mSel.value='10'; dSel.value='20'; hhSel.value='06'; mmSel.value='00'; el('#city').value='seoul';
 })();
 
-/* ---------- Renderers ---------- */
-const STEM_ELEM = {甲:"wood",乙:"wood",丙:"fire",丁:"fire",戊:"earth",己:"earth",庚:"metal",辛:"metal",壬:"water",癸:"water"};
+// color map
+const STEM_ELEM={甲:"wood",乙:"wood",丙:"fire",丁:"fire",戊:"earth",己:"earth",庚:"metal",辛:"metal",壬:"water",癸:"water"};
 const BRANCH_ELEM={子:"water",丑:"earth",寅:"wood",卯:"wood",辰:"earth",巳:"fire",午:"fire",未:"earth",申:"metal",酉:"metal",戌:"earth",亥:"water"};
 const COLOR_CLASS={wood:"wood",fire:"fire",earth:"earth",metal:"metal",water:"water"};
 
-function renderPillars(pillars,elements,tenGods,hiddenStems){
-  const root = el('#pillarsCard');
-  if(!pillars){ root.style.display='none'; return; }
-  root.style.display='block';
-  root.innerHTML = `
-    <div class="kicker">FOUR PILLARS</div>
-    <div class="pillars">
-      ${["hour","day","month","year"].map(k=>{
-        const p = pillars[k]; if(!p) return '';
-        const stemClass = COLOR_CLASS[STEM_ELEM[p.stem]]||'wood';
-        const brClass   = COLOR_CLASS[BRANCH_ELEM[p.branch]]||'earth';
-        const tg = (tenGods?.byPillar?.[k] || tenGods?.[k] || tenGods?.[k+'Stem']) || '';
-        const hs = hiddenStems?.[p.branch] || hiddenStems?.byBranch?.[p.branch] || [];
-        const title = ({hour:'Hour Pillar (시주)',day:'Day Pillar (일주)',month:'Month Pillar (월주)',year:'Year Pillar (년주)'}[k]);
-        return `
-          <div class="pillar">
-            <div class="pillar-title">${title}</div>
-            ${k==='day'?'<div class="muted" style="text-align:center;margin-bottom:6px">Day Master (Self) / 일간(나)</div>':''}
-            <div class="box ${stemClass}">${p.stem}</div>
-            <div class="box ${brClass}" style="margin-top:8px">${p.branch}</div>
-            ${tg?`<div class="chips"><span class="chip">${tg}</span></div>`:''}
-            ${Array.isArray(hs)&&hs.length?`<div class="chips">${hs.map(h=>`<span class="chip">${h}</span>`).join('')}</div>`:''}
-          </div>`;
-      }).join('')}
-    </div>
-    ${elements?`<div class="gauge" style="margin-top:10px">${["wood","fire","earth","metal","water"].map(e=>{const pct=Math.max(2,Math.round((elements[e]||0)*100));return `<div class="${COLOR_CLASS[e]}" style="width:${pct}%"></div>`}).join('')}</div>`:''}
+// ---------- renderers ----------
+function renderPillars(pillars, elements){
+  const keys=["hour","day","month","year"];
+  pillarsEl.innerHTML = keys.map(k=>{
+    const p=pillars?.[k]; if(!p) return "";
+    const stemC = COLOR_CLASS[STEM_ELEM[p.stem]]||"wood";
+    const brC   = COLOR_CLASS[BRANCH_ELEM[p.branch]]||"earth";
+    const title = ({hour:"Hour Pillar (시주)",day:"Day Pillar (일주)",month:"Month Pillar (월주)",year:"Year Pillar (년주)"}[k]);
+    const sub = (k==="day") ? 'Day Master (Self) / 일간(나)' : '';
+    return `<div class="pillar">
+      <h5>${title}</h5>
+      ${sub?`<div class="sub">${sub}</div>`:''}
+      <div class="box ${stemC}">${p.stem||'?'}</div>
+      <div class="box ${brC}">${p.branch||'?'}</div>
+    </div>`;
+  }).join('');
+  // gauge
+  const order=["wood","fire","earth","metal","water"];
+  gaugeEl.innerHTML = order.map(e=>{
+    const pct=Math.max(2,Math.round((elements?.[e]||0)*100));
+    return `<div class="${COLOR_CLASS[e]}" style="width:${pct}%"></div>`;
+  }).join('');
+}
+
+function calcAge(bISO){ const b=new Date(bISO+"T00:00:00"); const n=new Date(); let a=n.getFullYear()-b.getFullYear(); const m=n.getMonth()-b.getMonth(); if(m<0||(m===0&&n.getDate()<b.getDate())) a--; return a; }
+function renderLuck(bigLuck, birthISO){
+  const age = calcAge(birthISO);
+  if(!Array.isArray(bigLuck)) { luckEl.innerHTML=''; return; }
+  luckEl.innerHTML = bigLuck.map(({startAge, stem, branch, tenGod})=>{
+    const now = typeof age==='number' && age>=startAge && age<startAge+10;
+    return `<div class="luck-item ${now?'luck-now':''}">
+      <div class="t">Age ${startAge}–${startAge+9}</div>
+      <div class="g">${(stem||'')}${(branch||'')}</div>
+      <div class="t">${tenGod||''}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderReadingHead(o){
+  const bullets = (o.bullets||[]).map(b=>`• ${htmlesc(b)}`).join('<br>');
+  const one = o.forecastOneLiner ? `<div class="muted" style="margin-top:6px">${htmlesc(o.forecastOneLiner)}</div>` : '';
+  const tryy = (o.actions && o.actions[0]) ? `<div class="card" style="margin-top:10px; background:#0f2a22; border-color:#174f3f;">Try: ${htmlesc(o.actions[0])}</div>` : '';
+  readingHead.innerHTML = `
+    <div class="section-title">${htmlesc(o.title||'Your Saju Reading')}</div>
+    <div>${bullets}</div>
+    ${one}
+    ${tryy}
   `;
 }
 
-function renderLuck(luck,birthDateISO){
-  const root = el('#luckCard');
-  const list = luck?.bigLuck || [];
-  if(!Array.isArray(list)||!list.length){ root.style.display='none'; return; }
-  root.style.display='block';
-  const age = (function(b){const d=new Date(b+'T00:00:00');const n=new Date();let a=n.getFullYear()-d.getFullYear();const m=n.getMonth()-d.getMonth();if(m<0||(m===0&&n.getDate()<d.getDate()))a--;return a})(birthDateISO);
-  root.innerHTML = `
-    <div class="kicker">BIG LUCK (10-year cycles)</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      ${list.map(({startAge,stem,branch,tenGod})=>{
-        const now = typeof age==='number' && age>=startAge && age<startAge+10;
-        return `<div style="flex:1;min-width:110px;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:8px;background:rgba(255,255,255,.05);${now?'outline:2px solid #66b3ff;box-shadow:0 0 0 4px rgba(102,179,255,.2)':''}">
-          <div class="muted">Age ${startAge}–${startAge+9}</div>
-          <div style="font-weight:800;font-size:16px;margin-top:2px">${(stem||'')+(branch||'')}</div>
-          ${tenGod?`<div class="muted" style="font-size:12px;margin-top:2px">${tenGod}</div>`:''}
-        </div>`
-      }).join('')}
-    </div>`;
+function renderReadingSections(sections){
+  if(!Array.isArray(sections)){ readingSecs.innerHTML=''; return; }
+  readingSecs.innerHTML = sections.map(s=>sectionCard(s.label||'Section', s.body||'')).join('');
 }
 
-function renderReading(output, meta={}){
-  const root = el('#readingCard'); root.style.display='block';
-  const pill = meta.fallback?'<span class="pill">Fallback</span>':meta.mocked?'<span class="pill">Mock</span>':'<span class="pill ok">Live</span>';
-  root.innerHTML = `
-    <div class="row-sb">
-      <div class="kicker">READING</div>
-      <div>${pill}</div>
+// topics (1x8)
+const TOPICS = [
+  {key:'wealth', emoji:'💰', title:'Wealth & Money', sub:'Income, savings, timing.'},
+  {key:'love', emoji:'❤️', title:'Love & Relationships', sub:'Compatibility, timing.'},
+  {key:'career', emoji:'📦', title:'Career & Growth', sub:'Fit, pivots, leadership.'},
+  {key:'health', emoji:'🌿', title:'Health & Wellness', sub:'Imbalance → care.'},
+  {key:'family', emoji:'👶', title:'Family & Children', sub:'Fertility & dynamics.'},
+  {key:'travel', emoji:'✈️', title:'Travel / Relocation', sub:'Good periods, cautions.'},
+  {key:'learning', emoji:'📘', title:'Learning & Skills', sub:'What to study.'},
+  {key:'timing', emoji:'⏱️', title:'Timing & Windows', sub:'Short‑term chances.'},
+];
+function drawTopics(){ topicsEl.innerHTML = TOPICS.map(t=>`
+  <button class="topic-card" data-topic="${t.key}">
+    <div class="left">
+      <span class="topic-emoji">${t.emoji}</span>
+      <div>
+        <div class="topic-title">${t.title}</div>
+        <div class="topic-sub">${t.sub}</div>
+      </div>
     </div>
-    <h3 class="headline">${output.title || 'Your Saju Reading'}</h3>
-    ${Array.isArray(output.bullets)?`<ul>${output.bullets.map(b=>`<li>${b}</li>`).join('')}</ul>`:''}
-    ${output.forecastOneLiner?`<div class="muted" style="margin-top:8px">${output.forecastOneLiner}</div>`:''}
-    ${Array.isArray(output.sections)?output.sections.map(s=>`
-      <div style="margin-top:10px">
-        <div class="kicker">SECTION</div>
-        <div style="font-weight:800;margin-bottom:4px">${s.title||''}</div>
-        <div class="muted">${(s.body||'').replace(/\n/g,'<br>')}</div>
-      </div>`).join(''):''}
-  `;
+    <div style="font-weight:800; color:#06101d; background:linear-gradient(135deg,#4da3ff,#66b3ff); padding:8px 10px; border-radius:10px">See insights</div>
+  </button>
+`).join(''); }
+drawTopics();
+
+// render ask/ topic result sections
+function renderTopicBlocks(payload){
+  const list = payload?.sections || [];
+  topicResultEl.innerHTML = list.map(s=>sectionCard(s.label||'Section', s.body||'')).join('');
 }
 
-function renderTopics(){
-  const root = el('#topicsCard'); root.style.display='block';
-  const topics = [
-    {key:'wealth', icon:'💰', title:'Wealth & Money', sub:'Income, savings, timing.'},
-    {key:'love', icon:'❤️', title:'Love & Relationships', sub:'Compatibility, meeting timing.'},
-    {key:'career', icon:'🧭', title:'Career & Growth', sub:'Fit, leadership vs craft, pivots.'},
-    {key:'health', icon:'🌿', title:'Health & Wellness', sub:'Imbalance → care routines.'},
-    {key:'family', icon:'👶', title:'Family & Children', sub:'Fertility & family dynamics.'},
-    {key:'travel', icon:'✈️', title:'Travel / Relocation', sub:'Good periods, cautions.'},
-    {key:'learning', icon:'📚', title:'Learning & Skills', sub:'What to study, deepen talent.'},
-    {key:'timing', icon:'⏱️', title:'Timing & Windows', sub:'Short‑term chances.'},
-  ];
-  root.innerHTML = `
-    <div class="kicker">EXPLORE SPECIFIC FORTUNES</div>
-    <div class="topics">
-      ${topics.map(t=>`
-        <div class="topic">
-          <h4>${t.icon} ${t.title}</h4>
-          <small>${t.sub}</small>
-          <button data-topic="${t.key}" class="seeBtn">See insights</button>
-          <div id="topic-${t.key}" class="muted" style="white-space:pre-wrap;margin-top:8px"></div>
-        </div>`).join('')}
-    </div>`;
-  root.querySelectorAll('.seeBtn').forEach(btn=>{
-    btn.addEventListener('click', ()=> handleTopic(btn.getAttribute('data-topic')));
-  });
-}
-
-function pushMsg(role,text){
-  const c = el('#chat'); const div = document.createElement('div');
-  div.className = 'msg '+(role==='user'?'me':'ai'); div.textContent = text; c.appendChild(div); c.scrollTop = c.scrollHeight;
-}
-
-function askError(msg){ const e=el('#askErr'); e.textContent = msg; e.style.display='block'; setTimeout(()=>e.style.display='none',2500); }
-
-/* ---------- Global chart cache ---------- */
-let G = { geo:null, calc:null, read:null };
-
-/* ---------- Button actions ---------- */
-el('#fillExample').addEventListener('click', ()=>{
-  el('#ySel').value='1989'; el('#mSel').value='10'; el('#dSel').value='20'; el('#hSel').value='06'; el('#minSel').value='00';
-  el('#city').value='seoul';
+// ---------- main flow ----------
+el('#fill').addEventListener('click', ()=>{
+  ySel.value='1989'; mSel.value='10'; dSel.value='20'; hhSel.value='06'; mmSel.value='00'; el('#city').value='seoul';
 });
 
-el('#runBtn').addEventListener('click', runAll);
-el('#askBtn').addEventListener('click', doAsk);
-
-async function runAll(){
-  const y=el('#ySel').value, m=el('#mSel').value, d=el('#dSel').value;
-  const hh=el('#hSel').value, mm=el('#minSel').value;
-  const city = el('#city').value.trim();
-  if(!y || !m || !d || !city){ setStatus('Please fill Y/M/D and city.','err'); return; }
+el('#run').addEventListener('click', async ()=>{
+  const y=ySel.value, m=mSel.value, d=dSel.value, hh=hhSel.value, mm=mmSel.value;
+  const city=el('#city').value.trim();
+  if(!city){ setStatus('Please enter a birth city.','err'); return; }
 
   const birthDateISO = `${y}-${m}-${d}`;
   const birthTime = `${hh}:${mm}`;
 
-  // Step 1
   setStatus('Step 1/3: Resolving city → timezone…');
-  const geo = await safeFetchJSON(`/api/geo-timezone?city=${encodeURIComponent(city)}`);
-  el('#dbgGeo').textContent = 'geo-timezone\n'+(geo.data?JSON.stringify(geo.data,null,2):geo.raw);
-  if(!geo.ok || !geo.data?.timezone){ setStatus('Failed on Step 1 (geo-timezone).','err'); showToast(geo.data?.error||'Network error'); return; }
-  const { lat, lng } = geo.data.location; const tzId = geo.data.timezone;
+  const geo = await fetchJSON(`/api/geo-timezone?city=${encodeURIComponent(city)}`);
+  if(!geo.ok || !geo.data?.timezone){ setStatus('Failed on Step 1 (geo-timezone).','err'); return; }
+  const {lat,lng} = geo.data.location; const tzId = geo.data.timezone;
 
-  // Step 2
   setStatus('Step 2/3: Calculating pillars/elements…');
-  const calc = await safeFetchJSON('/api/calc',{
+  const calc = await fetchJSON('/api/calc',{
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ birthDateISO, birthTime, lat, lng, tzId, timeAccuracy:'exact' })
   });
-  el('#dbgCalc').textContent = 'calc\n'+(calc.data?JSON.stringify(calc.data,null,2):calc.raw);
-  if(!calc.ok || !calc.data?.data){ setStatus('Failed on Step 2 (calc).','err'); showToast(calc.data?.error||'Server error'); return; }
+  if(!calc.ok || !calc.data?.data){ setStatus('Failed on Step 2 (calc).','err'); return; }
+  const dCalc = calc.data.data || {};
+  renderPillars(dCalc.pillars, dCalc.elements);
+  renderLuck(dCalc.luck?.bigLuck, birthDateISO);
 
-  const dcalc = calc.data.data || {};
-  const { pillars, elements, tenGods, hiddenStems, interactions, luck } = dcalc;
-  renderPillars(pillars, elements, tenGods, hiddenStems);
-  renderLuck(luck, birthDateISO);
-
-  // Step 3
   setStatus('Step 3/3: Generating English reading…');
-  const read = await safeFetchJSON('/api/reading-generate', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ pillars, elements, tenGods, interactions, type:'summary', locale:'en-US', length:'long', maxBullets:6 })
-  });
-  el('#dbgRead').textContent = 'reading\n'+(read.data?JSON.stringify(read.data,null,2):read.raw);
-  if(!read.ok || !read.data?.output){ setStatus('Failed on Step 3 (reading).','err'); showToast(read.data?.error||'LLM error'); return; }
-
-  renderReading(read.data.output, { fallback: read.data.fallback, mocked: read.data.mocked });
-  renderTopics();
-  el('#askCard').style.display='block';
-
-  setStatus(`Done • tz: ${tzId} • lat:${lat.toFixed(4)}, lng:${lng.toFixed(4)}`, 'ok');
-
-  // cache for topic/ask
-  G = { geo:geo.data, calc:dcalc, read:read.data, meta:{ birthDateISO, birthTime, tzId } };
-}
-
-async function handleTopic(topicKey){
-  if(!G?.calc?.pillars){ showToast('Run Calculate first.'); return; }
-  const target = el(`#topic-${topicKey}`); target.textContent = 'Loading…';
-  const resp = await safeFetchJSON('/api/topic-insight', {
+  const reading = await fetchJSON('/api/reading-generate',{
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({
-      topic: topicKey,
-      pillars: G.calc.pillars,
-      elements: G.calc.elements,
-      tenGods: G.calc.tenGods,
-      interactions: G.calc.interactions,
-      luck: G.calc.luck,
-      locale:'en-US'
+      pillars:dCalc.pillars, elements:dCalc.elements, tenGods:dCalc.tenGods,
+      interactions:dCalc.interactions, luck:dCalc.luck, locale:'en-US', length:'long'
     })
   });
-  if(!resp.ok){ target.textContent = `⚠️ ${resp.data?.error || 'Network error'}\n${resp.raw?.slice(0,160)}`; return; }
-  target.textContent = resp.data.output || '(empty)';
-}
+  if(!reading.ok || !reading.data?.output){ setStatus('Failed on Step 3 (reading).','err'); return; }
+  const out = reading.data.output;
+  renderReadingHead(out);
+  renderReadingSections(out.sections);
 
-async function doAsk(){
-  const q = el('#askInput').value.trim();
-  if(!q) return;
-  if(!G?.calc?.pillars){ askError('Run Calculate first.'); return; }
-  pushMsg('user', q);
-  el('#askInput').value='';
+  setStatus(`Done • tz: ${tzId} • lat:${lat.toFixed(4)}, lng:${lng.toFixed(4)}`,'ok');
+  dbgEl.textContent = `geo-timezone\n${JSON.stringify(geo.data,null,2)}\n\ncalc\n${JSON.stringify(calc.data,null,2)}\n\nreading\n${JSON.stringify(reading.data,null,2)}`;
+});
 
-  const resp = await safeFetchJSON('/api/ask', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({
-      question: q,
-      pillars: G.calc.pillars,
-      elements: G.calc.elements,
-      tenGods: G.calc.tenGods,
-      interactions: G.calc.interactions,
-      luck: G.calc.luck,
-      locale:'en-US'
-    })
-  });
+// topic click → /api/ask
+topicsEl.addEventListener('click', async (e)=>{
+  const btn = e.target.closest('.topic-card'); if(!btn) return;
+  const topic = btn.dataset.topic;
+  // calc 데이터를 디버그 패널에서 꺼내오긴 어려우므로, 간단히 다시 계산 요청하도록 구현(사용성 OK)
+  const y=ySel.value, m=mSel.value, d=dSel.value, hh=hhSel.value, mm=mmSel.value, city=el('#city').value.trim();
+  const birthDateISO = `${y}-${m}-${d}`; const birthTime = `${hh}:${mm}`;
 
-  if(!resp.ok){
-    pushMsg('assistant', `⚠️ ${resp.data?.error || 'Network error'}\n${(resp.raw||'').slice(0,180)}`);
-    return;
-  }
-  pushMsg('assistant', resp.data.output || '(empty)');
-}
+  setStatus('Fetching topic insights…');
+  const geo = await fetchJSON(`/api/geo-timezone?city=${encodeURIComponent(city)}`);
+  if(!geo.ok||!geo.data?.timezone){ setStatus('Topic failed: geo error','err'); return; }
+  const {lat,lng} = geo.data.location; const tzId = geo.data.timezone;
+  const calc = await fetchJSON('/api/calc',{ method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ birthDateISO, birthTime, lat, lng, tzId, timeAccuracy:'exact' }) });
+  if(!calc.ok||!calc.data?.data){ setStatus('Topic failed: calc error','err'); return; }
+
+  const ask = await fetchJSON('/api/ask',{ method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ topic, question:null, calc: calc.data }) });
+  if(!ask.ok||!ask.data?.ok){ setStatus('Topic failed: ask error','err'); return; }
+
+  renderTopicBlocks(ask.data);
+  setStatus('Topic loaded.','ok');
+});
+
+// Ask chat
+el('#askBtn').addEventListener('click', async ()=>{
+  const q = el('#askInput').value.trim(); if(!q) return;
+  msg('me', q); el('#askInput').value='';
+
+  // 가져올 컨텍스트(간단 재계산)
+  const y=ySel.value, m=mSel.value, d=dSel.value, hh=hhSel.value, mm=mmSel.value, city=el('#city').value.trim();
+  const birthDateISO = `${y}-${m}-${d}`; const birthTime = `${hh}:${mm}`;
+
+  const geo = await fetchJSON(`/api/geo-timezone?city=${encodeURIComponent(city)}`);
+  if(!geo.ok||!geo.data?.timezone){ msg('ai','Network error — please try again.'); return; }
+  const {lat,lng} = geo.data.location; const tzId = geo.data.timezone;
+  const calc = await fetchJSON('/api/calc',{ method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ birthDateISO, birthTime, lat, lng, tzId, timeAccuracy:'exact' }) });
+  if(!calc.ok||!calc.data?.data){ msg('ai','Network error — please try again.'); return; }
+
+  const ask = await fetchJSON('/api/ask',{ method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ topic:null, question:q, calc:calc.data }) });
+  if(!ask.ok||!ask.data?.ok){ msg('ai','Network error — please try again.'); return; }
+
+  // 답변 합성(Overview/Phases/WatchOut/Tips)
+  const s = ask.data.sections||[];
+  const text = s.map(x=>{
+    const head = x.label||'';
+    const body = x.body||'';
+    return `${head}\n${body}`;
+  }).join('\n\n');
+  msg('ai', text);
+});
 </script>
 </body>
 </html>
