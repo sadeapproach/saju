@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
@@ -39,8 +39,8 @@ button[disabled]{opacity:.6;cursor:not-allowed}
 .lnow{outline:2px solid var(--accent);box-shadow:0 0 0 4px #66b3ff33}
 /* reading */
 .block{background:#14213d;border:1px solid #2c4168;border-radius:10px;padding:12px;margin-top:10px}
-.btitle{color:#a9d6ff;font-weight:800;margin-bottom:6px}
-.bsubtitle{color:#9dc6ff;font-size:12px;margin:-2px 0 8px;opacity:.9}
+.btitle{color:#a9d6ff;font-weight:800;margin-bottom:4px}
+.bsubtitle{color:#9dc6ff;font-size:12px;margin:-2px 0 10px;opacity:.9}
 .bul{padding-left:18px;margin:6px 0}
 .call{margin-top:10px;padding:10px 12px;background:#49d39a18;border:1px solid #49d39a55;border-radius:10px}
 /* fortunes */
@@ -126,22 +126,15 @@ button[disabled]{opacity:.6;cursor:not-allowed}
 <script>
 /* ---------- util ---------- */
 const Q = (s)=>document.querySelector(s);
-const S = (s)=>document.querySelectorAll(s);
 const statusEl = Q('#status'), dbgEl=Q('#dbg');
 function setStatus(msg,type=''){ statusEl.textContent=msg; statusEl.className='help '+(type||''); }
-
 async function fetchJSON(url,opt){
-  try{
-    const r=await fetch(url,opt); const txt=await r.text();
-    let data=null; try{ data=JSON.parse(txt) }catch{}
-    return { ok:r.ok && !!data, status:r.status, data, raw:txt };
-  }catch(e){ return { ok:false, status:0, data:null, raw:String(e&&e.message||e) }; }
+  try{ const r=await fetch(url,opt); const txt=await r.text(); let data=null; try{ data=JSON.parse(txt) }catch{}; return { ok:r.ok && !!data, status:r.status, data, raw:txt }; }
+  catch(e){ return { ok:false, status:0, data:null, raw:String(e&&e.message||e) }; }
 }
-
 function yyyy(n){return String(n).padStart(4,'0')}
 function dd(n){return String(n).padStart(2,'0')}
 function age(b){const d=new Date(b+"T00:00:00");const n=new Date();let a=n.getFullYear()-d.getFullYear();const m=n.getMonth()-d.getMonth(); if(m<0||(m===0&&n.getDate()<d.getDate())) a--; return a;}
-
 (function initSelects(){
   const y=Q('#yy'), m=Q('#mm'), d=Q('#dd'), h=Q('#hh'), mi=Q('#min');
   for(let i=1940;i<=2025;i++) y.appendChild(new Option(i,i));
@@ -154,32 +147,26 @@ function age(b){const d=new Date(b+"T00:00:00");const n=new Date();let a=n.getFu
 </script>
 
 <script>
-/* ---------- safe markdown ---------- */
+/* ---------- safe markdown to HTML (paragraph-aware) ---------- */
 function asString(x){
-  if (x==null) return '';
-  if (typeof x==='string') return x;
+  if (x==null) return ''; if (typeof x==='string') return x;
   if (typeof x==='number' || typeof x==='boolean') return String(x);
   if (Array.isArray(x)) return x.map(asString).join('\n');
-  const cand = x.text||x.summary||x.body||x.html||x.overview||'';
-  return typeof cand==='string' ? cand : '';
+  const cand = x.text||x.summary||x.body||x.html||x.overview||''; return typeof cand==='string' ? cand : '';
 }
 function md(s=''){
-  const raw = asString(s);
-  if(!raw) return '';
+  const raw = asString(s); if(!raw) return '';
   let t = raw.replace(/\r\n/g,'\n').trim();
-  t = t.replace(/^### +(.+)$/gm,'<div class="btitle">$1</div>')
-       .replace(/^## +(.+)$/gm,'<div class="btitle">$1</div>')
-       .replace(/^# +(.+)$/gm,'<div class="btitle">$1</div>');
-  t = t.split(/\n\n+/).map(block=>{
-    const b = block.trim();
-    if (/^(\-|\u2022) /.test(b)) {
-      return '<ul class="bul">' + b.split('\n')
-        .map(l=>l.replace(/^(\-|\u2022) +/, ''))
-        .map(x=>`<li>${x}</li>`).join('') + '</ul>';
+  // 두 줄 공백을 문단으로
+  t = t.split(/\n{2,}/).map(b=>{
+    // 불릿은 따로 처리
+    if (/^\- /.test(b.trim())) {
+      return '<ul class="bul">' + b.trim().split('\n').map(l=>l.replace(/^\- /,'')).map(x=>`<li>${x}</li>`).join('') + '</ul>';
     }
-    return `<p>${b}</p>`;
+    // 단순 줄바꿈은 <br>로
+    return `<p>${b.replace(/\n/g,'<br/>')}</p>`;
   }).join('');
-  return t.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+  return t;
 }
 </script>
 
@@ -188,7 +175,6 @@ function md(s=''){
 const STEM_ELEM = {甲:"wood",乙:"wood",丙:"fire",丁:"fire",戊:"earth",己:"earth",庚:"metal",辛:"metal",壬:"water",癸:"water"};
 const BRANCH_ELEM={子:"water",丑:"earth",寅:"wood",卯:"wood",辰:"earth",巳:"fire",午:"fire",未:"earth",申:"metal",酉:"metal",戌:"earth",亥:"water"};
 const colorCls = ch => (STEM_ELEM[ch]||BRANCH_ELEM[ch]||'wood');
-
 function renderPillars(pillars, tenGods){
   const root=Q('#pillars'); root.innerHTML='';
   (['hour','day','month','year']).forEach(k=>{
@@ -225,7 +211,7 @@ function renderLuck(luck, birthISO){
 </script>
 
 <script>
-/* ---------- 7-section reading renderer ---------- */
+/* ---------- READING 렌더러 (7 sections; last = Daily Compass) ---------- */
 const READING_META = [
   ['pillars','Your Four Pillars Overview','A quick glance at the overall chart structure.'],
   ['day_master','Day Master Traits','The element that represents “you”.'],
@@ -233,17 +219,20 @@ const READING_META = [
   ['structure','Base Pattern (Structure)','Career vs. wealth vs. learning—your natural emphasis.'],
   ['yongshin','Helpful Focus (Yongshin)','Pick one supportive theme and make it a weekly non‑negotiable.'],
   ['life_flow','Decade Cycle','Big tailwinds & timing—not a rigid fate.'],
-  ['summary','One‑Screen Summary','Strengths, watch‑outs, and a tiny habit to start this week.'],
+  ['daily_compass','Daily Compass','Strengths, watch‑outs, and one tiny habit to start this week.']
 ];
-function renderReading7(sections){
+function renderReading7(model){
   const root=Q('#reading'); root.innerHTML='';
+  if(!model || typeof model!=='object'){
+    root.innerHTML='<div class="block"><div class="btitle">Reading</div><div>Could not build reading.</div></div>'; return;
+  }
   READING_META.forEach(([key,title,subtitle])=>{
-    const text = sections?.[key] || '';
+    const text = model[key] || '';
     const div=document.createElement('div'); div.className='block';
     div.innerHTML = `
       <div class="btitle">${title}</div>
       <div class="bsubtitle">${subtitle}</div>
-      <div>${md(text)||'<span class="small" style="opacity:.7">No content.</span>'}</div>
+      <div>${ md(text) }</div>
     `;
     root.appendChild(div);
   });
@@ -251,39 +240,51 @@ function renderReading7(sections){
 </script>
 
 <script>
-/* ---------- Specific Fortunes (생략: 기존과 동일) ---------- */
-// ... (네가 쓰던 fortunes 코드 그대로 유지)
+/* ---------- Specific Fortunes (생략: 기존 그대로) ---------- */
+// ... (현재 프로젝트에서 이미 동작 중인 fortune 코드 그대로 두시면 됩니다)
 </script>
 
 <script>
-/* ---------- Ask (same as before) ---------- */
-// ... (네가 쓰던 ask 코드 그대로 유지)
+/* ---------- ask (간단 템플릿) ---------- */
+function addMsg(text,who='bot'){
+  const p=document.createElement('div'); p.className='msg '+(who==='me'?'me':'bot'); p.innerHTML=md(text);
+  const box=Q('#chat'); box.appendChild(p); box.scrollTop=box.scrollHeight;
+}
+async function ask(q){
+  addMsg(q,'me');
+  try{
+    let r = await fetchJSON('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q,mode:'chat',ctx:window.__chartCtx||null})});
+    if(!r.ok||(!r.data?.ok && !r.data?.output)){ r = await fetchJSON(`/api/ask?q=${encodeURIComponent(q)}`); }
+    if(!r.ok||(!r.data?.ok && !r.data?.output)){ addMsg("I couldn’t quite catch that. Could you rephrase your question? 🙂"); return; }
+    addMsg(r.data.output||"Here’s my take based on your chart.");
+  }catch{ addMsg("⚠️ Network error — please try again."); }
+}
 </script>
 
 <script>
-/* ---------- Step run (OpenAI 강제) ---------- */
-
-// NEW: reading 응답 추출
-function pickReadingOutput(respData){
-  if (!respData) return null;
-  return respData.output || respData.sections || null;
-}
-
-// NEW: OpenAI 강제 호출
-async function fetchReadingAI(payload){
-  // POST + query ?force=ai, body.useAI=true
-  const r = await fetchJSON('/api/reading-generate?force=ai', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ ...payload, useAI:true, mode:'structured' })
-  });
-  return r;
-}
-
+/* ---------- main flow ---------- */
 Q('#fill').addEventListener('click',()=>{
   Q('#yy').value='1989'; Q('#mm').value='10'; Q('#dd').value='20'; Q('#hh').value='06'; Q('#min').value='00';
   Q('#city').value='seoul';
 });
+Q('#askBtn').addEventListener('click',()=>{
+  const v=Q('#ask').value.trim(); if(!v) return; Q('#ask').value=''; ask(v);
+});
+
+function pickReadingOutput(respData){
+  if (!respData) return null;
+  return respData.output || respData.sections || (respData.data && (respData.data.output || respData.data.sections)) || null;
+}
+
+async function fetchReading(payload){
+  // OpenAI 사용 고정
+  const r = await fetchJSON('/api/reading-generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ chart: payload })});
+  if (r.ok) {
+    const out = pickReadingOutput(r.data);
+    if (out) return { ok:true, out, raw:r.data };
+  }
+  return { ok:false, last:r };
+}
 
 Q('#run').addEventListener('click', async ()=>{
   const yy=Q('#yy').value, mm=Q('#mm').value, ddv=Q('#dd').value, hh=Q('#hh').value, mi=Q('#min').value;
@@ -305,39 +306,26 @@ Q('#run').addEventListener('click', async ()=>{
 
   renderPillars(pillars,tenGods);
   renderLuck(luck,birthDateISO);
-
-  window.__chartCtx = { pillars, elements, tenGods, luck, birthDateISO, tzId, lat, lng };
+  window.__chartCtx = { pillars, elements, tenGods, interactions, luck, birthDateISO, tzId, lat, lng };
 
   setStatus('Step 3/3: Generating reading (OpenAI)…');
-  const r = await fetchReadingAI({pillars,elements,tenGods,interactions,luck,birthDateISO});
-  if(!r.ok){
+  const read = await fetchReading({pillars,elements,tenGods,interactions,luck,birthDateISO});
+  if(!read.ok){
     setStatus('Failed on Step 3 (reading).','err');
-    Q('#reading').innerHTML = `<div class="block">
-      <div class="btitle">Reading error</div>
-      <div class="small">OpenAI generation failed. Check server logs or API key.</div>
-      <pre class="small" style="white-space:pre-wrap;background:#0b1426;border:1px solid rgba(255,255,255,.08);padding:8px;border-radius:8px;margin-top:8px;">${r.raw||''}</pre>
-    </div>`;
+    Q('#reading').innerHTML = `<div class="block"><div class="btitle">Reading error</div><div class="small">OpenAI generation failed. Check server logs or API key.</div><pre class="small" style="white-space:pre-wrap;background:#0b1426;border:1px solid rgba(255,255,255,.08);padding:8px;border-radius:8px;margin-top:8px;">${read.last ? (read.last.raw || JSON.stringify(read.last.data||{},null,2)) : 'No response'}</pre></div>`;
     dbgEl.textContent = 'geo-timezone\n'+JSON.stringify(geo.data,null,2)
       +'\n\ncalc\n'+JSON.stringify(calc.data,null,2)
-      +'\n\nreading (error)\n'+(r.raw||'');
+      +'\n\nreading (failed)\n'+JSON.stringify(read.last && read.last.data || {},null,2);
     return;
   }
 
-  const out = pickReadingOutput(r.data);
-  if (!out){
-    setStatus('Failed on Step 3 (reading payload).','err');
-    Q('#reading').innerHTML = `<div class="block"><div class="btitle">Reading error</div><div class="small">No structured output.</div></div>`;
-    return;
-  }
-
-  renderReading7(out);
+  renderReading7(read.out);
   setStatus(`Done • tz: ${tzId} • lat:${lat.toFixed(4)}, lng:${lng.toFixed(4)}`,'ok');
 
   dbgEl.textContent = 'geo-timezone\n'+JSON.stringify(geo.data,null,2)
     +'\n\ncalc\n'+JSON.stringify(calc.data,null,2)
-    +'\n\nreading\n'+JSON.stringify(r.data,null,2);
+    +'\n\nreading\n'+JSON.stringify(read.raw || read.out,null,2);
 });
-/* boot */
 </script>
 </body>
 </html>
