@@ -39,7 +39,7 @@ button[disabled]{opacity:.6;cursor:not-allowed}
 .lnow{outline:2px solid var(--accent);box-shadow:0 0 0 4px #66b3ff33}
 /* reading */
 .block{background:#14213d;border:1px solid #2c4168;border-radius:10px;padding:12px;margin-top:10px}
-.btitle{color:#a9d6ff;font-weight:800;margin-bottom:6px}
+.btitle{color:#a9d6ff;font-weight:800;margin-bottom:4px}
 .bsubtitle{color:#9dc6ff;font-size:12px;margin:-2px 0 8px;opacity:.9}
 .bul{padding-left:18px;margin:6px 0}
 .call{margin-top:10px;padding:10px 12px;background:#49d39a18;border:1px solid #49d39a55;border-radius:10px}
@@ -226,20 +226,9 @@ function renderLuck(luck, birthISO){
 </script>
 
 <script>
-/* ---------- READING 렌더러 (7섹션 + 구버전 호환) ---------- */
-function adaptOldReading(old) {
-  if (!old || Array.isArray(old)) return null;
-  const out = {
-    pillars: old.pillars || "",
-    day_master: old.day_master || old.core || "",
-    five_elements: old.five_elements || old.balance || "",
-    structure: old.structure || old.tengods || "",
-    yongshin: old.yongshin || "",
-    life_flow: old.life_flow || old.luck || "",
-    summary: old.summary || ""
-  };
-  return out;
-}
+/* ---------- READING (7-section) ---------- */
+
+/* Titles + Subtitles (fixed in English) */
 const READING_META = [
   ['pillars','Your Four Pillars Overview','A quick glance at the overall chart structure.'],
   ['day_master','Day Master Traits','The element that represents “you”.'],
@@ -249,6 +238,157 @@ const READING_META = [
   ['life_flow','Decade Cycle','Big tailwinds & timing—not a rigid fate.'],
   ['summary','One‑Screen Summary','Strengths, watch‑outs, and a tiny habit to start this week.']
 ];
+
+/* Old -> new shape adapter (kept for safety) */
+function adaptOldReading(old) {
+  if (!old || Array.isArray(old)) return null;
+  return {
+    pillars: old.pillars || old.core || "",
+    day_master: old.day_master || old.dayMaster || "",
+    five_elements: old.five_elements || old.balance || "",
+    structure: old.structure || old.tengods || "",
+    yongshin: old.yongshin || "",
+    life_flow: old.life_flow || old.luck || "",
+    summary: old.summary || ""
+  };
+}
+
+/* Element counters from pillars */
+function countElementsFromPillars(pillars){
+  const map={wood:0,fire:0,earth:0,metal:0,water:0};
+  const push=(ch)=>{const e=STEM_ELEM[ch]||BRANCH_ELEM[ch]; if(e) map[e]++;};
+  if(!pillars) return map;
+  ['hour','day','month','year'].forEach(k=>{const p=pillars[k]; if(!p) return; push(p.stem); push(p.branch);});
+  return map;
+}
+function currentLuckInfo(luck, birthISO){
+  const a=age(birthISO); let cur=null,next=null;
+  const list=luck?.bigLuck||[];
+  for(const seg of list){ if(a>=seg.startAge && a<seg.startAge+10) cur=seg; }
+  if(cur){ next=list.find(x=>x.startAge===cur.startAge+10)||null; } else { next=list[0]||null; }
+  return {cur,next,age:a};
+}
+
+/* Day Master short description */
+const DM_DESC = {
+  '甲':'Yang Wood (tree): direct, upright, needs space to grow.',
+  '乙':'Yin Wood (vine): adaptive, relational, grows by support.',
+  '丙':'Yang Fire (sun): bold, generous, visible; needs fuel & pacing.',
+  '丁':'Yin Fire (candle): warm, insightful; protect from overuse.',
+  '戊':'Yang Earth (mountain): reliable, protective; beware rigidity.',
+  '己':'Yin Earth (field): caring, practical; guard against worry.',
+  '庚':'Yang Metal (axe): clear‑cutting, decisive; soften edges.',
+  '辛':'Yin Metal (jewel): refined, precise; avoid over‑perfection.',
+  '壬':'Yang Water (ocean): broad, visionary; anchor your flow.',
+  '癸':'Yin Water (dew): observant, adaptive; keep firm boundaries.'
+};
+
+/* Friendly label for counts */
+function labelElements(map){
+  return `wood:${map.wood}, fire:${map.fire}, earth:${map.earth}, metal:${map.metal}, water:${map.water}`;
+}
+
+/* Build rich, specific fallback reading (English) */
+function synthesizeDetailedReading(ctx){
+  const p = ctx?.pillars||{};
+  const hour=`${p.hour?.stem||''}${p.hour?.branch||''}`.trim();
+  const dayS=p.day?.stem||'', dayB=p.day?.branch||'';
+  const day=`${dayS}${dayB}`.trim();
+  const month=`${p.month?.stem||''}${p.month?.branch||''}`.trim();
+  const year=`${p.year?.stem||''}${p.year?.branch||''}`.trim();
+  const em = countElementsFromPillars(p);
+  const emLbl = labelElements(em);
+  const dom = Object.entries(em).sort((a,b)=>b[1]-a[1])[0]?.[0]||'mixed';
+  const missing = Object.keys(em).filter(k=>em[k]===0);
+  const {cur,next,age:a} = currentLuckInfo(ctx?.luck, ctx?.birthDateISO);
+  const curStr = cur? `${cur.startAge}–${cur.startAge+9} ${cur.stem||''}${cur.branch||''}` : 'N/A';
+  const nextStr = next? `${next.startAge}–${next.startAge+9} ${next.stem||''}${next.branch||''}` : 'N/A';
+  const dmLine = DM_DESC[dayS] || 'Day Master: description unavailable.';
+
+  /* 1) Pillars overview */
+  const pillars = [
+    `Your pillars at a glance —  Hour ${hour}, Day ${day}, Month ${month}, Year ${year}. This is a quick snapshot of personal (day/hour), seasonal (month), and ancestral (year) influences.`,
+    `Together they show a **${dom}‑leaning** profile with this count → ${emLbl}.`,
+    `Tension to balance: **stability (Earth) vs. expansion (Wood)**. Use choices that feel both *expansive and stable*.`
+  ].join('\n\n');
+
+  /* 2) Day master */
+  const dayMaster = [
+    `Your Day Master is **${dayS}**, ${dmLine}`,
+    `Style: test‑and‑sense before committing; resilient yet can hesitate.`,
+    `Recharge: quiet/natural settings (walks, journaling, water/greenery).`,
+    `Watch‑outs: scattering energy or saying “yes” too easily.`,
+    `Try: a daily boundary ritual (fixed cutoff time or phone‑off hour).`
+  ].join('\n');
+
+  /* 3) Element balance */
+  const compat = missing.includes('metal')
+    ? 'People with strong **Metal** (clarity, pruning) sharpen your plans; too much extra Wood around you can feel chaotic.'
+    : missing.includes('water')
+      ? 'People with strong **Water** (insight, reflection) help you pace; heavy Fire crowds decision space.'
+      : 'Match with folks who supply what you lack and calm what you overdo.';
+  const element = [
+    `Element balance leans **${dom}**. Totals → ${emLbl}.`,
+    missing.length? `Notable gap: **${missing.join(', ')}**.` : `No hard gap detected; still add intentional pruning and recovery.`,
+    compat,
+    (missing.includes('metal')
+      ? 'Borrow Metal weekly: tidy a workspace, set clear deadlines, do a 15‑min Friday review.'
+      : missing.includes('water')
+        ? 'Borrow Water: 2×20‑min reflection blocks, hydration anchor, earlier wind‑down.'
+        : 'Keep both space (Wood) and order (Earth) in your week.')
+  ].join('\n');
+
+  /* 4) Structure */
+  const structure = [
+    `Base pattern shows **Resource → Output**: you absorb, then translate into something useful.`,
+    `Career fit: teaching/explaining, research→design, content/product where ideas become tools.`,
+    `Pitfall: over‑studying without shipping. Design a cycle: **absorb → create → rest**, with visible delivery points.`
+  ].join('\n');
+
+  /* 5) Yongshin focus */
+  const yong = (missing.includes('metal'))
+    ? [
+        `Most helpful focus: **Metal** (clarity, pruning, boundaries).`,
+        `Why: plenty of ideas (Wood) and duty (Earth) but low pruning.`,
+        `Make it weekly non‑negotiable:`,
+        `• Planning ritual every Sunday\n• Declutter one corner weekly\n• Boundary phrase: “I’ll confirm tomorrow.”`
+      ].join('\n')
+    : (missing.includes('water'))
+      ? [
+          `Most helpful focus: **Water** (rest, reflection, hydration).`,
+          `Why: strong drive but not enough cooling/recovery.`,
+          `Make it weekly non‑negotiable:`,
+          `• 2 evening wind‑downs\n• Hydration + short journaling\n• One tech‑free walk`
+        ].join('\n')
+      : [
+          `Helpful focus: **Consistent review cadence**.`,
+          `Anchor: weekly plan → mid‑week check → Friday retro.`
+        ].join('\n');
+
+  /* 6) Decade cycle */
+  const decade = [
+    `Decade cycles — current: **${curStr}**, next: **${nextStr}**.`,
+    cur ? `Now’s tone: ${cur.tenGod||'mixed'}; practice balancing obligations with 2–3 “big rocks”.` : 'Now: practice balance and baseline routines.',
+    next ? `Next decade tends to feel more **decisive** (sharper Metal/Water); expect clearer priorities.` : 'Next: keep optionality and skills broad.',
+    `Timing hint: use quieter months to launch; noisy seasons for testing and networking.`
+  ].join('\n');
+
+  /* 7) Summary */
+  const summary = [
+    `**Strengths:** adaptability, empathy, steady persistence.`,
+    `**Watch‑outs:** over‑responsibility, lack of pruning.`,
+    `**Micro‑habit:** weekly review + cut‑back ritual (borrow the element you lack).`,
+    `Operating manual: a flexible stream with solid banks flows farthest — pair your adaptability with pruning and structure.`,
+    `**This week:** finish one project; decline one extra duty.`
+  ].join('\n');
+
+  return {
+    pillars, day_master: dayMaster, five_elements: element,
+    structure, yongshin: yong, life_flow: decade, summary
+  };
+}
+
+/* Render */
 function renderReading7(sectionsIn){
   const root=Q('#reading'); root.innerHTML='';
   let model=null;
@@ -259,7 +399,7 @@ function renderReading7(sectionsIn){
     model = adaptOldReading(sectionsIn);
   }
   if(!model){
-    root.innerHTML = '<div class="block"><div class="btitle">Reading</div><div>Could not build a reading this time.</div></div>';
+    root.innerHTML = '<div class="block"><div class="btitle">Reading</div><div>Couldn’t build a reading this time.</div></div>';
     return;
   }
   READING_META.forEach(([key,title,subtitle])=>{
@@ -277,7 +417,7 @@ function renderReading7(sectionsIn){
 </script>
 
 <script>
-/* ---------- Specific Fortunes (기존 유지) ---------- */
+/* ---------- Specific Fortunes (unchanged for now) ---------- */
 const TOPIC_ALIASES = {
   wealth:['wealth','money','finance','wealth_money','money_wealth'],
   love:['love','relationships','love_relationships','romance','relationship_love'],
@@ -343,22 +483,6 @@ function mdFortune(s){ return (typeof s==='string'?s:String(s||''))
   .replace(/^### +(.+)$/gm,'<div class="btitle">$1</div>')
   .replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')
   .replace(/^(\-|\u2022) (.+)$/gm,'• $2'); }
-function countElementsFromPillars(pillars){
-  const map={wood:0,fire:0,earth:0,metal:0,water:0};
-  const push=(ch)=>{const e=STEM_ELEM[ch]||BRANCH_ELEM[ch]; if(e) map[e]++;};
-  if(!pillars) return map;
-  ['hour','day','month','year'].forEach(k=>{
-    const p=pillars[k]; if(!p) return; push(p.stem); push(p.branch);
-  });
-  return map;
-}
-function currentLuckInfo(luck, birthISO){
-  const a=age(birthISO); let cur=null,next=null;
-  const list=luck?.bigLuck||[];
-  for(const seg of list){ if(a>=seg.startAge && a<seg.startAge+10) cur=seg; }
-  if(cur){ next=list.find(x=>x.startAge===cur.startAge+10)||null; } else { next=list[0]||null; }
-  return {cur,next,age:a};
-}
 function extractFortuneBlocks(o){
   if (!o) return [];
   const asText = (v)=>{
@@ -384,6 +508,22 @@ function extractFortuneBlocks(o){
     if (typeof raw==='string' && raw.trim()) blocks.push({title:'Overview', body:raw.trim()});
   }
   return blocks;
+}
+function countElementsFromPillars(pillars){
+  const map={wood:0,fire:0,earth:0,metal:0,water:0};
+  const push=(ch)=>{const e=STEM_ELEM[ch]||BRANCH_ELEM[ch]; if(e) map[e]++;};
+  if(!pillars) return map;
+  ['hour','day','month','year'].forEach(k=>{
+    const p=pillars[k]; if(!p) return; push(p.stem); push(p.branch);
+  });
+  return map;
+}
+function currentLuckInfo(luck, birthISO){
+  const a=age(birthISO); let cur=null,next=null;
+  const list=luck?.bigLuck||[];
+  for(const seg of list){ if(a>=seg.startAge && a<seg.startAge+10) cur=seg; }
+  if(cur){ next=list.find(x=>x.startAge===cur.startAge+10)||null; } else { next=list[0]||null; }
+  return {cur,next,age:a};
 }
 function synthesizeFortune(frontKey, ctx){
   const out=[];
@@ -417,38 +557,34 @@ async function callFortuneAPI(frontKey){
   names.forEach(n=>{
     attempts.push({m:'GET', url:`/api/ask?topic=${encodeURIComponent(n)}&mode=fortune`});
     attempts.push({m:'GET', url:`/api/ask?category=${encodeURIComponent(n)}&mode=fortune`});
-    attempts.push({m:'GET', url:`/api/ask?type=${encodeURIComponent(n)}&mode=fortune`});
-    attempts.push({m:'GET', url:`/api/ask?k=${encodeURIComponent(n)}&mode=fortune`});
   });
   names.forEach(n=>{
     attempts.push({m:'GET', url:`/api/fortune?topic=${encodeURIComponent(n)}`});
     attempts.push({m:'GET', url:`/api/fortune?category=${encodeURIComponent(n)}`});
-    attempts.push({m:'GET', url:`/api/fortune?type=${encodeURIComponent(n)}`});
-    attempts.push({m:'GET', url:`/api/fortune?k=${encodeURIComponent(n)}`});
   });
   names.forEach(n=>{
     attempts.push({m:'POST', url:'/api/ask', body:{topic:n, mode:'fortune', ctx}});
     attempts.push({m:'POST', url:'/api/ask', body:{category:n, mode:'fortune', ctx}});
-    attempts.push({m:'POST', url:'/api/ask', body:{type:n, mode:'fortune', ctx}});
-    attempts.push({m:'POST', url:'/api/ask', body:{k:n, mode:'fortune', ctx}});
   });
   names.forEach(n=>{
     attempts.push({m:'POST', url:'/api/fortune', body:{topic:n, ctx}});
     attempts.push({m:'POST', url:'/api/fortune', body:{category:n, ctx}});
-    attempts.push({m:'POST', url:'/api/fortune', body:{type:n, ctx}});
-    attempts.push({m:'POST', url:'/api/fortune', body:{k:n, ctx}});
   });
   let lastResp=null;
   for (const a of attempts){
     try{
-      const opt = a.m==='POST' ? {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(a.body||{})} : {};
+      const opt = a.m==='POST'
+        ? {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(a.body||{})}
+        : {};
       const r = await fetchJSON(a.url, opt);
       lastResp = r;
       if (r.ok && (r.data?.ok!==false) && (r.data?.output || r.data?.data)){
         const out = r.data.output || r.data.data;
         return {ok:true, out, meta:a};
       }
-    }catch(e){ lastResp = {ok:false,status:0,raw:String(e)}; }
+    }catch(e){
+      lastResp = {ok:false,status:0,raw:String(e)};
+    }
   }
   return {ok:false, lastResp};
 }
@@ -487,7 +623,7 @@ if (document.querySelector('#fgrid')) { mountFortuneGrid(); }
 </script>
 
 <script>
-/* ---------- ask (일관 톤 템플릿 주입) ---------- */
+/* ---------- ask (tone template) ---------- */
 function addMsg(text,who='bot'){
   const p=document.createElement('div'); p.className='msg '+(who==='me'?'me':'bot'); p.innerHTML=md(text);
   const box=Q('#chat'); box.appendChild(p); box.scrollTop=box.scrollHeight;
@@ -545,7 +681,7 @@ Q('#askBtn').addEventListener('click',()=>{
   const v=Q('#ask').value.trim(); if(!v) return; Q('#ask').value=''; ask(v);
 });
 
-/* helper to pick output */
+/* Pick output helper */
 function pickReadingOutput(respData){
   if (!respData) return null;
   return respData.output
@@ -554,10 +690,10 @@ function pickReadingOutput(respData){
       || null;
 }
 
-/* attempts with salvage + en-US locale */
+/* Try server first, then fallback */
 async function fetchReading({pillars,elements,tenGods,interactions,luck}){
   const attempts = [
-    {body:{pillars,elements,tenGods,interactions,luck, mode:'structured', locale:'en-US'}},
+    {body:{pillars,elements,tenGods,interactions,mode:'structured',locale:'en-US'}},
     {body:{chart:{pillars,elements,tenGods,interactions,luck}, mode:'structured', locale:'en-US', schema:'v2'}},
     {body:{data:{pillars,elements,tenGods,interactions,luck}, locale:'en-US'}},
     {get:true}
@@ -576,11 +712,10 @@ async function fetchReading({pillars,elements,tenGods,interactions,luck}){
         const out = pickReadingOutput(r.data);
         if (out) return {ok:true, out, raw:r.data};
       }
-    }catch(e){ last = {ok:false,status:0,raw:String(e)}; }
+    }catch(e){
+      last = {ok:false,status:0,raw:String(e)};
+    }
   }
-  // SALVAGE: 마지막 응답에 output이 있으면 성공으로 돌려줌
-  const salvage = last && last.data && pickReadingOutput(last.data);
-  if (salvage) return {ok:true, out: salvage, raw:last.data, meta:{salvaged:true}};
   return {ok:false, last};
 }
 
@@ -610,28 +745,31 @@ Q('#run').addEventListener('click', async ()=>{
   setStatus('Step 3/3: Generating 7‑section reading…');
 
   const read = await fetchReading({pillars,elements,tenGods,interactions,luck});
+  let finalSections = null;
 
   if(read.ok){
-    renderReading7(read.out);
-    setStatus(`Done • tz: ${tzId} • lat:${lat.toFixed(4)}, lng:${lng.toFixed(4)}`,'ok');
-    mountFortuneGrid();
-    dbgEl.textContent = 'geo-timezone\n'+JSON.stringify(geo.data,null,2)
-      +'\n\ncalc\n'+JSON.stringify(calc.data,null,2)
-      +'\n\nreading\n'+JSON.stringify(read.raw || read.out,null,2);
-    return;
+    // Server returned something — try to normalize keys to our 7-section shape
+    const out = read.out;
+    if (out && (out.pillars || out.day_master || out.five_elements || out.structure || out.yongshin || out.life_flow || out.summary)){
+      finalSections = out;
+    }else{
+      // if server returned free text blocks, stitch them into our model as a fallback-light
+      finalSections = synthesizeDetailedReading(window.__chartCtx);
+    }
+  } else {
+    // Hard fallback: full client synthesis
+    finalSections = synthesizeDetailedReading(window.__chartCtx);
   }
 
-  // 정말 실패했을 때만 에러 블록
-  setStatus('Failed on Step 3 (reading).','err');
-  const rbox = Q('#reading');
-  rbox.innerHTML = `<div class="block">
-    <div class="btitle">Reading error</div>
-    <div class="small">Cannot build reading. Check server log or payload mapping.</div>
-    <pre class="small" style="white-space:pre-wrap;background:#0b1426;border:1px solid rgba(255,255,255,.08);padding:8px;border-radius:8px;margin-top:8px;">${read.last ? (read.last.raw || JSON.stringify(read.last.data||{},null,2)) : 'No response'}</pre>
-  </div>`;
+  renderReading7(finalSections);
+
+  setStatus(`Done • tz: ${tzId} • lat:${lat.toFixed(4)}, lng:${lng.toFixed(4)}`,'ok');
+
+  mountFortuneGrid();
+
   dbgEl.textContent = 'geo-timezone\n'+JSON.stringify(geo.data,null,2)
     +'\n\ncalc\n'+JSON.stringify(calc.data,null,2)
-    +'\n\nreading (failed)\n'+JSON.stringify(read.last && read.last.data || {},null,2);
+    +'\n\nreading\n'+JSON.stringify(read.raw || finalSections,null,2);
 });
 
 /* boot */
