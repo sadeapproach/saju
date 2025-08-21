@@ -1,221 +1,220 @@
 // /api/reading-generate.js
-// Next.js pages/api 스타일. OpenAI 있으면 JSON 구조 생성, 없으면 서버 폴백 생성.
+// Next.js / Vercel serverless (pages/api/* or app/api/route.js 스타일 호환)
+// OpenAI로 7-section reading을 생성. 장애 시 풍부한 규칙 기반 fallback 사용.
 
-export const config = { api: { bodyParser: true } };
+import OpenAI from "openai";
 
-// ---------- 작은 유틸 ----------
+export const config = {
+  api: { bodyParser: true },
+};
+
+/* ------------------------- helpers: chart utils ------------------------- */
 const STEM_ELEM = { "甲":"wood","乙":"wood","丙":"fire","丁":"fire","戊":"earth","己":"earth","庚":"metal","辛":"metal","壬":"water","癸":"water" };
 const BRANCH_ELEM = { "子":"water","丑":"earth","寅":"wood","卯":"wood","辰":"earth","巳":"fire","午":"fire","未":"earth","申":"metal","酉":"metal","戌":"earth","亥":"water" };
 
-function countElementsFromPillars(pillars){
-  const m={wood:0,fire:0,earth:0,metal:0,water:0};
-  const push=(ch)=>{const e=STEM_ELEM[ch]||BRANCH_ELEM[ch]; if(e) m[e]++;};
-  if(!pillars) return m;
-  ["hour","day","month","year"].forEach(k=>{ const p=pillars[k]; if(!p) return; push(p.stem); push(p.branch); });
+function countElements(pillars) {
+  const m = { wood:0, fire:0, earth:0, metal:0, water:0 };
+  if (!pillars) return m;
+  ["hour","day","month","year"].forEach(k=>{
+    const p = pillars[k]; if (!p) return;
+    const e1 = STEM_ELEM[p.stem];   if (e1) m[e1]++;
+    const e2 = BRANCH_ELEM[p.branch]; if (e2) m[e2]++;
+  });
   return m;
 }
-function labelElements(m){ return `wood:${m.wood}, fire:${m.fire}, earth:${m.earth}, metal:${m.metal}, water:${m.water}`; }
-function age(b){ if(!b) return "N/A"; const d=new Date(b+"T00:00:00"); const n=new Date(); let a=n.getFullYear()-d.getFullYear(); const m=n.getMonth()-d.getMonth(); if(m<0||(m===0&&n.getDate()<d.getDate())) a--; return a; }
-function currentLuckInfo(luck,birthISO){
-  const a=typeof birthISO==="string"? age(birthISO) : null;
-  let cur=null,next=null; const list=luck?.bigLuck||[];
-  for(const seg of list){ if(typeof a==="number" && a>=seg.startAge && a<seg.startAge+10) cur=seg; }
-  if(cur){ next=list.find(x=>x.startAge===cur.startAge+10)||null; } else { next=list[0]||null; }
-  return {cur,next,age:a};
+function pickDominantWeak(m){
+  const arr = Object.entries(m).sort((a,b)=>b[1]-a[1]);
+  return { dominant: arr[0]?.[0]||"", weakest: arr.at(-1)?.[0]||"" };
+}
+function findLuckNowNext(luck, birthISO){
+  if (!luck || !Array.isArray(luck.bigLuck)) return { now:null, next:null };
+  const age = (()=>{ const d=new Date(birthISO+"T00:00:00"); const n=new Date();
+    let a=n.getFullYear()-d.getFullYear(); const m=n.getMonth()-d.getMonth();
+    if (m<0 || (m===0 && n.getDate()<d.getDate())) a--; return a; })();
+  let now=null;
+  for (const seg of luck.bigLuck){ if (age>=seg.startAge && age<seg.startAge+10) { now=seg; break; } }
+  const next = now ? luck.bigLuck.find(s=>s.startAge===now.startAge+10) || null : luck.bigLuck[0] || null;
+  return { now, next, age };
 }
 
-const DM_DESC = {
-  '甲':'Yang Wood (tree): direct, upright, needs space to grow.',
-  '乙':'Yin Wood (vine): adaptive, relational, grows by support.',
-  '丙':'Yang Fire (sun): bold, generous, visible; needs fuel & pacing.',
-  '丁':'Yin Fire (candle): warm, insightful; protect from overuse.',
-  '戊':'Yang Earth (mountain): reliable, protective; beware rigidity.',
-  '己':'Yin Earth (field): caring, practical; guard against worry.',
-  '庚':'Yang Metal (axe): clear‑cutting, decisive; soften edges.',
-  '辛':'Yin Metal (jewel): refined, precise; avoid over‑perfection.',
-  '壬':'Yang Water (ocean): broad, visionary; anchor your flow.',
-  '癸':'Yin Water (dew): observant, adaptive; keep firm boundaries.'
-};
+/* ----------------------- OpenAI prompt & generator ---------------------- */
+function buildPrompt({pillars, elementsCount, dominant, weakest, luckInfo}) {
+  const p = pillars || {};
+  const hour = `${p.hour?.stem||''}${p.hour?.branch||''}`;
+  const day  = `${p.day?.stem||''}${p.day?.branch||''}`;
+  const month= `${p.month?.stem||''}${p.month?.branch||''}`;
+  const year = `${p.year?.stem||''}${p.year?.branch||''}`;
+  const dm = p.day?.stem || "";
 
-// ---------- 서버 폴백 7-섹션 생성 ----------
-function synthesizeDetailedReading(ctx){
-  const p = ctx?.pillars||{};
-  const hour=`${p.hour?.stem||''}${p.hour?.branch||''}`.trim();
-  const dayS=p.day?.stem||'', dayB=p.day?.branch||'';
-  const day=`${dayS}${dayB}`.trim();
-  const month=`${p.month?.stem||''}${p.month?.branch||''}`.trim();
-  const year=`${p.year?.stem||''}${p.year?.branch||''}`.trim();
+  const luckNow = luckInfo.now ? `${luckInfo.now.startAge}–${luckInfo.now.startAge+9} ${luckInfo.now.stem||''}${luckInfo.now.branch||''}` : "N/A";
+  const luckNext = luckInfo.next ? `${luckInfo.next.startAge}–${luckInfo.next.startAge+9} ${luckInfo.next.stem||''}${luckInfo.next.branch||''}` : "N/A";
 
-  const em = countElementsFromPillars(p);
-  const emLbl = labelElements(em);
-  const dom = Object.entries(em).sort((a,b)=>b[1]-a[1])[0]?.[0]||'mixed';
-  const missing = Object.keys(em).filter(k=>em[k]===0);
-  const {cur,next,age:a} = currentLuckInfo(ctx?.luck, ctx?.birthDateISO);
-  const curStr = cur? `${cur.startAge}–${cur.startAge+9} ${cur.stem||''}${cur.branch||''}` : 'N/A';
-  const nextStr = next? `${next.startAge}–${next.startAge+9} ${next.stem||''}${next.branch||''}` : 'N/A';
-  const dmLine = DM_DESC[dayS] || 'Day Master: description unavailable.';
+  return `
+You are a friendly, practical Saju/Bazi guide writing for English speakers who may be new to this topic.
+Write **clear, concrete, non-generic** guidance tied to THIS chart.
 
-  const pillars = [
-    `Your pillars at a glance —  Hour ${hour}, Day ${day}, Month ${month}, Year ${year}. This is a quick snapshot of personal (day/hour), seasonal (month), and ancestral (year) influences.`,
-    `Together they show a **${dom}‑leaning** profile with this count → ${emLbl}.`,
-    `Tension to balance: **stability (Earth) vs. expansion (Wood)**. Use choices that feel both *expansive and stable*.`
-  ].join('\n\n');
-
-  const day_master = [
-    `Your Day Master is **${dayS}**. ${dmLine}`,
-    `Style: test‑and‑sense before committing; resilient yet can hesitate.`,
-    `Recharge: quiet/natural settings (walks, journaling, water/greenery).`,
-    `Watch‑outs: scattering energy or saying “yes” too easily.`,
-    `Try: a daily boundary ritual (fixed cutoff time or phone‑off hour).`
-  ].join('\n');
-
-  const compat = missing.includes('metal')
-    ? 'People with strong **Metal** (clarity, pruning) sharpen your plans; too much extra Wood around you can feel chaotic.'
-    : missing.includes('water')
-      ? 'People with strong **Water** (insight, reflection) help you pace; heavy Fire crowds decision space.'
-      : 'Match with folks who supply what you lack and calm what you overdo.';
-
-  const five_elements = [
-    `Element balance leans **${dom}**. Totals → ${emLbl}.`,
-    missing.length? `Notable gap: **${missing.join(', ')}**.` : `No hard gap detected; still add intentional pruning and recovery.`,
-    compat,
-    (missing.includes('metal')
-      ? 'Borrow Metal weekly: tidy a workspace, set clear deadlines, do a 15‑min Friday review.'
-      : missing.includes('water')
-        ? 'Borrow Water: 2×20‑min reflection blocks, hydration anchor, earlier wind‑down.'
-        : 'Keep both space (Wood) and order (Earth) in your week.')
-  ].join('\n');
-
-  const structure = [
-    `Base pattern shows **Resource → Output**: you absorb, then translate into something useful.`,
-    `Career fit: teaching/explaining, research→design, content/product where ideas become tools.`,
-    `Pitfall: over‑studying without shipping. Design a cycle: **absorb → create → rest**, with visible delivery points.`
-  ].join('\n');
-
-  const yongshin = (missing.includes('metal'))
-    ? [
-        `Most helpful focus: **Metal** (clarity, pruning, boundaries).`,
-        `Why: plenty of ideas (Wood) and duty (Earth) but low pruning.`,
-        `Make it weekly non‑negotiable:`,
-        `• Planning ritual every Sunday\n• Declutter one corner weekly\n• Boundary phrase: “I’ll confirm tomorrow.”`
-      ].join('\n')
-    : (missing.includes('water'))
-      ? [
-          `Most helpful focus: **Water** (rest, reflection, hydration).`,
-          `Why: strong drive but not enough cooling/recovery.`,
-          `Make it weekly non‑negotiable:`,
-          `• 2 evening wind‑downs\n• Hydration + short journaling\n• One tech‑free walk`
-        ].join('\n')
-      : [
-          `Helpful focus: **Consistent review cadence**.`,
-          `Anchor: weekly plan → mid‑week check → Friday retro.`
-        ].join('\n');
-
-  const life_flow = [
-    `Decade cycles — current: **${curStr}**, next: **${nextStr}**.`,
-    cur ? `Now’s tone: ${cur.tenGod||'mixed'}; practice balancing obligations with 2–3 “big rocks”.` : 'Now: practice balance and baseline routines.',
-    next ? `Next decade tends to feel more **decisive** (sharper Metal/Water); expect clearer priorities.` : 'Next: keep optionality and skills broad.',
-    `Timing hint: use quieter months to launch; noisy seasons for testing and networking.`
-  ].join('\n');
-
-  const summary = [
-    `**Strengths:** adaptability, empathy, steady persistence.`,
-    `**Watch‑outs:** over‑responsibility, lack of pruning.`,
-    `**Micro‑habit:** weekly review + cut‑back ritual (borrow the element you lack).`,
-    `Operating manual: a flexible stream with solid banks flows farthest — pair your adaptability with pruning and structure.`,
-    `**This week:** finish one project; decline one extra duty.`
-  ].join('\n');
-
-  return { pillars, day_master, five_elements, structure, yongshin, life_flow, summary };
+Return ONLY valid JSON with the following keys (English values):
+{
+  "pillars": string,       // 130-180 words, 2 short paragraphs + 3-5 bullets
+  "day_master": string,    // 130-180 words, 2 short paragraphs + 3-5 bullets
+  "five_elements": string, // 130-180 words, show counts and what to add/avoid, 2 short paragraphs + 3-5 bullets
+  "structure": string,     // 130-180 words, name likely pattern in plain English + how to use/avoid, 2 short paragraphs + 3-5 bullets
+  "yongshin": string,      // 120-170 words, propose 1-2 supportive themes (yongshin-like), each with why/how, bullets
+  "life_flow": string,     // 120-170 words, current decade then next; how to time starts/restarts; bullets
+  "summary": string        // 90-130 words, strengths + watch-outs + 1 tiny habit
 }
 
-// ---------- OpenAI 호출 (있으면 사용) ----------
-async function tryOpenAI(payload){
-  const apiKey = process.env.OPENAI_API_KEY || process.env.OPENAI_APIKEY || process.env.OPENAI_API;
-  if(!apiKey) return { ok:false, reason:'NO_KEY' };
+Rules:
+- Use plain language. No unexplained jargon. If a term appears once (e.g., "Day Master"), add a parenthetical gloss the first time only.
+- Tie every point back to the actual chart (pillars, element counts, current decade).
+- Use short paragraphs separated by blank lines. Bullets must start with "- " (dash + space).
+- Avoid fortune-cookie lines; prefer concrete behavior, schedules, and examples.
+- Do not include any markdown headings; just paragraphs and bullets.
 
-  let OpenAI;
-  try { OpenAI = (await import('openai')).default; }
-  catch { return { ok:false, reason:'MODULE_NOT_FOUND' }; }
+Chart context:
+- Pillars (hour/day/month/year): ${hour}, ${day}, ${month}, ${year}
+- Day stem (Day Master): ${dm}
+- Element counts: wood:${elementsCount.wood}, fire:${elementsCount.fire}, earth:${elementsCount.earth}, metal:${elementsCount.metal}, water:${elementsCount.water}
+- Dominant: ${dominant || "unknown"}  |  Weakest: ${weakest || "unknown"}
+- Luck decades: current ${luckNow}, next ${luckNext}
+`.trim();
+}
+
+async function callOpenAI(payload){
+  const apiKey = process.env.OPENAI_API_KEY || process.env.OPENAI_APIKEY || process.env.OPENAI_KEY;
+  if (!apiKey) return { ok:false, reason:"OPENAI_API_KEY missing" };
 
   const client = new OpenAI({ apiKey });
-  const { pillars, luck, birthDateISO } = payload;
 
-  const hour=`${pillars?.hour?.stem||''}${pillars?.hour?.branch||''}`.trim();
-  const day=`${pillars?.day?.stem||''}${pillars?.day?.branch||''}`.trim();
-  const month=`${pillars?.month?.stem||''}${pillars?.month?.branch||''}`.trim();
-  const year=`${pillars?.year?.stem||''}${pillars?.year?.branch||''}`.trim();
+  const { pillars, luck } = payload;
+  const elementsCount = countElements(pillars);
+  const { dominant, weakest } = pickDominantWeak(elementsCount);
+  const luckInfo = findLuckNowNext(luck, payload.birthDateISO);
 
-  const em = countElementsFromPillars(pillars);
-  const {cur,next,age:a} = currentLuckInfo(luck,birthDateISO);
-  const curStr = cur? `${cur.startAge}–${cur.startAge+9} ${cur.stem||''}${cur.branch||''}` : 'N/A';
-  const nextStr = next? `${next.startAge}–${next.startAge+9} ${next.stem||''}${next.branch||''}` : 'N/A';
+  const prompt = buildPrompt({ pillars, elementsCount, dominant, weakest, luckInfo });
 
-  const sys = [
-    'You are a Saju/Bazi guide for English speakers.',
-    'Tone: clear, warm, practical; avoid jargon; explain briefly when needed.',
-    'Return ONLY a JSON object with keys: pillars, day_master, five_elements, structure, yongshin, life_flow, summary.',
-    'Write 6–12 sentences per section, use concrete, personalized details from the chart summary.'
-  ].join(' ');
+  const resp = await client.chat.completions.create({
+    model: "gpt-4o-mini",          // 가볍고 빠른 모델. 품질 높이려면 gpt-4.1 등으로 교체 가능
+    temperature: 0.7,
+    response_format: { type: "json_object" },
+    messages: [
+      { role: "system", content: "You produce long, practical Saju readings as structured JSON only." },
+      { role: "user", content: prompt }
+    ],
+  });
 
-  const user = [
-    `Pillars: Hour ${hour}, Day ${day}, Month ${month}, Year ${year}.`,
-    `Element counts: ${labelElements(em)}.`,
-    `Decade: current ${curStr}, next ${nextStr}, age ${a}.`,
-    'Follow the user-facing style we agreed (specific, non-generic, helpful micro-habits).'
-  ].join(' ');
+  const text = resp?.choices?.[0]?.message?.content || "";
+  let data = null;
+  try { data = JSON.parse(text); } catch(e){ /* fall through */ }
 
-  try{
-    const resp = await client.chat.completions.create({
-      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-      temperature: 0.6,
-      response_format: { type:'json_object' },
-      messages: [
-        { role:'system', content: sys },
-        { role:'user', content: user }
-      ]
-    });
-    const text = resp.choices?.[0]?.message?.content || '';
-    const json = JSON.parse(text);
-    // 최소 키 검사
-    if(json && (json.pillars || json.day_master || json.five_elements)) {
-      return { ok:true, sections: json, meta:{provider:'openai'} };
-    }
-    return { ok:false, reason:'BAD_JSON' };
-  }catch(e){
-    return { ok:false, reason:'API_FAIL', error: String(e?.message||e) };
+  if (!data || typeof data !== "object") {
+    return { ok:false, reason:"Bad JSON from model", raw:text };
   }
+
+  // minimal sanity: all keys present
+  const must = ["pillars","day_master","five_elements","structure","yongshin","life_flow","summary"];
+  const ok = must.every(k => typeof data[k] === "string" && data[k].trim().length>10);
+  if (!ok) return { ok:false, reason:"Missing keys in model JSON", raw:data };
+
+  return { ok:true, output:data, meta:{ provider:"openai", model:"gpt-4o-mini" } };
 }
 
-// ---------- 핸들러 ----------
-export default async function handler(req,res){
+/* --------------------------- rich fallback text ------------------------- */
+function englishFallback(payload){
+  const { pillars, luck, birthDateISO } = payload || {};
+  const p = pillars || {};
+  const em = countElements(pillars);
+  const { dominant, weakest } = pickDominantWeak(em);
+  const { now, next } = findLuckNowNext(luck, birthDateISO);
+
+  const four = `Your pillars at a glance —  Hour ${p.hour?.stem||''}${p.hour?.branch||''}, Day ${p.day?.stem||''}${p.day?.branch||''}, Month ${p.month?.stem||''}${p.month?.branch||''}, Year ${p.year?.stem||''}${p.year?.branch||''}. This gives a snapshot of personal (day/hour), seasonal (month), and ancestral (year) influences.
+
+Together they show a ${dominant || "mixed"}‑leaning profile with these counts → wood:${em.wood}, fire:${em.fire}, earth:${em.earth}, metal:${em.metal}, water:${em.water}.
+
+- Stability axis: prefer decisions that feel both “steady and expandable”.
+- Make room weekly for the weakest element (“${weakest}”) in your routines.
+- Anchor one recurring ritual to keep noise down in busy months.`;
+
+  const day = `Your Day Master is ${p.day?.stem||'unknown'} (your core style—how you act, decide, and recharge). Treat it as your design spec for energy.
+
+- Best environments: natural light, quiet corners, short walks.
+- Communication: decide slowly, say “no” earlier, keep boundaries explicit.
+- Recovery: one protected block for rest after heavy social/ship weeks.`;
+
+  const five = `Element balance shows ${dominant || "the leading"} element and a gap at ${weakest || "one area"}. To feel balanced, borrow what you lack and soften what’s dominant.
+
+- Add ${weakest || "the weakest"} through weekly choices (e.g., hydration for water, pruning for metal).
+- Ease dominance: small constraints → routines, time budgets, tidy workspace.
+- One Friday review (15 min) prevents spillover and resets energy.`;
+
+  const struct = `Base pattern leans Resource → Output: you absorb, then translate ideas into something useful. Careers thrive when you echo your natural rhythm (learn → make). Watch-out: studying without shipping.
+
+- Design a cycle: **absorb → create → rest** with visible delivery points.
+- Put “demo day” on the calendar; protect recovery after launches.
+- Avoid sprinting across multiple firsts in the same week.`;
+
+  const ys = `Helpful focus (“yongshin”-like): pick one supportive theme and make it non‑negotiable weekly.
+
+- If Metal is low: clarity & pruning → tidy a corner, set clear deadlines, write short specs.
+- If Water is low: hydration & evening wind‑down → earlier lights‑out 2×/week.
+- If Wood is high: add structure → boundary phrase “I’ll confirm tomorrow.”`;
+
+  const flow = `Decade cycles — current: ${now ? `${now.startAge}–${now.startAge+9} ${now.stem||''}${now.branch||''}` : "N/A"}, next: ${next ? `${next.startAge}–${next.startAge+9} ${next.stem||''}${next.branch||''}` : "N/A"}.
+Use steadier seasons for launches; shift into drafts and networking in noisier months.
+
+- Start during low‑noise stretches; avoid stacking new job + move + travel.
+- Restart after a rest week; plan small “win” to rebuild momentum.
+- Preview the next 6 weeks every Sunday.`;
+
+  const sum = `Strengths: adaptability, patient growth, steady persistence. Watch‑outs: over‑responsibility, scattered yeses.
+Tiny habit for this week: 30‑minute block that feeds the weakest element (“${weakest}”) — e.g., water → hydration + evening wind‑down.`;
+
+  return {
+    pillars: four,
+    day_master: day,
+    five_elements: five,
+    structure: struct,
+    yongshin: ys,
+    life_flow: flow,
+    summary: sum
+  };
+}
+
+/* -------------------------------- handler ------------------------------- */
+export default async function handler(req, res){
   try{
-    const payload = req.method === 'POST'
-      ? (req.body || {})
-      : (req.query || {});
+    // 다양한 형태(body.data, body.chart 등) 허용
+    const body = req.method === "GET" ? {} : (req.body || {});
+    const src = body.chart || body.data || body || {};
+    const pillars = src.pillars || body.pillars || null;
+    const elements = src.elements || body.elements || null; // 현재는 사용하지 않지만 그대로 전달
+    const tenGods = src.tenGods || body.tenGods || null;
+    const interactions = src.interactions || body.interactions || null;
+    const luck = src.luck || body.luck || null;
+    const birthDateISO = src.birthDateISO || body.birthDateISO || null;
 
-    // 다양한 래핑 케이스 풀기
-    const data = payload.chart || payload.data || payload || {};
-    const { pillars, elements, tenGods, interactions, luck, birthDateISO } = data;
-
-    const ctx = { pillars, elements, tenGods, interactions, luck, birthDateISO };
+    const payload = { pillars, elements, tenGods, interactions, luck, birthDateISO };
 
     // 1) OpenAI 시도
-    const ai = await tryOpenAI(ctx);
-
-    if (ai.ok && ai.sections) {
-      return res.status(200).json({ ok:true, output: ai.sections, meta: ai.meta });
+    try{
+      const ai = await callOpenAI(payload);
+      if (ai.ok){
+        return res.status(200).json({ ok:true, output: ai.output, meta: ai.meta });
+      }
+      // fall through → fallback
+    }catch(err){
+      // swallow to fallback
     }
 
-    // 2) 서버 폴백 생성
-    const sections = synthesizeDetailedReading(ctx);
-    return res.status(200).json({ ok:true, output: sections, meta:{ provider:'fallback', reason: ai.reason || 'no_ai' } });
+    // 2) Fallback (규칙 기반)
+    const fb = englishFallback(payload);
+    return res.status(200).json({ ok:true, output: fb, meta:{ provider:"fallback", reason:"OpenAI failed or missing" } });
 
   }catch(e){
     return res.status(200).json({
       ok:false,
-      message:'reading-generator failed',
-      error:String(e?.message||e)
+      error:"SERVER_ERROR",
+      message: e?.message || String(e),
     });
   }
 }
