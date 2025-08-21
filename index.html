@@ -39,8 +39,9 @@ button[disabled]{opacity:.6;cursor:not-allowed}
 .lnow{outline:2px solid var(--accent);box-shadow:0 0 0 4px #66b3ff33}
 /* reading */
 .block{background:#14213d;border:1px solid #2c4168;border-radius:10px;padding:12px;margin-top:10px}
-.btitle{color:#a9d6ff;font-weight:800;margin-bottom:4px}
-.bsubtitle{color:#9dc6ff;font-size:12px;margin:-2px 0 10px;opacity:.9}
+.btitle{color:#a9d6ff;font-weight:800;margin-bottom:2px}
+.bsubtitle{color:#9dc6ff;font-size:12px;margin:-2px 0 8px;opacity:.9}
+.block p{margin:0 0 10px 0;line-height:1.6}
 .bul{padding-left:18px;margin:6px 0}
 .call{margin-top:10px;padding:10px 12px;background:#49d39a18;border:1px solid #49d39a55;border-radius:10px}
 /* fortunes */
@@ -126,15 +127,23 @@ button[disabled]{opacity:.6;cursor:not-allowed}
 <script>
 /* ---------- util ---------- */
 const Q = (s)=>document.querySelector(s);
+const S = (s)=>document.querySelectorAll(s);
 const statusEl = Q('#status'), dbgEl=Q('#dbg');
+
 function setStatus(msg,type=''){ statusEl.textContent=msg; statusEl.className='help '+(type||''); }
+
 async function fetchJSON(url,opt){
-  try{ const r=await fetch(url,opt); const txt=await r.text(); let data=null; try{ data=JSON.parse(txt) }catch{}; return { ok:r.ok && !!data, status:r.status, data, raw:txt }; }
-  catch(e){ return { ok:false, status:0, data:null, raw:String(e&&e.message||e) }; }
+  try{
+    const r=await fetch(url,opt); const txt=await r.text();
+    let data=null; try{ data=JSON.parse(txt) }catch{}
+    return { ok:r.ok && !!data, status:r.status, data, raw:txt };
+  }catch(e){ return { ok:false, status:0, data:null, raw:String(e&&e.message||e) }; }
 }
+
 function yyyy(n){return String(n).padStart(4,'0')}
 function dd(n){return String(n).padStart(2,'0')}
 function age(b){const d=new Date(b+"T00:00:00");const n=new Date();let a=n.getFullYear()-d.getFullYear();const m=n.getMonth()-d.getMonth(); if(m<0||(m===0&&n.getDate()<d.getDate())) a--; return a;}
+
 (function initSelects(){
   const y=Q('#yy'), m=Q('#mm'), d=Q('#dd'), h=Q('#hh'), mi=Q('#min');
   for(let i=1940;i<=2025;i++) y.appendChild(new Option(i,i));
@@ -147,26 +156,30 @@ function age(b){const d=new Date(b+"T00:00:00");const n=new Date();let a=n.getFu
 </script>
 
 <script>
-/* ---------- safe markdown to HTML (paragraph-aware) ---------- */
+/* ---------- safe markdown ---------- */
 function asString(x){
-  if (x==null) return ''; if (typeof x==='string') return x;
+  if (x==null) return '';
+  if (typeof x==='string') return x;
   if (typeof x==='number' || typeof x==='boolean') return String(x);
   if (Array.isArray(x)) return x.map(asString).join('\n');
-  const cand = x.text||x.summary||x.body||x.html||x.overview||''; return typeof cand==='string' ? cand : '';
+  const cand = x.text||x.summary||x.body||x.html||x.overview||'';
+  return typeof cand==='string' ? cand : '';
 }
 function md(s=''){
-  const raw = asString(s); if(!raw) return '';
+  const raw = asString(s);
+  if(!raw) return '';
   let t = raw.replace(/\r\n/g,'\n').trim();
-  // 두 줄 공백을 문단으로
-  t = t.split(/\n{2,}/).map(b=>{
-    // 불릿은 따로 처리
-    if (/^\- /.test(b.trim())) {
-      return '<ul class="bul">' + b.trim().split('\n').map(l=>l.replace(/^\- /,'')).map(x=>`<li>${x}</li>`).join('') + '</ul>';
+  // 문단 분리: 빈줄 기준
+  const blocks = t.split(/\n{2,}/).map(b=>b.trim()).filter(Boolean);
+  return blocks.map(b=>{
+    // 목록 처리
+    if (/^(\-|\u2022|•) /.test(b)) {
+      return '<ul class="bul">' + b.split('\n')
+        .map(l=>l.replace(/^(\-|\u2022|•) +/, ''))
+        .map(x=>`<li>${x}</li>`).join('') + '</ul>';
     }
-    // 단순 줄바꿈은 <br>로
-    return `<p>${b.replace(/\n/g,'<br/>')}</p>`;
+    return `<p>${b}</p>`;
   }).join('');
-  return t;
 }
 </script>
 
@@ -175,6 +188,7 @@ function md(s=''){
 const STEM_ELEM = {甲:"wood",乙:"wood",丙:"fire",丁:"fire",戊:"earth",己:"earth",庚:"metal",辛:"metal",壬:"water",癸:"water"};
 const BRANCH_ELEM={子:"water",丑:"earth",寅:"wood",卯:"wood",辰:"earth",巳:"fire",午:"fire",未:"earth",申:"metal",酉:"metal",戌:"earth",亥:"water"};
 const colorCls = ch => (STEM_ELEM[ch]||BRANCH_ELEM[ch]||'wood');
+
 function renderPillars(pillars, tenGods){
   const root=Q('#pillars'); root.innerHTML='';
   (['hour','day','month','year']).forEach(k=>{
@@ -211,7 +225,20 @@ function renderLuck(luck, birthISO){
 </script>
 
 <script>
-/* ---------- READING 렌더러 (7 sections; last = Daily Compass) ---------- */
+/* ---------- READING 렌더러 (7섹션 + 구버전 호환) ---------- */
+function adaptOldReading(old) {
+  if (!old || Array.isArray(old)) return null;
+  const out = {
+    pillars: old.pillars || "",
+    day_master: old.day_master || old.core || "",
+    five_elements: old.five_elements || old.balance || "",
+    structure: old.structure || old.tengods || "",
+    yongshin: old.yongshin || "",
+    life_flow: old.life_flow || old.luck || "",
+    daily_compass: old.daily_compass || old.summary || ""
+  };
+  return out;
+}
 const READING_META = [
   ['pillars','Your Four Pillars Overview','A quick glance at the overall chart structure.'],
   ['day_master','Day Master Traits','The element that represents “you”.'],
@@ -221,18 +248,27 @@ const READING_META = [
   ['life_flow','Decade Cycle','Big tailwinds & timing—not a rigid fate.'],
   ['daily_compass','Daily Compass','Strengths, watch‑outs, and one tiny habit to start this week.']
 ];
-function renderReading7(model){
+function renderReading7(sectionsIn){
   const root=Q('#reading'); root.innerHTML='';
-  if(!model || typeof model!=='object'){
-    root.innerHTML='<div class="block"><div class="btitle">Reading</div><div>Could not build reading.</div></div>'; return;
+  let model=null;
+  if (sectionsIn && !Array.isArray(sectionsIn) &&
+      ('pillars' in sectionsIn || 'day_master' in sectionsIn || 'five_elements' in sectionsIn)) {
+    model = sectionsIn;
+  } else {
+    model = adaptOldReading(sectionsIn);
+  }
+  if(!model){
+    root.innerHTML = '<div class="block"><div class="btitle">Reading</div><div>Couldn’t build reading this time.</div></div>';
+    return;
   }
   READING_META.forEach(([key,title,subtitle])=>{
     const text = model[key] || '';
+    const empty = !(text && String(text).trim().length>0);
     const div=document.createElement('div'); div.className='block';
     div.innerHTML = `
       <div class="btitle">${title}</div>
       <div class="bsubtitle">${subtitle}</div>
-      <div>${ md(text) }</div>
+      <div>${ empty ? '<span class="small" style="opacity:.7">No content.</span>' : md(text) }</div>
     `;
     root.appendChild(div);
   });
@@ -240,21 +276,258 @@ function renderReading7(model){
 </script>
 
 <script>
-/* ---------- Specific Fortunes (생략: 기존 그대로) ---------- */
-// ... (현재 프로젝트에서 이미 동작 중인 fortune 코드 그대로 두시면 됩니다)
+/* ---------- Specific Fortunes (기존 유지) ---------- */
+const TOPIC_ALIASES = {
+  wealth:['wealth','money','finance','wealth_money','money_wealth'],
+  love:['love','relationships','love_relationships','romance','relationship_love'],
+  career:['career','growth','career_growth'],
+  health:['health','wellness','health_wellness'],
+  family:['family','children','family_children'],
+  travel:['travel','relocation','travel_relocation','move'],
+  learning:['learning','skills','learning_skills','study'],
+  timing:['timing','windows','timing_windows','luck_windows'],
+};
+const TOPICS = [
+  {key:'wealth', icon:'💰', name:'Wealth & Money', hint:'Income, savings, timing.'},
+  {key:'love', icon:'❤️', name:'Love & Relationships', hint:'Compatibility, timing.'},
+  {key:'career', icon:'🧰', name:'Career & Growth', hint:'Fit, leadership vs craft.'},
+  {key:'health', icon:'🌿', name:'Health & Wellness', hint:'Imbalance → care.'},
+  {key:'family', icon:'👶', name:'Family & Children', hint:'Fertility & dynamics.'},
+  {key:'travel', icon:'✈️', name:'Travel / Relocation', hint:'Good periods, cautions.'},
+  {key:'learning', icon:'📘', name:'Learning & Skills', hint:'What to study.'},
+  {key:'timing', icon:'⏱️', name:'Timing & Windows', hint:'Short‑term chances.'},
+];
+function mountFortuneGrid(){
+  const g=Q('#fgrid'); if(!g) return;
+  g.innerHTML='';
+  TOPICS.forEach(t=>{
+    const card=document.createElement('div'); card.className='ftile'; card.dataset.key=t.key;
+    card.innerHTML=`
+      <div class="ftop">
+        <div class="fleft">
+          <div class="ficon">${t.icon}</div>
+          <div>
+            <div class="fname">${t.name}</div>
+            <div class="fhint">${t.hint}</div>
+          </div>
+        </div>
+        <button class="see">See insights</button>
+      </div>
+      <div class="fcontent"></div>
+    `;
+    g.appendChild(card);
+  });
+  g.querySelectorAll('.see').forEach(btn=>{
+    btn.addEventListener('click',()=>expandTopic(btn.closest('.ftile')));
+  });
+}
+function showFortuneError(content,label,resp){
+  const message = (resp && resp.data && (resp.data.error||resp.data.message))
+               || (resp && resp.raw) || 'Network error — please try again.';
+  const status  = resp && resp.status ? `status: ${resp.status}` : '';
+  content.innerHTML = `
+    <div class="block" style="border-color:#f59e0b80">
+      <div class="btitle">${label}</div>
+      <div class="err">Network / Server error</div>
+      <div class="small" style="margin-top:6px">${status}</div>
+      <pre class="small" style="white-space:pre-wrap;margin-top:8px;background:#0b1426;border:1px solid rgba(255,255,255,.08);padding:8px;border-radius:8px">${String(message).slice(0,1200)}</pre>
+      <div class="closewrap"><button class="closebtn">Close</button></div>
+    </div>`;
+  content.style.display='block';
+  const close=content.querySelector('.closebtn');
+  if(close) close.addEventListener('click',()=>{content.style.display='none';});
+}
+function mdFortune(s){ return (typeof s==='string'?s:String(s||''))
+  .replace(/\r\n/g,'\n').trim()
+  .replace(/^### +(.+)$/gm,'<div class="btitle">$1</div>')
+  .replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')
+  .replace(/^(\-|\u2022) (.+)$/gm,'• $2'); }
+function countElementsFromPillars(pillars){
+  const map={wood:0,fire:0,earth:0,metal:0,water:0};
+  const push=(ch)=>{const e=STEM_ELEM[ch]||BRANCH_ELEM[ch]; if(e) map[e]++;};
+  if(!pillars) return map;
+  ['hour','day','month','year'].forEach(k=>{
+    const p=pillars[k]; if(!p) return; push(p.stem); push(p.branch);
+  });
+  return map;
+}
+function currentLuckInfo(luck, birthISO){
+  const a=age(birthISO); let cur=null,next=null;
+  const list=luck?.bigLuck||[];
+  for(const seg of list){ if(a>=seg.startAge && a<seg.startAge+10) cur=seg; }
+  if(cur){ next=list.find(x=>x.startAge===cur.startAge+10)||null; } else { next=list[0]||null; }
+  return {cur,next,age:a};
+}
+function extractFortuneBlocks(o){
+  if (!o) return [];
+  const asText = (v)=>{
+    if(!v) return '';
+    if(typeof v==='string') return v.trim();
+    if(Array.isArray(v)) return v.map(x=>asText(x)).filter(Boolean).map(x=>`• ${x}`).join('\n');
+    return (v.text||v.body||v.html||v.markdown||v.content||'').toString().trim();
+  };
+  const pushIf=(arr,title,val)=>{const t=asText(val); if(t) arr.push({title,body:t});};
+  const blocks=[];
+  pushIf(blocks,'Overview', o.overview||o.summary||o.intro||o.description||o.content||o.answer||o.result);
+  pushIf(blocks,'Key Phases', o.phases||o.keyPhases||o.key_points||o.keyPoints||o.points);
+  pushIf(blocks,'Watch Out', o.watch||o.watchOut||o.cautions||o.risks||o.pitfalls||o.avoid);
+  pushIf(blocks,'Tips', o.tips||o.recommendations||o.advice||o.actions);
+  if (o.sections && typeof o.sections==='object'){
+    const M=o.sections; pushIf(blocks,'Overview', M.overview); pushIf(blocks,'Key Phases', M.phases);
+    pushIf(blocks,'Watch Out', M.watch); pushIf(blocks,'Tips', M.tips);
+  }
+  if (Array.isArray(o.cards)) o.cards.forEach(c=>pushIf(blocks, c.title||c.kicker||'Insight', c.body||c.text||c));
+  if (Array.isArray(o.blocks)) o.blocks.forEach(b=>pushIf(blocks, b.title||'Insight', b.body||b.text||b));
+  if (!blocks.length){
+    const raw = o.markdown || o.html || o.text || o.content || o.answer || o.result;
+    if (typeof raw==='string' && raw.trim()) blocks.push({title:'Overview', body:raw.trim()});
+  }
+  return blocks;
+}
+function synthesizeFortune(frontKey, ctx){
+  const out=[];
+  const pillars=ctx?.pillars||{};
+  const em=countElementsFromPillars(pillars);
+  const dom=Object.entries(em).sort((a,b)=>b[1]-a[1])[0]?.[0]||'';
+  const {cur,next,age}=currentLuckInfo(ctx?.luck, ctx?.birthDateISO);
+  const curStr = cur ? `${cur.startAge}–${cur.startAge+9} (${cur.stem||''}${cur.branch||''})` : 'N/A';
+  const nxtStr = next ? `${next.startAge}–${next.startAge+9} (${next.stem||''}${next.branch||''})` : 'N/A';
+  const open = `This is a practical snapshot built from your chart context (age ${age}). Dominant element looks like **${dom || 'mixed'}**. Current luck decade: **${curStr}**, next: **${nxtStr}**.`;
+  const topicHints = {
+    wealth:{phases:`• When Output/Influence dominates (like ${cur?.tenGod||'certain decades'}), lean into visibility and pitching.\n• ${next?`Next decade ${nxtStr} may favor switching vehicles or new income lines.`:''}`,watch:`• Avoid over‑leveraging during Metal‑leaning months if cashflow is uneven.\n• Keep an emergency buffer (3–6 months).`,tips:`• Budget by **quarters**; review monthly.\n• Batch big expenses outside peak busy months.\n• Track one KPI: saving rate or debt‑to‑income.`},
+    love:{phases:`• Social/Peer‑heavy luck windows support dating & networking.\n• Quiet months are better for clarifying non‑negotiables.`,watch:`• Don’t make lifetime decisions under short “high” transits.\n• Balance work/output so energy is left for relationships.`,tips:`• Plan **low‑friction** dates; prioritize routine over intensity.\n• Review expectations every quarter; communicate early.`},
+    career:{phases:`• Output decades (식상) → build portfolio & ship.\n• Authority decades (관) → step up to leadership and process.`,watch:`• Don’t overcommit across cycles; protect recovery weeks.\n• Say “no” to roles that drain your day‑master element.`,tips:`• One focus per quarter.\n• Keep a brag doc; update after each delivery.\n• Practice weekly “demo”.`},
+    health:{phases:`• Earth‑heavy periods: support digestion & regularity.\n• Fire‑heavy: hydrate/sleep; calm the nervous system.`,watch:`• Overwork during Output spikes → track fatigue.\n• Mind late nights around month changes.`,tips:`• Daily walk ⭐\n• Sleep window anchor.\n• Quarterly labs if you push hard at work.`},
+    family:{phases:`• Stable Earth/Metal months favor planning & paperwork.\n• Water/Wood months are smoother for transitions.`,watch:`• Don’t compress major moves with career sprints.\n• Share logistics early with family.`,tips:`• Create a shared calendar.\n• Budget a “buffer week” for any big change.`},
+    travel:{phases:`• Move/relocation: aim for steady‑support months (fewer surprises).\n• Short trips fit well in Output‑light weeks.`,watch:`• Avoid back‑to‑back obligations within 7 days of moving.\n• Double‑check docs in Mercury‑style retro cycles.`,tips:`• Batch paperwork; keep copies in cloud.\n• Pad 1–2 buffer days around the move.`},
+    learning:{phases:`• Resource decades (인성) are ideal for deep study.\n• Peer/output decades → learn by shipping.`,watch:`• Beware course hopping; set an outcome per quarter.`,tips:`• Pick **one stack**.\n• Weekly 2×90 min focus sessions.\n• Publish a mini‑project monthly.`},
+    timing:{phases:`• Use the **current luck decade** tailwinds (${curStr}).\n• Micro‑windows: quiet weeks after new moons or post‑holiday lulls.`,watch:`• Don’t force starts during family/health spikes.\n• Respect your recovery weeks.`,tips:`• Plan by quarters; preview the next 6 weeks every Sunday.\n• Keep a small “optionality” buffer.`}
+  }[frontKey]||{phases:`• Ride stable months for starts; use noisy months for drafts.\n• Align big calls with your recovery patterns.`,watch:`• Avoid stacking multiple firsts in one week.`,tips:`• Quarter plan, weekly review, daily minimums.`};
+  out.push({title:'Overview', body:open});
+  out.push({title:'Key Phases', body:topicHints.phases});
+  out.push({title:'Watch Out', body:topicHints.watch});
+  out.push({title:'Tips', body:topicHints.tips});
+  return out;
+}
+async function callFortuneAPI(frontKey){
+  const ctx = window.__chartCtx || null;
+  const names = TOPIC_ALIASES[frontKey] || [frontKey];
+  const attempts = [];
+  names.forEach(n=>{
+    attempts.push({m:'GET', url:`/api/ask?topic=${encodeURIComponent(n)}&mode=fortune`});
+    attempts.push({m:'GET', url:`/api/ask?category=${encodeURIComponent(n)}&mode=fortune`});
+    attempts.push({m:'GET', url:`/api/ask?type=${encodeURIComponent(n)}&mode=fortune`});
+    attempts.push({m:'GET', url:`/api/ask?k=${encodeURIComponent(n)}&mode=fortune`});
+  });
+  names.forEach(n=>{
+    attempts.push({m:'GET', url:`/api/fortune?topic=${encodeURIComponent(n)}`});
+    attempts.push({m:'GET', url:`/api/fortune?category=${encodeURIComponent(n)}`});
+    attempts.push({m:'GET', url:`/api/fortune?type=${encodeURIComponent(n)}`});
+    attempts.push({m:'GET', url:`/api/fortune?k=${encodeURIComponent(n)}`});
+  });
+  names.forEach(n=>{
+    attempts.push({m:'POST', url:'/api/ask', body:{topic:n, mode:'fortune', ctx}});
+    attempts.push({m:'POST', url:'/api/ask', body:{category:n, mode:'fortune', ctx}});
+    attempts.push({m:'POST', url:'/api/ask', body:{type:n, mode:'fortune', ctx}});
+    attempts.push({m:'POST', url:'/api/ask', body:{k:n, mode:'fortune', ctx}});
+  });
+  names.forEach(n=>{
+    attempts.push({m:'POST', url:'/api/fortune', body:{topic:n, ctx}});
+    attempts.push({m:'POST', url:'/api/fortune', body:{category:n, ctx}});
+    attempts.push({m:'POST', url:'/api/fortune', body:{type:n, ctx}});
+    attempts.push({m:'POST', url:'/api/fortune', body:{k:n, ctx}});
+  });
+  let lastResp=null;
+  for (const a of attempts){
+    try{
+      const opt = a.m==='POST' ? {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(a.body||{})} : {};
+      const r = await fetchJSON(a.url, opt);
+      lastResp = r;
+      if (r.ok && (r.data?.ok!==false) && (r.data?.output || r.data?.data)){
+        const out = r.data.output || r.data.data;
+        return {ok:true, out, meta:a};
+      }
+    }catch(e){ lastResp = {ok:false,status:0,raw:String(e)}; }
+  }
+  return {ok:false, lastResp};
+}
+async function expandTopic(card){
+  if (!card || card.dataset.loading === '1') return;
+  card.dataset.loading = '1';
+  const key=card.dataset.key;
+  const btn=card.querySelector('.see');
+  const content=card.querySelector('.fcontent');
+  if (btn) { btn.disabled=true; btn.textContent='Loading…'; }
+  try{
+    const res = await callFortuneAPI(key);
+    let blocks = [];
+    if (res.ok){ blocks = extractFortuneBlocks(res.out||[]); }
+    const meaningful = blocks.some(b=> (b.body||'').trim().length>0 );
+    if (!meaningful){ blocks = synthesizeFortune(key, window.__chartCtx || {}); }
+    content.innerHTML =
+      blocks.map(b=>`
+        <div class="block">
+          ${b.title?`<div class="btitle">${b.title}</div>`:''}
+          <div>${mdFortune(b.body||'')}</div>
+        </div>`).join('')
+      + `<div class="closewrap"><button class="closebtn">Close</button></div>`;
+    content.style.display='block';
+    if (btn) btn.style.display='none';
+    const cbtn = content.querySelector('.closebtn');
+    if (cbtn) cbtn.addEventListener('click',()=>{content.style.display='none'; if(btn) btn.style.display='inline-block';});
+  }catch(e){
+    showFortuneError(content, 'Specific Fortune', {raw:String(e)});
+  }finally{
+    if (btn){ btn.disabled=false; btn.textContent='See insights'; }
+    delete card.dataset.loading;
+  }
+}
+if (document.querySelector('#fgrid')) { mountFortuneGrid(); }
 </script>
 
 <script>
-/* ---------- ask (간단 템플릿) ---------- */
+/* ---------- ask (일관 톤 템플릿 주입) ---------- */
 function addMsg(text,who='bot'){
   const p=document.createElement('div'); p.className='msg '+(who==='me'?'me':'bot'); p.innerHTML=md(text);
   const box=Q('#chat'); box.appendChild(p); box.scrollTop=box.scrollHeight;
 }
+function summarizeChart(ctx){
+  if(!ctx) return 'No chart context.';
+  const p=ctx.pillars||{};
+  const hour=`${p.hour?.stem||''}${p.hour?.branch||''}`.trim();
+  const day =`${p.day?.stem||''}${p.day?.branch||''}`.trim();
+  const month=`${p.month?.stem||''}${p.month?.branch||''}`.trim();
+  const year=`${p.year?.stem||''}${p.year?.branch||''}`.trim();
+  const em=countElementsFromPillars(p);
+  const dom=Object.entries(em).sort((a,b)=>b[1]-a[1])[0]?.[0]||'mixed';
+  const {cur}=currentLuckInfo(ctx.luck, ctx.birthDateISO);
+  const luckStr = cur? `${cur.startAge}–${cur.startAge+9} ${cur.stem||''}${cur.branch||''} (${cur.tenGod||''})` : 'N/A';
+  return `Pillars: Hour ${hour}, Day ${day}, Month ${month}, Year ${year}. Dominant element: ${dom}. Current luck decade: ${luckStr}.`;
+}
+function buildAskPrompt(q, ctx){
+  const summary=summarizeChart(ctx);
+  return [
+    'You are a Saju/Bazi guide. Tone: clear, warm, practical. Avoid jargon; if needed, explain briefly.',
+    'Format:',
+    '• Direct answer first (2–4 sentences).',
+    '• Then 3–5 bullets of actionable tips.',
+    '• Add 1 “Timing” hint only if relevant.',
+    '',
+    'Chart context:',
+    summary,
+    '',
+    'User question:',
+    q
+  ].join('\n');
+}
 async function ask(q){
   addMsg(q,'me');
   try{
-    let r = await fetchJSON('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q,mode:'chat',ctx:window.__chartCtx||null})});
-    if(!r.ok||(!r.data?.ok && !r.data?.output)){ r = await fetchJSON(`/api/ask?q=${encodeURIComponent(q)}`); }
+    const payload = { q: buildAskPrompt(q, window.__chartCtx||null), mode:'chat', ctx:window.__chartCtx||null };
+    let r = await fetchJSON('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(!r.ok || (!r.data?.ok && !r.data?.output)){
+      r = await fetchJSON(`/api/ask?q=${encodeURIComponent(payload.q)}`);
+    }
     if(!r.ok||(!r.data?.ok && !r.data?.output)){ addMsg("I couldn’t quite catch that. Could you rephrase your question? 🙂"); return; }
     addMsg(r.data.output||"Here’s my take based on your chart.");
   }catch{ addMsg("⚠️ Network error — please try again."); }
@@ -273,17 +546,20 @@ Q('#askBtn').addEventListener('click',()=>{
 
 function pickReadingOutput(respData){
   if (!respData) return null;
-  return respData.output || respData.sections || (respData.data && (respData.data.output || respData.data.sections)) || null;
+  return respData.output
+      || respData.sections
+      || (respData.data && (respData.data.output || respData.data.sections))
+      || null;
 }
 
-async function fetchReading(payload){
-  // OpenAI 사용 고정
-  const r = await fetchJSON('/api/reading-generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ chart: payload })});
-  if (r.ok) {
-    const out = pickReadingOutput(r.data);
-    if (out) return { ok:true, out, raw:r.data };
-  }
-  return { ok:false, last:r };
+async function fetchReading({pillars,elements,tenGods,interactions,luck,birthDateISO}){
+  const body = { chart:{pillars,elements,tenGods,interactions,luck,birthDateISO} };
+  let r = await fetchJSON('/api/reading-generate',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+  return r;
 }
 
 Q('#run').addEventListener('click', async ()=>{
@@ -306,26 +582,40 @@ Q('#run').addEventListener('click', async ()=>{
 
   renderPillars(pillars,tenGods);
   renderLuck(luck,birthDateISO);
-  window.__chartCtx = { pillars, elements, tenGods, interactions, luck, birthDateISO, tzId, lat, lng };
 
-  setStatus('Step 3/3: Generating reading (OpenAI)…');
-  const read = await fetchReading({pillars,elements,tenGods,interactions,luck,birthDateISO});
+  window.__chartCtx = { pillars, elements, tenGods, luck, birthDateISO, tzId, lat, lng };
+
+  setStatus('Step 3/3: Generating AI reading…');
+  const read=await fetchReading({pillars,elements,tenGods,interactions,luck,birthDateISO});
   if(!read.ok){
     setStatus('Failed on Step 3 (reading).','err');
-    Q('#reading').innerHTML = `<div class="block"><div class="btitle">Reading error</div><div class="small">OpenAI generation failed. Check server logs or API key.</div><pre class="small" style="white-space:pre-wrap;background:#0b1426;border:1px solid rgba(255,255,255,.08);padding:8px;border-radius:8px;margin-top:8px;">${read.last ? (read.last.raw || JSON.stringify(read.last.data||{},null,2)) : 'No response'}</pre></div>`;
+    const rbox = Q('#reading');
+    rbox.innerHTML = `<div class="block">
+      <div class="btitle">Reading error</div>
+      <div class="small">OpenAI generation failed. Check server logs or API key.</div>
+      <pre class="small" style="white-space:pre-wrap;background:#0b1426;border:1px solid rgba(255,255,255,.08);padding:8px;border-radius:8px;margin-top:8px;">${read.data?JSON.stringify(read.data,null,2):read.raw}</pre>
+    </div>`;
     dbgEl.textContent = 'geo-timezone\n'+JSON.stringify(geo.data,null,2)
       +'\n\ncalc\n'+JSON.stringify(calc.data,null,2)
-      +'\n\nreading (failed)\n'+JSON.stringify(read.last && read.last.data || {},null,2);
+      +'\n\nreading (failed)\n'+JSON.stringify(read.data||{},null,2);
     return;
   }
 
-  renderReading7(read.out);
+  const out = pickReadingOutput(read.data);
+  renderReading7(out);
+
   setStatus(`Done • tz: ${tzId} • lat:${lat.toFixed(4)}, lng:${lng.toFixed(4)}`,'ok');
+
+  mountFortuneGrid();
 
   dbgEl.textContent = 'geo-timezone\n'+JSON.stringify(geo.data,null,2)
     +'\n\ncalc\n'+JSON.stringify(calc.data,null,2)
-    +'\n\nreading\n'+JSON.stringify(read.raw || read.out,null,2);
+    +'\n\nreading\n'+JSON.stringify(read.data||{},null,2);
 });
+
+/* boot */
+mountFortuneGrid();
+addMsg("Hi! Ask me anything about timing, relationships, career, or health. I’ll use your current chart as context.",'bot');
 </script>
 </body>
 </html>
