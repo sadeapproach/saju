@@ -55,8 +55,6 @@ button[disabled]{opacity:.6;cursor:not-allowed}
 .closewrap{display:flex;justify-content:flex-end}
 .closebtn{margin-top:16px;background:#22314c;border:1px solid #2c4168;color:#cfe2ff;padding:8px 10px;border-radius:8px}
 /* fortune article */
-.f-article h4{margin:0 0 8px;font-size:16px}
-.f-article .sub{margin:0 0 10px;color:#9dc6ff}
 .f-article p{margin:8px 0 10px;line-height:1.6}
 .f-article ul{margin:8px 0 12px 18px}
 .f-article li{margin:4px 0}
@@ -161,34 +159,41 @@ function age(b){const d=new Date(b+"T00:00:00");const n=new Date();let a=n.getFu
 </script>
 
 <script>
-/* ---------- safe markdown / fortune-md ---------- */
+/* ---------- safe markdown & fortune block ---------- */
 function escapeHtml(s){ return s.replace(/[&<>]/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;' }[c])); }
 
-function mdFortuneBlock(input=''){
-  // 1) normalize line breaks
-  let t = (typeof input==='string'?input:String(input||'')).replace(/\r\n/g,'\n').trim();
+function mdSimple(s=''){
+  const raw=(typeof s==='string'?s:String(s||'')).replace(/\r\n/g,'\n').trim();
+  if(!raw) return '';
+  const blocks = raw.split(/\n{2,}/).map(seg=>{
+    return `<p>${escapeHtml(seg).replace(/\n/g,'<br>')}</p>`;
+  });
+  return blocks.join('');
+}
 
-  // 2) bullet normalization
-  // turn lines starting with "• " or "- " to <li>
+/* fortune: 더 강한 줄바꿈 & 목록 처리 */
+function mdFortuneBlock(input=''){
+  // 콤마로 붙은 문장 보정: ",In your" 등
+  let t = (typeof input==='string'?input:String(input||'')).replace(/\r\n/g,'\n').trim();
+  t = t.replace(/,\s*(?=In\s)/g,'\n');
+  t = t.replace(/,\s*(?=Avoid|Be |Connect|Cultivate|Practice|Plan|Save)/g,'\n');
+
   const paragraphs = t.split(/\n{2,}/).map(seg=>{
-    // if this paragraph looks like a list:
-    if (/^(?:\s*(?:•|-)\s.+\n?)+$/m.test(seg)) {
+    const looksList = /^(?:\s*(?:•|-)\s.+\n?)+$/m.test(seg);
+    if (looksList) {
       const lis = seg.split(/\n/).map(l=>l.trim()).filter(Boolean)
         .map(l=>l.replace(/^(?:•|-)\s*/, ''))
         .map(txt=>`<li>${escapeHtml(txt)}</li>`).join('');
       return `<ul>${lis}</ul>`;
     }
-    // otherwise treat single \n as <br>
-    const html = escapeHtml(seg).replace(/\n/g,'<br>');
-    return `<p>${html}</p>`;
+    return `<p>${escapeHtml(seg).replace(/\n/g,'<br>')}</p>`;
   });
-
   return paragraphs.join('');
 }
 </script>
 
 <script>
-/* ---------- pillars & luck (unchanged) ---------- */
+/* ---------- pillars & luck ---------- */
 const STEM_ELEM = {甲:"wood",乙:"wood",丙:"fire",丁:"fire",戊:"earth",己:"earth",庚:"metal",辛:"metal",壬:"water",癸:"water"};
 const BRANCH_ELEM={子:"water",丑:"earth",寅:"wood",卯:"wood",辰:"earth",巳:"fire",午:"fire",未:"earth",申:"metal",酉:"metal",戌:"earth",亥:"water"};
 const colorCls = ch => (STEM_ELEM[ch]||BRANCH_ELEM[ch]||'wood');
@@ -228,15 +233,124 @@ function renderLuck(luck, birthISO){
 }
 </script>
 
-<!-- READING 렌더러는 기존 그대로 사용 (생략) -->
 <script>
-/* ---------- READING (요약) : 기존 프로젝트 로직 유지 ---------- */
-function renderReading7(sections){ const root=Q('#reading'); root.innerHTML=''; /* 이미 구현되어 있는 버전 사용 중 */ }
+/* ---------- READING (정상 동작 버전 복구) ---------- */
+function asString(x){
+  if (x==null) return '';
+  if (typeof x==='string') return x;
+  if (typeof x==='number' || typeof x==='boolean') return String(x);
+  if (Array.isArray(x)) return x.map(asString).join('\n');
+  const cand = x.text||x.summary||x.body||x.html||x.overview||'';
+  return typeof cand==='string' ? cand : '';
+}
+function md(s=''){
+  const raw = asString(s);
+  if(!raw) return '';
+  let t = raw.replace(/\r\n/g,'\n').trim();
+  t = t.replace(/^### +(.+)$/gm,'<div class="btitle">$1</div>')
+       .replace(/^## +(.+)$/gm,'<div class="btitle">$1</div>')
+       .replace(/^# +(.+)$/gm,'<div class="btitle">$1</div>');
+  t = t.split(/\n\n+/).map(block=>{
+    const b = block.trim();
+    if (/^(\-|\u2022) /.test(b)) {
+      return '<ul class="bul">' + b.split('\n')
+        .map(l=>l.replace(/^(\-|\u2022) +/, ''))
+        .map(x=>`<li>${x}</li>`).join('') + '</ul>';
+    }
+    return `<p>${b.replace(/\n/g,'<br>')}</p>`;
+  }).join('');
+  return t.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+}
+
+function adaptOldReading(old) {
+  if (!old || Array.isArray(old)) return null;
+  const out = {
+    pillars: old.pillars || "",
+    day_master: old.day_master || old.core || "",
+    five_elements: old.five_elements || old.balance || "",
+    structure: old.structure || old.tengods || "",
+    yongshin: old.yongshin || "",
+    life_flow: old.life_flow || old.luck || "",
+    summary: old.summary || ""
+  };
+  return out;
+}
+const READING_META = [
+  ['pillars','Your Four Pillars Overview','A quick glance at the overall chart structure.'],
+  ['day_master','Day Master Traits','The element that represents “you”.'],
+  ['five_elements','Element Balance','Where your energy leans — and what to watch.'],
+  ['structure','Base Pattern (Structure)','Career vs. wealth vs. learning—your natural emphasis.'],
+  ['yongshin','Helpful Focus (Yongshin)','Pick one supportive theme and make it a weekly non‑negotiable.'],
+  ['life_flow','Decade Cycle','Big tailwinds & timing—not a rigid fate.'],
+  ['summary','Daily Compass','Strengths, watch‑outs, and one tiny habit to start this week.']
+];
+
+function renderReading7(sectionsIn){
+  const root=Q('#reading'); root.innerHTML='';
+  let model=null;
+  if (sectionsIn && !Array.isArray(sectionsIn) &&
+      ('pillars' in sectionsIn || 'day_master' in sectionsIn || 'five_elements' in sectionsIn)) {
+    model = sectionsIn;
+  } else {
+    model = adaptOldReading(sectionsIn);
+  }
+  if(!model){
+    root.innerHTML = '<div class="block"><div class="btitle">Reading</div><div>이번에는 리딩을 만들지 못했어요.</div></div>';
+    return;
+  }
+  READING_META.forEach(([key,title,subtitle])=>{
+    const text = model[key] || '';
+    const empty = !(text && String(text).trim().length>0);
+    const div=document.createElement('div'); div.className='block';
+    div.innerHTML = `
+      <div class="btitle">${title}</div>
+      <div class="bsubtitle">${subtitle}</div>
+      <div>${ empty ? '<span class="small" style="opacity:.7">표시할 내용이 없습니다.</span>' : md(text) }</div>
+    `;
+    root.appendChild(div);
+  });
+}
+
+/* reading API */
+function pickReadingOutput(respData){
+  if (!respData) return null;
+  return respData.output
+      || respData.sections
+      || (respData.data && (respData.data.output || respData.data.sections))
+      || null;
+}
+async function fetchReading({pillars,elements,tenGods,interactions,luck}){
+  const attempts = [
+    {body:{pillars,elements,tenGods,interactions,mode:'structured',locale:'ko-KR'}},
+    {body:{chart:{pillars,elements,tenGods,interactions,luck}, mode:'structured', locale:'ko-KR', schema:'v2'}},
+    {body:{data:{pillars,elements,tenGods,interactions,luck}, locale:'ko-KR'}},
+    {get:true}
+  ];
+  let last=null;
+  for (const a of attempts){
+    try{
+      let r;
+      if (a.get){
+        r = await fetchJSON('/api/reading-generate?mode=structured');
+      }else{
+        r = await fetchJSON('/api/reading-generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(a.body)});
+      }
+      last=r;
+      if (r.ok){
+        const out = pickReadingOutput(r.data);
+        if (out) return {ok:true, out, raw:r.data};
+      }
+    }catch(e){
+      last = {ok:false,status:0,raw:String(e)};
+    }
+  }
+  return {ok:false, last};
+}
 </script>
 
 <script>
-/* ---------- Specific Fortunes (개편) ---------- */
-/* 6개 카테고리: 성격·인성 / 직업·명예 / 재물·재운 / 부부·연애 / 건강운 / 운세 흐름 */
+/* ---------- Specific Fortunes (단일 본문, 타이틀 중복 X) ---------- */
+/* 6개 카테고리 */
 const TOPICS = [
   {key:'personality', icon:'🧭', name:'Personality & Traits', hint:'Strengths, blind spots, fit.'},
   {key:'career_status', icon:'🎯', name:'Career, Reputation & Influence', hint:'Talents, roles, visibility.'},
@@ -271,12 +385,10 @@ function mountFortuneGrid(){
   });
 }
 
-/* fortune 콘텐츠 렌더링: 제목/부제/본문 단일 아티클 */
-function renderFortuneArticle(container, title, subtitle, bodyHtml){
+/* 단일 본문 렌더(제목/부제 표시 안함) */
+function renderFortuneArticle(container, bodyHtml){
   container.innerHTML = `
     <div class="block f-article">
-      <h4>${title}</h4>
-      ${subtitle?`<div class="sub">${subtitle}</div>`:''}
       ${bodyHtml}
       <div class="closewrap"><button class="closebtn">Close</button></div>
     </div>
@@ -287,7 +399,7 @@ function renderFortuneArticle(container, title, subtitle, bodyHtml){
   if (cbtn) cbtn.addEventListener('click',()=>{container.style.display='none'; if(btn) btn.style.display='inline-block';});
 }
 
-/* API 시도 (기존 엔드포인트 호환) */
+/* API 시도 */
 async function callFortuneAPI(frontKey){
   const ctx = window.__chartCtx || null;
   const tryList = [
@@ -304,22 +416,34 @@ async function callFortuneAPI(frontKey){
   return {ok:false};
 }
 
-/* 응답 → 단일 본문으로 정리 */
+/* 응답 → 단일 본문(중복 제거) */
+function normalizeText(x){
+  return String(x||'').replace(/\s+/g,' ').trim();
+}
 function toSingleArticle(topicKey, apiOut){
-  // 1) 가능한 필드를 최대한 수용
-  const text = (apiOut?.article || apiOut?.content || apiOut?.body || apiOut?.markdown || apiOut?.text || '').toString();
-  if (text.trim()) return text;
+  const primary = (apiOut?.article || apiOut?.content || apiOut?.body || apiOut?.markdown || apiOut?.text || '').toString();
+  if (primary.trim()) return primary;
 
-  // 2) 흔한 구조를 합치기
   const parts = [];
   const push = v=>{ if (typeof v==='string' && v.trim()) parts.push(v.trim()); };
-  if (apiOut?.overview) push(apiOut.overview);
-  if (apiOut?.summary) push(apiOut.summary);
-  if (apiOut?.tips) push(Array.isArray(apiOut.tips)? apiOut.tips.map(x=>`• ${x}`).join('\n') : apiOut.tips);
-  if (apiOut?.watch) push(Array.isArray(apiOut.watch)? apiOut.watch.map(x=>`• ${x}`).join('\n') : apiOut.watch);
+  const pushList = (v)=>{ if(Array.isArray(v)){ parts.push(v.map(s=>s && s.trim()?`• ${s.trim()}`:'').filter(Boolean).join('\n')); } };
+
+  push(apiOut?.overview);
+  push(apiOut?.summary);
+  pushList(apiOut?.phases || apiOut?.keyPhases);
+  pushList(apiOut?.tips);
+  pushList(apiOut?.watch || apiOut?.cautions);
+
   if (Array.isArray(apiOut?.blocks)) apiOut.blocks.forEach(b=>push(b?.text||b?.body||b));
   if (Array.isArray(apiOut?.cards)) apiOut.cards.forEach(c=>push(c?.body||c?.text||c));
-  return parts.join('\n\n');
+
+  // 문장/블록 중복 제거
+  const seen=new Set(); const uniq=[];
+  parts.join('\n\n').split(/\n{2,}/).forEach(seg=>{
+    const k=normalizeText(seg);
+    if(k && !seen.has(k)){ seen.add(k); uniq.push(seg.trim()); }
+  });
+  return uniq.join('\n\n');
 }
 
 /* 차트 기반 합성(백업) */
@@ -351,7 +475,7 @@ function synthesizeArticle(topicKey, ctx){
   }
 }
 
-/* 확장 동작 */
+/* 확장 */
 async function expandTopic(card){
   if (!card || card.dataset.loading === '1') return;
   card.dataset.loading = '1';
@@ -361,21 +485,14 @@ async function expandTopic(card){
   if (btn) { btn.disabled=true; btn.textContent='Loading…'; }
 
   try{
-    // 1) API 시도
     const api = await callFortuneAPI(key);
     let article = '';
-    if (api.ok){
-      article = toSingleArticle(key, api.data);
-    }
-    // 2) 백업 합성
+    if (api.ok){ article = toSingleArticle(key, api.data); }
     if (!article || !article.trim()){
       article = synthesizeArticle(key, window.__chartCtx||{});
     }
-    // 3) 가독성 마크업
     const html = mdFortuneBlock(article);
-    // 4) 카드 렌더
-    const topicMeta = TOPICS.find(t=>t.key===key) || {name:'Insight', hint:''};
-    renderFortuneArticle(content, topicMeta.name, topicMeta.hint, html);
+    renderFortuneArticle(content, html);
     if (btn) btn.style.display='none';
   }catch(e){
     content.innerHTML = `
@@ -397,9 +514,10 @@ if (document.querySelector('#fgrid')) { mountFortuneGrid(); }
 </script>
 
 <script>
-/* ---------- Ask (그대로) ---------- */
+/* ---------- Ask ---------- */
 function addMsg(text,who='bot'){
-  const p=document.createElement('div'); p.className='msg '+(who==='me'?'me':'bot'); p.innerHTML=escapeHtml(text).replace(/\n/g,'<br>');
+  const p=document.createElement('div'); p.className='msg '+(who==='me'?'me':'bot');
+  p.innerHTML=escapeHtml(text).replace(/\n/g,'<br>');
   const box=Q('#chat'); box.appendChild(p); box.scrollTop=box.scrollHeight;
 }
 function summarizeChart(ctx){
@@ -434,7 +552,7 @@ async function ask(q){
 </script>
 
 <script>
-/* ---------- main flow (요약) ---------- */
+/* ---------- main flow ---------- */
 Q('#fill').addEventListener('click',()=>{
   Q('#yy').value='1989'; Q('#mm').value='10'; Q('#dd').value='20'; Q('#hh').value='06'; Q('#min').value='00';
   Q('#city').value='seoul';
@@ -466,21 +584,35 @@ Q('#run').addEventListener('click', async ()=>{
 
   window.__chartCtx = { pillars, elements, tenGods, luck, birthDateISO, tzId, lat, lng };
 
-  setStatus('Step 3/3: Generating reading…');
-  // (프로젝트의 기존 reading API 호출 로직 사용)
-  // 여기서 renderReading7(...) 호출하도록 연결되어 있을 것
+  setStatus('Step 3/3: Generating structured reading…');
+
+  const read = await fetchReading({pillars,elements,tenGods,interactions,luck});
+  if(!read.ok){
+    setStatus('Failed on Step 3 (reading).','err');
+    const rbox = Q('#reading');
+    rbox.innerHTML = `<div class="block">
+      <div class="btitle">Reading error</div>
+      <div class="small">OpenAI generation failed. Check server logs or API key.</div>
+      <pre class="small" style="white-space:pre-wrap;background:#0b1426;border:1px solid rgba(255,255,255,.08);padding:8px;border-radius:8px;margin-top:8px;">${read.last ? (read.last.raw || JSON.stringify(read.last.data||{},null,2)) : 'No response'}</pre>
+    </div>`;
+    dbgEl.textContent = 'geo-timezone\n'+JSON.stringify(geo.data,null,2)
+      +'\n\ncalc\n'+JSON.stringify(calc.data,null,2)
+      +'\n\nreading (failed)\n'+JSON.stringify(read.last && read.last.data || {},null,2);
+    return;
+  }
+  renderReading7(read.out);
 
   setStatus(`Done • tz: ${tzId} • lat:${lat.toFixed(4)}, lng:${lng.toFixed(4)}`,'ok');
 
-  // 최신 컨텍스트 기준으로 fortune 버튼 재바인딩
   mountFortuneGrid();
 
   dbgEl.textContent = 'geo-timezone\n'+JSON.stringify(geo.data,null,2)
-    +'\n\ncalc\n'+JSON.stringify(calc.data,null,2);
+    +'\n\ncalc\n'+JSON.stringify(calc.data,null,2)
+    +'\n\nreading\n'+JSON.stringify(read.raw || read.out,null,2);
 });
+
 /* boot */
 mountFortuneGrid();
-addMsg("Hi! Ask me anything about timing, relationships, career, or health. I’ll use your current chart as context.",'bot');
 </script>
 </body>
 </html>
