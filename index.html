@@ -146,7 +146,6 @@ async function fetchJSON(url,opt){
 function yyyy(n){return String(n).padStart(4,'0')}
 function dd(n){return String(n).padStart(2,'0')}
 function age(b){const d=new Date(b+"T00:00:00");const n=new Date();let a=n.getFullYear()-d.getFullYear();const m=n.getMonth()-d.getMonth(); if(m<0||(m===0&&n.getDate()<d.getDate())) a--; return a;}
-
 (function initSelects(){
   const y=Q('#yy'), m=Q('#mm'), d=Q('#dd'), h=Q('#hh'), mi=Q('#min');
   for(let i=1940;i<=2025;i++) y.appendChild(new Option(i,i));
@@ -161,7 +160,6 @@ function age(b){const d=new Date(b+"T00:00:00");const n=new Date();let a=n.getFu
 <script>
 /* ---------- safe markdown & fortune block ---------- */
 function escapeHtml(s){ return s.replace(/[&<>]/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;' }[c])); }
-
 function mdSimple(s=''){
   const raw=(typeof s==='string'?s:String(s||'')).replace(/\r\n/g,'\n').trim();
   if(!raw) return '';
@@ -171,13 +169,11 @@ function mdSimple(s=''){
   return blocks.join('');
 }
 
-/* fortune: 더 강한 줄바꿈 & 목록 처리 */
+/* fortune: 강한 줄바꿈 & 목록 처리 */
 function mdFortuneBlock(input=''){
-  // 콤마로 붙은 문장 보정: ",In your" 등
   let t = (typeof input==='string'?input:String(input||'')).replace(/\r\n/g,'\n').trim();
-  t = t.replace(/,\s*(?=In\s)/g,'\n');
-  t = t.replace(/,\s*(?=Avoid|Be |Connect|Cultivate|Practice|Plan|Save)/g,'\n');
-
+  // 콤마로 이어붙은 문장 보정
+  t = t.replace(/,\s*(?=(In your|Avoid|Be |Connect|Cultivate|Practice|Plan|Save|Invest|Review)\b)/g,'\n');
   const paragraphs = t.split(/\n{2,}/).map(seg=>{
     const looksList = /^(?:\s*(?:•|-)\s.+\n?)+$/m.test(seg);
     if (looksList) {
@@ -234,7 +230,7 @@ function renderLuck(luck, birthISO){
 </script>
 
 <script>
-/* ---------- READING (정상 동작 버전 복구) ---------- */
+/* ---------- READING (그대로) ---------- */
 function asString(x){
   if (x==null) return '';
   if (typeof x==='string') return x;
@@ -261,7 +257,6 @@ function md(s=''){
   }).join('');
   return t.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
 }
-
 function adaptOldReading(old) {
   if (!old || Array.isArray(old)) return null;
   const out = {
@@ -284,7 +279,6 @@ const READING_META = [
   ['life_flow','Decade Cycle','Big tailwinds & timing—not a rigid fate.'],
   ['summary','Daily Compass','Strengths, watch‑outs, and one tiny habit to start this week.']
 ];
-
 function renderReading7(sectionsIn){
   const root=Q('#reading'); root.innerHTML='';
   let model=null;
@@ -310,8 +304,6 @@ function renderReading7(sectionsIn){
     root.appendChild(div);
   });
 }
-
-/* reading API */
 function pickReadingOutput(respData){
   if (!respData) return null;
   return respData.output
@@ -349,7 +341,7 @@ async function fetchReading({pillars,elements,tenGods,interactions,luck}){
 </script>
 
 <script>
-/* ---------- Specific Fortunes (단일 본문, 타이틀 중복 X) ---------- */
+/* ---------- Specific Fortunes ---------- */
 /* 6개 카테고리 */
 const TOPICS = [
   {key:'personality', icon:'🧭', name:'Personality & Traits', hint:'Strengths, blind spots, fit.'},
@@ -360,6 +352,27 @@ const TOPICS = [
   {key:'timing', icon:'⏱️', name:'Life Cycle & Timing', hint:'This year & next decade.'},
 ];
 
+/* 토픽별 고유 렌즈 + 중복 방지 가드레일 */
+const TOPIC_GUIDES = {
+  personality: `Focus strictly on: decision‑making style, social energy, boundaries, recharge pattern, blind spots. Do NOT give money, job, or medical advice.`,
+  career_status: `Focus strictly on: role fit (builder/crafter/leader), org context, visibility levers, reputation arcs by current decade. Avoid money budgeting/investing tips.`,
+  wealth: `Focus strictly on: earning modes (salary vs. variable), cashflow seasonality, saving/investing rules and risk posture by elements. Avoid job role/visibility advice.`,
+  relationship: `Focus strictly on: partner dynamics, attachment boundaries, timing for dating/commitment. Avoid money or job tactics.`,
+  health: `Focus strictly on: body systems by elements, stress/sleep rhythm, recovery practices. Avoid financial or job/role advice.`,
+  timing: `Focus strictly on: this year and current/next decade windows, months/seasons best for launch vs draft, one action to delay. Avoid career/finance/medical prescriptions.`
+};
+
+/* 제네릭 문구 필터(토픽과 맞지 않으면 삭제) */
+const GENERIC_FILTER = {
+  personality: [/Set clear financial goals/i,/budget/i,/invest/i,/retirement/i],
+  career_status: [/budget/i,/financial plan/i,/invest/i,/retirement/i],
+  wealth: [],
+  relationship: [/budget/i,/invest/i,/career development/i],
+  health: [/budget/i,/invest/i,/financial/i,/career/i],
+  timing: []
+};
+
+/* Fortune 카드 마운트 */
 function mountFortuneGrid(){
   const g=Q('#fgrid'); if(!g) return;
   g.innerHTML='';
@@ -385,7 +398,125 @@ function mountFortuneGrid(){
   });
 }
 
-/* 단일 본문 렌더(제목/부제 표시 안함) */
+/* 차트 → 앵커 텍스트 */
+function chartAnchors(ctx){
+  const pillars=ctx?.pillars||{};
+  const em={wood:0,fire:0,earth:0,metal:0,water:0};
+  ['hour','day','month','year'].forEach(k=>{const p=pillars[k]; if(!p)return; const e1=STEM_ELEM[p.stem], e2=BRANCH_ELEM[p.branch]; if(e1)em[e1]++; if(e2)em[e2]++;});
+  const dom=Object.entries(em).sort((a,b)=>b[1]-a[1])[0]?.[0]||'mixed';
+  const ageNow = age(ctx?.birthDateISO||'');
+  const cur = (ctx?.luck?.bigLuck||[]).find(s=> ageNow>=s.startAge && ageNow<s.startAge+10);
+  const decade = cur ? `${cur.startAge}–${cur.startAge+9} ${cur.stem||''}${cur.branch||''}` : 'N/A';
+  return `Dominant element: ${dom}. Current luck decade: ${decade}.`;
+}
+
+/* API 호출: guide 동봉 */
+async function callFortuneAPI(frontKey){
+  const ctx = window.__chartCtx || null;
+  const guide = `${TOPIC_GUIDES[frontKey]||''}\nGround to chart: ${chartAnchors(ctx)}\nWrite specific, non-generic, with short paragraphs & bullet lists.\nDo not repeat sentences within the answer.`;
+  const tryList = [
+    {m:'POST', url:'/api/fortune', body:{topic:frontKey, ctx, guide}},
+    {m:'POST', url:'/api/ask', body:{topic:frontKey, mode:'fortune', ctx, guide}},
+    {m:'GET', url:`/api/fortune?topic=${encodeURIComponent(frontKey)}`},
+    {m:'GET', url:`/api/ask?topic=${encodeURIComponent(frontKey)}&mode=fortune`}
+  ];
+  for (const a of tryList){
+    const opt = a.m==='POST'? {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(a.body||{})} : {};
+    const r = await fetchJSON(a.url,opt);
+    if (r.ok && (r.data?.output || r.data?.data)) return {ok:true, data:r.data.output || r.data.data};
+  }
+  return {ok:false};
+}
+
+/* 텍스트 정규화 & 중복 제거 */
+function normalizeKey(s){
+  return s.toLowerCase()
+    .replace(/[.,;:!?"'’”“\)\(]/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+function dedupeLines(lines, topicKey){
+  const out=[]; const seen=new Set();
+  const filters = GENERIC_FILTER[topicKey]||[];
+  for(const raw of lines){
+    const line = raw.trim();
+    if(!line) continue;
+    // 토픽과 맞지 않는 문구 제거
+    if (filters.some(rx=>rx.test(line))) continue;
+    const key = normalizeKey(line);
+    if(key && !seen.has(key)){
+      seen.add(key);
+      out.push(line);
+    }
+  }
+  return out;
+}
+function explodeToLines(text){
+  // 문단 → 줄 → 불릿 분해
+  return text.split(/\n{2,}/)
+    .flatMap(p=>p.split(/\n/))
+    .flatMap(l=>{
+      // "A,B,C"처럼 콤마로 붙은 열거 분리는 하지 않음(이미 앞단에서 개행 처리)
+      if (/^(?:•|-)\s*/.test(l)) return l.replace(/^(?:•|-)\s*/,'').trim();
+      return l.trim();
+    })
+    .filter(Boolean);
+}
+
+/* 응답 → 단일 기사(중복/제네릭 제거) */
+function toSingleArticle(topicKey, apiOut){
+  const primary = (apiOut?.article || apiOut?.content || apiOut?.body || apiOut?.markdown || apiOut?.text || '').toString().trim();
+  let base = primary;
+  if (!base){
+    const parts=[];
+    const push = v=>{ if(typeof v==='string' && v.trim()) parts.push(v.trim()); };
+    const pushList = v=>{ if(Array.isArray(v)) parts.push(v.map(x=>x && x.trim()?`• ${x.trim()}`:'').filter(Boolean).join('\n')); };
+    push(apiOut?.overview); push(apiOut?.summary); push(apiOut?.intro);
+    pushList(apiOut?.phases || apiOut?.keyPhases);
+    pushList(apiOut?.tips);
+    pushList(apiOut?.watch || apiOut?.cautions);
+    if (Array.isArray(apiOut?.blocks)) apiOut.blocks.forEach(b=>push(b?.text||b?.body||b));
+    if (Array.isArray(apiOut?.cards)) apiOut.cards.forEach(c=>push(c?.body||c?.text||c));
+    base = parts.join('\n\n');
+  }
+
+  // 문장/불릿 라인으로 분해 후 중복/불일치 제거
+  const lines = explodeToLines(base);
+  const uniq = dedupeLines(lines, topicKey);
+
+  // 다시 문단으로 묶기: 불릿 후보/일반문장 분리
+  const bullets=[]; const prose=[];
+  uniq.forEach(l=>{
+    if (/^(In your \d0s|Avoid |Be |Set |Invest |Review |Save |Network |Seek |Stay )/i.test(l) || l.length<=120) bullets.push(l); else prose.push(l);
+  });
+
+  const proseText = prose.join('\n\n');
+  const bulletText = bullets.length ? '\n\n' + bullets.map(x=>'• '+x).join('\n') : '';
+
+  return (proseText + bulletText).trim();
+}
+
+/* 차트 기반 합성(백업) */
+function synthesizeArticle(topicKey, ctx){
+  const anchors = chartAnchors(ctx);
+  switch(topicKey){
+    case 'personality':
+      return `How you decide, relate, and recharge.\n\n${anchors}\n\n• Decision style and boundaries.\n• Social energy & recovery routine.\n• One blind spot to watch this month.`;
+    case 'career_status':
+      return `Role fit, context, and visibility.\n\n${anchors}\n\n• Best roles this decade (builder vs leader).\n• One lever to grow reputation.\n• A weekly showcase habit.`;
+    case 'wealth':
+      return `Earning mode & money rhythm.\n\n${anchors}\n\n• Cashflow posture & saving rule.\n• Investing rule of thumb.\n• Red flags to avoid in busy months.`;
+    case 'relationship':
+      return `Partner dynamics & timing.\n\n${anchors}\n\n• Your connection style.\n• Boundaries that keep it steady.\n• Better months for commitment.`;
+    case 'health':
+      return `Body signals & recovery.\n\n${anchors}\n\n• Systems needing support.\n• Work/rest rhythm.\n• Two anchor habits.`;
+    case 'timing':
+    default:
+      return `Windows & pivots.\n\n${anchors}\n\n• Good weeks for launch vs draft.\n• One thing to delay.\n• 90‑day focus.`;
+  }
+}
+
+/* 렌더 */
 function renderFortuneArticle(container, bodyHtml){
   container.innerHTML = `
     <div class="block f-article">
@@ -397,82 +528,6 @@ function renderFortuneArticle(container, bodyHtml){
   const cbtn = container.querySelector('.closebtn');
   const btn = container.closest('.ftile').querySelector('.see');
   if (cbtn) cbtn.addEventListener('click',()=>{container.style.display='none'; if(btn) btn.style.display='inline-block';});
-}
-
-/* API 시도 */
-async function callFortuneAPI(frontKey){
-  const ctx = window.__chartCtx || null;
-  const tryList = [
-    {m:'POST', url:'/api/fortune', body:{topic:frontKey, ctx}},
-    {m:'POST', url:'/api/ask', body:{topic:frontKey, mode:'fortune', ctx}},
-    {m:'GET', url:`/api/fortune?topic=${encodeURIComponent(frontKey)}`},
-    {m:'GET', url:`/api/ask?topic=${encodeURIComponent(frontKey)}&mode=fortune`},
-  ];
-  for (const a of tryList){
-    const opt = a.m==='POST'? {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(a.body||{})} : {};
-    const r = await fetchJSON(a.url,opt);
-    if (r.ok && (r.data?.output || r.data?.data)) return {ok:true, data:r.data.output || r.data.data};
-  }
-  return {ok:false};
-}
-
-/* 응답 → 단일 본문(중복 제거) */
-function normalizeText(x){
-  return String(x||'').replace(/\s+/g,' ').trim();
-}
-function toSingleArticle(topicKey, apiOut){
-  const primary = (apiOut?.article || apiOut?.content || apiOut?.body || apiOut?.markdown || apiOut?.text || '').toString();
-  if (primary.trim()) return primary;
-
-  const parts = [];
-  const push = v=>{ if (typeof v==='string' && v.trim()) parts.push(v.trim()); };
-  const pushList = (v)=>{ if(Array.isArray(v)){ parts.push(v.map(s=>s && s.trim()?`• ${s.trim()}`:'').filter(Boolean).join('\n')); } };
-
-  push(apiOut?.overview);
-  push(apiOut?.summary);
-  pushList(apiOut?.phases || apiOut?.keyPhases);
-  pushList(apiOut?.tips);
-  pushList(apiOut?.watch || apiOut?.cautions);
-
-  if (Array.isArray(apiOut?.blocks)) apiOut.blocks.forEach(b=>push(b?.text||b?.body||b));
-  if (Array.isArray(apiOut?.cards)) apiOut.cards.forEach(c=>push(c?.body||c?.text||c));
-
-  // 문장/블록 중복 제거
-  const seen=new Set(); const uniq=[];
-  parts.join('\n\n').split(/\n{2,}/).forEach(seg=>{
-    const k=normalizeText(seg);
-    if(k && !seen.has(k)){ seen.add(k); uniq.push(seg.trim()); }
-  });
-  return uniq.join('\n\n');
-}
-
-/* 차트 기반 합성(백업) */
-function synthesizeArticle(topicKey, ctx){
-  const pillars=ctx?.pillars||{};
-  const countElems=()=>{const m={wood:0,fire:0,earth:0,metal:0,water:0}; ['hour','day','month','year'].forEach(k=>{const p=pillars[k]; if(!p) return; const e1=STEM_ELEM[p.stem], e2=BRANCH_ELEM[p.branch]; if(e1)m[e1]++; if(e2)m[e2]++;}); return m;};
-  const em=countElems(); const dom=Object.entries(em).sort((a,b)=>b[1]-a[1])[0]?.[0]||'mixed';
-  const {bigLuck=[]}=ctx?.luck||{};
-  const nowAge=age(ctx?.birthDateISO||'');
-  const cur = bigLuck.find(s=> nowAge>=s.startAge && nowAge<s.startAge+10) || null;
-  const decade = cur ? `Current decade ${cur.startAge}–${cur.startAge+9} ${cur.stem||''}${cur.branch||''}` : 'Current decade N/A';
-
-  const baseOpen = `Based on your pillars and element balance, your dominant tone looks **${dom}**. ${decade}.`;
-
-  switch(topicKey){
-    case 'personality':
-      return `${baseOpen}\n\n• Core style: how you decide / recharge / relate.\n• Strengths to lean into; blind spots to watch.\n• Situations where your tone shines vs. drains.`;
-    case 'career_status':
-      return `${baseOpen}\n\n• Roles that match your rhythm (builder vs. explorer vs. steward).\n• Where influence/reputation grows fastest this decade.\n• One visibility habit to add this month.`;
-    case 'wealth':
-      return `${baseOpen}\n\n• Cashflow posture (stable vs. variable) by element mix.\n• One saving rule and one investing rule that fits your energy.\n• Red flags to avoid during Metal‑leaning months.`;
-    case 'relationship':
-      return `${baseOpen}\n\n• Your partner vibe and boundaries.\n• Seasons better for dating/commitment.\n• A weekly ritual to keep connection steady.`;
-    case 'health':
-      return `${baseOpen}\n\n• Body systems that ask for support by element.\n• Work/Rest rhythm that protects recovery.\n• 2 small habits to anchor sleep & stress.`;
-    case 'timing':
-    default:
-      return `${baseOpen}\n\n• Quick lanes for the next 90 days.\n• Good windows for launches vs. drafts.\n• One thing to delay until quieter weeks.`;
-  }
 }
 
 /* 확장 */
