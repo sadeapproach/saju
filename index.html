@@ -69,7 +69,7 @@ button[disabled]{opacity:.6;cursor:not-allowed}
 <body>
 <div class="wrap">
   <div class="h1">Saju‑Eight • End‑to‑End Playground</div>
-  <div class="sub">Enter birth info → timezone → pillars → 6‑section reading → explore specific fortunes → ask follow‑ups (with chart context).</div>
+  <div class="sub">Enter birth info → timezone → pillars → 7‑section reading → explore specific fortunes → ask follow‑ups (with chart context).</div>
 
   <div class="card">
     <div class="grid2">
@@ -226,50 +226,35 @@ function renderLuck(luck, birthISO){
 </script>
 
 <script>
-/* ---------- READING 렌더러 (7섹션 + 구버전 호환) ---------- */
-function adaptOldReading(old) {
-  if (!old || Array.isArray(old)) return null;
-  const out = {
-    pillars: old.pillars || "",
-    day_master: old.day_master || old.core || "",
-    five_elements: old.five_elements || old.balance || "",
-    structure: old.structure || old.tengods || "",
-    yongshin: old.yongshin || "",
-    life_flow: old.life_flow || old.luck || "",
-    summary: old.summary || ""
-  };
-  return out;
+/* ---------- READING (7 sections: title / subtitle / content) ---------- */
+function isValidReadingArray(arr){
+  return Array.isArray(arr) && arr.length && arr.every(
+    s => s && typeof s.title==='string' && typeof s.content==='string'
+  );
 }
-const READING_META = [
-  ['pillars','당신의 네 기둥 요약','태어난 연·월·일·시의 천간·지지로 보는 전체 구조'],
-  ['day_master','나를 대표하는 기운','일간(나의 기본 성향) 중심으로 성격·대인관계·행동 습관'],
-  ['five_elements','오행의 균형','목·화·토·금·수의 강약과 조화, 생활 보완 포인트'],
-  ['structure','기본 운세 구조','격국 관점의 방향성(재물·명예·학습 등)'],
-  ['yongshin','보완 키워드(용신)','부족/과다한 기운을 다듬는 핵심 키워드'],
-  ['life_flow','삶의 큰 흐름','초년·중년·말년의 기회와 주의점'],
-  ['summary','한눈에 보는 장단점','강점·약점 요약 + 오늘부터 실천 한 줄']
-];
-function renderReading7(sectionsIn){
-  const root=Q('#reading'); root.innerHTML='';
-  let model=null;
-  if (sectionsIn && !Array.isArray(sectionsIn) &&
-      ('pillars' in sectionsIn || 'day_master' in sectionsIn || 'five_elements' in sectionsIn)) {
-    model = sectionsIn;
-  } else {
-    model = adaptOldReading(sectionsIn);
-  }
-  if(!model){
-    root.innerHTML = '<div class="block"><div class="btitle">Reading</div><div>이번에는 리딩을 만들지 못했어요.</div></div>';
+function renderReading7(input){
+  const root = Q('#reading'); root.innerHTML = '';
+  const sections = Array.isArray(input) ? input
+                 : (Array.isArray(input?.sections) ? input.sections : []);
+  if (!isValidReadingArray(sections)) {
+    const div = document.createElement('div');
+    div.className = 'block';
+    div.innerHTML = `
+      <div class="btitle">Reading error</div>
+      <div>Cannot build reading. Check server log or payload mapping.</div>
+      <pre class="small" style="white-space:pre-wrap;margin-top:8px;background:#0b1426;border:1px solid rgba(255,255,255,.08);padding:8px;border-radius:8px">
+${JSON.stringify(input, null, 2)}
+      </pre>`;
+    root.appendChild(div);
     return;
   }
-  READING_META.forEach(([key,title,subtitle])=>{
-    const text = model[key] || '';
-    const empty = !(text && String(text).trim().length>0);
-    const div=document.createElement('div'); div.className='block';
+  sections.forEach(sec=>{
+    const div = document.createElement('div');
+    div.className = 'block';
     div.innerHTML = `
-      <div class="btitle">${title}</div>
-      <div class="bsubtitle">${subtitle}</div>
-      <div>${ empty ? '<span class="small" style="opacity:.7">표시할 내용이 없습니다.</span>' : md(text) }</div>
+      <div class="btitle">${sec.title || ''}</div>
+      ${sec.subtitle ? `<div class="bsubtitle">${sec.subtitle}</div>` : ''}
+      <div>${md(sec.content || '')}</div>
     `;
     root.appendChild(div);
   });
@@ -545,45 +530,6 @@ Q('#askBtn').addEventListener('click',()=>{
   const v=Q('#ask').value.trim(); if(!v) return; Q('#ask').value=''; ask(v);
 });
 
-/* NEW: 읽기 전용 도우미 - 여러 형태의 응답에서 output 추출 */
-function pickReadingOutput(respData){
-  if (!respData) return null;
-  // 가장 흔한 경로들
-  return respData.output
-      || respData.sections
-      || (respData.data && (respData.data.output || respData.data.sections))
-      || null;
-}
-
-/* NEW: 여러 payload 시도 */
-async function fetchReading({pillars,elements,tenGods,interactions,luck}){
-  const attempts = [
-    {body:{pillars,elements,tenGods,interactions,mode:'structured',locale:'ko-KR'}},
-    {body:{chart:{pillars,elements,tenGods,interactions,luck}, mode:'structured', locale:'ko-KR', schema:'v2'}},
-    {body:{data:{pillars,elements,tenGods,interactions,luck}, locale:'ko-KR'}},
-    {get:true}
-  ];
-  let last=null;
-  for (const a of attempts){
-    try{
-      let r;
-      if (a.get){
-        r = await fetchJSON('/api/reading-generate?mode=structured');
-      }else{
-        r = await fetchJSON('/api/reading-generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(a.body)});
-      }
-      last=r;
-      if (r.ok){
-        const out = pickReadingOutput(r.data);
-        if (out) return {ok:true, out, raw:r.data};
-      }
-    }catch(e){
-      last = {ok:false,status:0,raw:String(e)};
-    }
-  }
-  return {ok:false, last};
-}
-
 Q('#run').addEventListener('click', async ()=>{
   const yy=Q('#yy').value, mm=Q('#mm').value, ddv=Q('#dd').value, hh=Q('#hh').value, mi=Q('#min').value;
   const city=Q('#city').value.trim();
@@ -607,34 +553,35 @@ Q('#run').addEventListener('click', async ()=>{
 
   window.__chartCtx = { pillars, elements, tenGods, luck, birthDateISO, tzId, lat, lng };
 
-  setStatus('Step 3/3: Generating structured reading…');
+  setStatus('Step 3/3: Generating reading (EN, 7 sections)…');
+  const read = await fetchJSON('/api/reading-generate',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ pillars,elements,tenGods,interactions,luck,birthDateISO,tzId,lat,lng })
+  });
 
-  const read = await fetchReading({pillars,elements,tenGods,interactions,luck});
   if(!read.ok){
     setStatus('Failed on Step 3 (reading).','err');
-    // 읽기 카드에 에러도 표시
     const rbox = Q('#reading');
     rbox.innerHTML = `<div class="block">
       <div class="btitle">Reading error</div>
       <div class="small">Cannot build reading. Check server log or payload mapping.</div>
-      <pre class="small" style="white-space:pre-wrap;background:#0b1426;border:1px solid rgba(255,255,255,.08);padding:8px;border-radius:8px;margin-top:8px;">${read.last ? (read.last.raw || JSON.stringify(read.last.data||{},null,2)) : 'No response'}</pre>
+      <pre class="small" style="white-space:pre-wrap;background:#0b1426;border:1px solid rgba(255,255,255,.08);padding:8px;border-radius:8px;margin-top:8px;">${read.raw||''}</pre>
     </div>`;
-    // 디버그 탭에도 남김
     dbgEl.textContent = 'geo-timezone\n'+JSON.stringify(geo.data,null,2)
       +'\n\ncalc\n'+JSON.stringify(calc.data,null,2)
-      +'\n\nreading (failed)\n'+JSON.stringify(read.last && read.last.data || {},null,2);
+      +'\n\nreading (failed)\n'+(read.raw||'');
     return;
   }
 
-  renderReading7(read.out);
-
+  renderReading7(read.data);
   setStatus(`Done • tz: ${tzId} • lat:${lat.toFixed(4)}, lng:${lng.toFixed(4)}`,'ok');
 
   mountFortuneGrid();
 
   dbgEl.textContent = 'geo-timezone\n'+JSON.stringify(geo.data,null,2)
     +'\n\ncalc\n'+JSON.stringify(calc.data,null,2)
-    +'\n\nreading\n'+JSON.stringify(read.raw || read.out,null,2);
+    +'\n\nreading\n'+JSON.stringify(read.data,null,2);
 });
 
 /* boot */
