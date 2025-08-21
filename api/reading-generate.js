@@ -1,167 +1,149 @@
 // /api/reading-generate.js
-// Node Serverless (CommonJS). 정적 require로 openai 의존성을 확실히 포함시킵니다.
+// Next.js / Vercel serverless (pages/api/* or app/api/route.js 스타일)
+// OpenAI 기반: 7-section reading 생성 (문단/줄바꿈 규칙 포함)
 
-const OpenAI = require("openai");
-
-exports.config = { runtime: "nodejs18.x" };
+import OpenAI from "openai";
 
 const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY, // 호환
 });
 
-// ---- helpers ----
-function countElements(pillars = {}) {
-  const STEM = { "甲":"wood","乙":"wood","丙":"fire","丁":"fire","戊":"earth","己":"earth","庚":"metal","辛":"metal","壬":"water","癸":"water" };
-  const BR   = { "子":"water","丑":"earth","寅":"wood","卯":"wood","辰":"earth","巳":"fire","午":"fire","未":"earth","申":"metal","酉":"metal","戌":"earth","亥":"water" };
-  const n = { wood:0, fire:0, earth:0, metal:0, water:0 };
+function countElements(pillars){
+  const STEM_ELEM = { "甲":"wood","乙":"wood","丙":"fire","丁":"fire","戊":"earth","己":"earth","庚":"metal","辛":"metal","壬":"water","癸":"water" };
+  const BRANCH_ELEM = { "子":"water","丑":"earth","寅":"wood","卯":"wood","辰":"earth","巳":"fire","午":"fire","未":"earth","申":"metal","酉":"metal","戌":"earth","亥":"water" };
+  const m = { wood:0, fire:0, earth:0, metal:0, water:0 };
+  if (!pillars) return m;
   ["hour","day","month","year"].forEach(k=>{
-    const p = pillars[k];
-    if (!p) return;
-    const s = STEM[p.stem]; const b = BR[p.branch];
-    if (s) n[s]++; if (b) n[b]++;
+    const p = pillars[k]; if(!p) return;
+    const push=(ch)=>{ const e = STEM_ELEM[ch] || BRANCH_ELEM[ch]; if(e) m[e]++; };
+    push(p.stem); push(p.branch);
   });
-  return n;
+  return m;
 }
 
-function currentLuck(luck, birthISO) {
-  try{
-    const today = new Date();
-    const b = birthISO ? new Date(birthISO + "T00:00:00") : null;
-    let age = b ? (today.getFullYear() - b.getFullYear()) : null;
-    if (b) {
-      const m = today.getMonth() - b.getMonth();
-      if (m < 0 || (m === 0 && today.getDate() < b.getDate())) age--;
-    }
-    let cur=null, next=null;
-    const list = Array.isArray(luck?.bigLuck) ? luck.bigLuck : [];
-    for (const seg of list) if (age != null && age >= seg.startAge && age < seg.startAge + 10) cur = seg;
-    if (cur) next = list.find(x=>x.startAge === cur.startAge + 10) || null;
-    else next = list[0] || null;
-    return { age, cur, next };
-  }catch{ return { age:null, cur:null, next:null }; }
-}
+function buildPrompt(payload){
+  const { pillars={}, elements={}, tenGods={}, interactions={}, luck={}, birthDateISO } = payload || {};
+  const hour = `${pillars?.hour?.stem||''}${pillars?.hour?.branch||''}`.trim();
+  const day  = `${pillars?.day?.stem||''}${pillars?.day?.branch||''}`.trim();
+  const month= `${pillars?.month?.stem||''}${pillars?.month?.branch||''}`.trim();
+  const year = `${pillars?.year?.stem||''}${pillars?.year?.branch||''}`.trim();
+  const elm  = countElements(pillars);
+  const emStr = `wood:${elm.wood}, fire:${elm.fire}, earth:${elm.earth}, metal:${elm.metal}, water:${elm.water}`;
+  const luckList = (luck?.bigLuck||[]).map(s=>`${s.startAge}–${s.startAge+9} ${s.stem||''}${s.branch||''}${s.tenGod?`(${s.tenGod})`:''}`).join(", ");
 
-const safe = v => (typeof v === "string" ? v : v ? JSON.stringify(v) : "");
-
-function makePrompt({pillars, tenGods, luck}) {
-  const counts = countElements(pillars || {});
-  const byStrength = Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k}:${v}`).join(", ");
-  const { age, cur, next } = currentLuck(luck, pillars?.birthDateISO);
-
-  const hour = `${pillars?.hour?.stem||""}${pillars?.hour?.branch||""}`;
-  const day  = `${pillars?.day?.stem||""}${pillars?.day?.branch||""}`;
-  const month= `${pillars?.month?.stem||""}${pillars?.month?.branch||""}`;
-  const year = `${pillars?.year?.stem||""}${pillars?.year?.branch||""}`;
-
-  const curStr = cur? `${cur.startAge}–${cur.startAge+9} ${safe(cur.stem)}${safe(cur.branch)} ${cur.tenGod?`(${cur.tenGod})`:""}` : "N/A";
-  const nxtStr = next? `${next.startAge}–${next.startAge+9} ${safe(next.stem)}${safe(next.branch)} ${next.tenGod?`(${next.tenGod})`:""}` : "N/A";
-
+  // 프롬프트: 각 섹션은 2개의 짧은 문단(또는 2~3문장 단락)로, 문단 사이에 반드시 빈 줄(\n\n) 삽입
+  // 불릿을 쓰면 앞에 "- " 사용. Markdown 굵게/헤딩 금지.
   return `
-You are a friendly Saju (Bazi) guide. Write in clear, warm, natural English (no jargon unless necessary, and explain it briefly).
-Make the content SPECIFIC to the user's chart—do not give generic advice. Use concrete examples.
-Target length: each section 4–7 sentences (1–2 short paragraphs). Use bullets sparingly for scannability.
+You are a friendly Saju/Bazi guide writing in clear, simple English for readers new to Saju.
+Write a 7‑section reading. Each section must be 2 short paragraphs (2–4 concise sentences each).
+Insert a single blank line between paragraphs (i.e., two newline characters: \\n\\n).
+Avoid bold, headings, emojis, or special formatting. Plain text only.
+If you use bullets, start lines with "- " and keep to 3–5 bullets max.
+Be specific to this chart and avoid generic advice.
 
-CHART SNAPSHOT
-- Pillars: Hour ${hour}, Day ${day}, Month ${month}, Year ${year}.
-- Element counts (stems+branches): ${byStrength}.
-- Age: ${age ?? "N/A"}, Luck decades: current ${curStr}, next ${nxtStr}.
-- Ten Gods (if provided): ${safe(tenGods && tenGods.summary || "")}
+Chart context (raw):
+- Pillars: Hour ${hour}, Day ${day}, Month ${month}, Year ${year}
+- Element counts: ${emStr}
+- Ten Gods (if present): ${JSON.stringify(tenGods||{})}
+- Interactions (if present): ${JSON.stringify(interactions||{})}
+- Big Luck: ${luckList || "N/A"}
+- Birth date: ${birthDateISO || "N/A"}
 
-Produce EXACTLY this JSON object (minified, no code fences):
+Return STRICT JSON with these exact keys (strings only; no Markdown):
 {
-  "pillars": "Your Four Pillars Overview — 1–2 short paragraphs. Mention how day/hour/month/year interact and one curious tension or harmony.",
-  "day_master": "Day Master Traits — personality, decision style, social vibe, recharge pattern grounded in THIS chart.",
-  "five_elements": "Element Balance — interpret counts, name weakest/strongest; how to support/balance with daily routines and concrete examples.",
-  "structure": "Base Pattern (Structure) — repeated flow (e.g., resource→output), ideal work/learning style, and one likely pitfall and fix.",
-  "yongshin": "Helpful Focus (Yongshin) — 1–2 supportive themes and WHY; include 3 practical ways.",
-  "life_flow": "Decade Cycle — current vs next; when to launch vs draft; 1 timing hint.",
-  "summary": "One-Screen Summary — strengths (3), watch-outs (2), tiny habit for this week (1)."
+  "pillars": "...",          // Section 1: Your Four Pillars Overview
+  "day_master": "...",       // Section 2: Day Master Traits
+  "five_elements": "...",    // Section 3: Element Balance
+  "structure": "...",        // Section 4: Base Pattern (Structure)
+  "yongshin": "...",         // Section 5: Helpful Focus (Yongshin)
+  "life_flow": "...",        // Section 6: Decade Cycle
+  "daily_compass": "..."     // Section 7: Daily Compass (strengths, watch-outs, one tiny habit)
 }
-Return only the JSON.
+
+Section guidance:
+
+1) Your Four Pillars Overview
+- Explain the overall frame from hour/day/month/year pillars.
+- Point out one tension or harmony in the chart relevant to decisions this year.
+
+2) Day Master Traits
+- Explain personality, decision style, social/relationship style tied to the Day Master (day stem).
+- Give a concrete routine or environment that recharges this person.
+
+3) Element Balance
+- Use the element counts above. Identify strong/weak elements.
+- Tell which elements they collaborate well with, and which feel draining. Offer 2–3 practical adjustments in daily life.
+
+4) Base Pattern (Structure)
+- Reconcile "career vs. learning vs. wealth" emphasis for this chart.
+- One pitfall to watch. One small design for a weekly cycle that suits them.
+
+5) Helpful Focus (Yongshin)
+- Name 1–2 focus keywords (e.g., clarity, pruning, hydration, pacing) that smooth the system.
+- Give concrete practice ideas, not generic advice.
+
+6) Decade Cycle
+- Speak to the current decade’s tone and the next decade’s shift (if data is present; otherwise infer from chart).
+- Add one timing hint for launching/pausing.
+
+7) Daily Compass
+- Paragraph 1: strengths in plain words + what to lean into this week.
+- Paragraph 2: 1–2 watch‑outs + one tiny habit (e.g., “15‑minute close‑down ritual on Fri”).
 `;
 }
 
-function buildFallback(payload) {
-  const p = payload?.pillars || {};
-  const c = countElements(p);
-  const list = Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k}:${v}`).join(", ");
-  const hour = `${p.hour?.stem||""}${p.hour?.branch||""}`;
-  const day  = `${p.day?.stem||""}${p.day?.branch||""}`;
-  const month= `${p.month?.stem||""}${p.month?.branch||""}`;
-  const year = `${p.year?.stem||""}${p.year?.branch||""}`;
-  return {
-    ok: true,
-    output: {
-      pillars: `Your pillars at a glance — Hour ${hour}, Day ${day}, Month ${month}, Year ${year}. Element spread: ${list}.`,
-      day_master: `Day Master quick take — practical, chart-aware paragraph here.`,
-      five_elements: `Balance — what is strong/weak and how to support it in daily life.`,
-      structure: `Base pattern — the loop you repeat and one pitfall to watch.`,
-      yongshin: `Helpful focus — one supportive theme and why it smooths your system.`,
-      life_flow: `Decade view — how the current decade feels vs. next; when to launch vs. draft.`,
-      summary: `Strengths, watch‑outs, and one tiny habit to try this week.`
-    },
-    meta: { provider: "fallback", reason: "OPENAI_FAILED" }
-  };
-}
+export default async function handler(req, res){
+  try{
+    const body = req.method === 'POST' ? (req.body || {}) : {};
+    const payload = body.chart || body || {};
+    const prompt = buildPrompt(payload);
 
-function readJSON(req) {
-  return new Promise((resolve, reject)=>{
-    let data=""; req.on("data", c=> data += c);
-    req.on("end", ()=>{ if(!data) return resolve({}); try{ resolve(JSON.parse(data)); }catch{ resolve({}); }});
-    req.on("error", reject);
-  });
-}
-
-module.exports = async function handler(req, res) {
-  try {
-    const body = req.method === "POST" ? (await readJSON(req)) : {};
-    const payload = body.chart || body.data || body || {};
-    const pillars  = payload.pillars || {};
-    const tenGods  = payload.tenGods || null;
-    const luck     = payload.luck || null;
-
-    if (!process.env.OPENAI_API_KEY) {
-      const fb = buildFallback(payload);
-      return res.status(200).json({ ok:false, error:"OPENAI_FAILED", reason:"NO_API_KEY", output: fb.output, meta:{provider:"fallback"} });
-    }
-
-    const prompt = makePrompt({ pillars, tenGods, luck });
-
-    const completion = await client.chat.completions.create({
+    // OpenAI 호출
+    const completion = await client.responses.create({
       model: "gpt-4o-mini",
-      temperature: 0.75,
-      messages: [
-        { role: "system", content: "You write helpful, concrete Saju readings for non‑experts. Keep it specific, grounded, and kind." },
+      temperature: 0.7,
+      max_output_tokens: 900,
+      input: [
+        { role: "system", content: "You output ONLY valid JSON. No markdown fences, no extra text." },
         { role: "user", content: prompt }
       ]
     });
 
-    const txt = (completion.choices?.[0]?.message?.content || "").trim();
-    let parsed = null;
-    try{
-      const clean = txt.replace(/^```json/i,"").replace(/```$/,"").trim();
-      parsed = JSON.parse(clean);
-    }catch{}
+    const txt = completion.output_text || "";
+    let data = null;
+    try { data = JSON.parse(txt); } catch(e){}
 
-    if (!parsed || typeof parsed !== "object") {
-      const fb = buildFallback(payload);
-      return res.status(200).json(fb);
+    if (!data || typeof data !== 'object'){
+      return res.status(200).json({
+        ok:false,
+        error:"OPENAI_JSON_PARSE_FAILED",
+        raw: txt?.slice(0, 2000) || ""
+      });
     }
 
+    // 필요한 키가 없을 경우 빈 문자열 보정
     const out = {
-      pillars: parsed.pillars || "",
-      day_master: parsed.day_master || parsed["day master"] || "",
-      five_elements: parsed.five_elements || parsed["five elements"] || "",
-      structure: parsed.structure || "",
-      yongshin: parsed.yongshin || parsed["helpful_focus"] || "",
-      life_flow: parsed.life_flow || parsed["decade_cycle"] || "",
-      summary: parsed.summary || ""
+      pillars: data.pillars || "",
+      day_master: data.day_master || "",
+      five_elements: data.five_elements || "",
+      structure: data.structure || "",
+      yongshin: data.yongshin || "",
+      life_flow: data.life_flow || "",
+      daily_compass: data.daily_compass || ""
     };
 
-    return res.status(200).json({ ok:true, output: out, meta:{ provider:"openai" } });
-
-  } catch (e) {
-    const fb = buildFallback({});
-    return res.status(200).json({ ok:false, error:"OPENAI_FAILED", reason:String(e?.message||e), output: fb.output, meta:{ provider:"fallback" } });
+    return res.status(200).json({ ok:true, output: out });
+  }catch(err){
+    return res.status(200).json({
+      ok:false,
+      error:"OPENAI_FAILED",
+      more: String(err && err.message || err)
+    });
   }
+}
+
+export const config = {
+  api: {
+    bodyParser: true,
+  },
 };
