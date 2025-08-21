@@ -1,9 +1,10 @@
 // /api/reading-generate.js
 // OpenAI 우선(강제) + 안전한 fallback. meta.provider 로 openai/fallback 표시.
-
-import OpenAI from "openai";
+// ★ 중요: 정적 import 삭제! (동적 import로 전환)
 
 export const config = { api: { bodyParser: true } };
+// (App Router를 쓰고 있다면 다음 줄이 필요합니다. pages/api면 없어도 됩니다.)
+export const runtime = 'nodejs';
 
 const STEM_ELEM = { "甲":"wood","乙":"wood","丙":"fire","丁":"fire","戊":"earth","己":"earth","庚":"metal","辛":"metal","壬":"water","癸":"water" };
 const BRANCH_ELEM = { "子":"water","丑":"earth","寅":"wood","卯":"wood","辰":"earth","巳":"fire","午":"fire","未":"earth","申":"metal","酉":"metal","戌":"earth","亥":"water" };
@@ -49,19 +50,19 @@ You are a friendly, practical Saju/Bazi guide for English speakers. Tie every po
 
 Return JSON with these keys (English text):
 {
-  "pillars": string,       // 150-220 words, 2 short paragraphs + 3–6 bullets
-  "day_master": string,    // 150-220 words, gloss "Day Master" once, 2 short paragraphs + 3–6 bullets
-  "five_elements": string, // 150-220 words, include counts & concrete add/avoid, 2 short paragraphs + 3–6 bullets
-  "structure": string,     // 150-220 words, plain-English pattern + how to use/avoid, bullets
-  "yongshin": string,      // 140-200 words, 1–2 supportive themes and why/how, bullets
-  "life_flow": string,     // 140-200 words, current decade then next with timing hints, bullets
-  "summary": string        // 110-150 words, strengths + watch-outs + 1 tiny habit
+  "pillars": string,
+  "day_master": string,
+  "five_elements": string,
+  "structure": string,
+  "yongshin": string,
+  "life_flow": string,
+  "summary": string
 }
 
-Formatting rules:
-- Use plain language. Parenthetical gloss the first time a term appears.
-- Separate paragraphs with blank lines. Bullets must start with "- ".
-- No markdown headings; just paragraphs and bullets.
+Rules:
+- 150–220 words each (summary 110–150). 2 short paragraphs + 3–6 bullets.
+- Gloss “Day Master” once. Plain language. No headings; just paragraphs and "- " bullets.
+- Separate paragraphs with blank lines.
 
 Chart:
 - Pillars hour/day/month/year: ${hour}, ${day}, ${month}, ${year}
@@ -73,8 +74,17 @@ Chart:
 }
 
 async function tryOpenAI(payload){
+  // ★ 동적 import — 여기서만 로드. 실패 시 우리가 잡아서 리턴.
+  let OpenAI;
+  try{
+    OpenAI = (await import('openai')).default;
+  }catch(e){
+    return { ok:false, reason:'OPENAI_MODULE_NOT_FOUND', more: String(e?.message||e) };
+  }
+
   const apiKey = process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || process.env.OPENAI_APIKEY;
   if (!apiKey) return { ok:false, reason:"OPENAI_API_KEY missing" };
+
   const client = new OpenAI({ apiKey });
 
   const elementsCount = countElements(payload.pillars);
@@ -167,20 +177,19 @@ export default async function handler(req, res){
       birthDateISO: src.birthDateISO || body.birthDateISO || null
     };
 
-    // OpenAI 우선 시도
+    // 1) OpenAI 시도
     try{
       const ai = await tryOpenAI(payload);
       if (ai.ok) return res.status(200).json({ ok:true, output:ai.output, meta:ai.meta });
       if (forceAI) {
-        // 강제 모드: 실패를 그대로 노출 (fallback 사용하지 않음)
-        return res.status(500).json({ ok:false, error:"OPENAI_FAILED", reason:ai.reason, raw:ai.raw||null });
+        return res.status(500).json({ ok:false, error:"OPENAI_FAILED", reason:ai.reason, more:ai.more||null, raw:ai.raw||null });
       }
     }catch(e){
       if (forceAI) return res.status(500).json({ ok:false, error:"OPENAI_EXCEPTION", message:e?.message||String(e) });
-      // 강제 아니면 fallback 진행
+      // 강제 아니면 fallback
     }
 
-    // fallback
+    // 2) fallback
     const fb = fallbackReading(payload);
     return res.status(200).json({ ok:true, output:fb, meta:{ provider:"fallback", reason:"OpenAI missing or failed" } });
 
