@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Saju‑Eight • End‑to‑End Playground</title>
+<title>Saju-Eight • End-to-End Playground</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -73,8 +73,8 @@ button[disabled]{opacity:.6;cursor:not-allowed}
 </head>
 <body>
 <div class="wrap">
-  <div class="h1">Saju‑Eight • End‑to‑End Playground</div>
-  <div class="sub">Enter birth info → timezone → pillars → 7‑section reading → explore specific fortunes → ask follow‑ups (with chart context).</div>
+  <div class="h1">Saju-Eight • End-to-End Playground</div>
+  <div class="sub">Enter birth info → timezone → pillars → 7-section reading → explore specific fortunes → ask follow-ups (with chart context).</div>
 
   <div class="card">
     <div class="grid2">
@@ -98,7 +98,7 @@ button[disabled]{opacity:.6;cursor:not-allowed}
   </div>
 
   <div class="card">
-    <div class="section-title">Big Luck (10‑year cycles)</div>
+    <div class="section-title">Big Luck (10-year cycles)</div>
     <div id="luck" class="luckbar"></div>
   </div>
 
@@ -230,7 +230,7 @@ function renderLuck(luck, birthISO){
 </script>
 
 <script>
-/* ---------- READING (그대로) ---------- */
+/* ---------- READING (Daily Compass 보강) ---------- */
 function asString(x){
   if (x==null) return '';
   if (typeof x==='string') return x;
@@ -257,6 +257,75 @@ function md(s=''){
   }).join('');
   return t.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
 }
+
+/* 요소 카운트 */
+function countElementsFromPillars(pillars){
+  const em={wood:0,fire:0,earth:0,metal:0,water:0};
+  if(!pillars) return em;
+  ['hour','day','month','year'].forEach(k=>{
+    const p=pillars[k]; if(!p) return;
+    const e1=STEM_ELEM[p.stem], e2=BRANCH_ELEM[p.branch];
+    if(e1) em[e1]++; if(e2) em[e2]++;
+  });
+  return em;
+}
+
+/* Daily Compass 합성 (fallback) */
+function buildDailyCompass(ctx){
+  const em = countElementsFromPillars(ctx?.pillars||{});
+  const entries = Object.entries(em).sort((a,b)=>b[1]-a[1]);
+  const dom = entries[0]?.[0] || 'mixed';
+  const weak = entries[entries.length-1]?.[0] || 'mixed';
+  const a = age(ctx?.birthDateISO||'');
+  const cur = (ctx?.luck?.bigLuck||[]).find(s=> a>=s.startAge && a<s.startAge+10);
+  const decade = cur ? `${cur.startAge}–${cur.startAge+9} ${cur.stem||''}${cur.branch||''}` : 'N/A';
+
+  const strengths = {
+    wood: 'creativity, learning momentum, empathy',
+    fire: 'charisma, enthusiasm, quick decision-making',
+    earth: 'stability, follow-through, practical care',
+    metal: 'focus, discipline, quality bar',
+    water: 'intuition, reflection, flexible thinking',
+    mixed: 'adaptability across contexts'
+  }[dom];
+
+  const watch = {
+    wood: 'over-committing and idea sprawl',
+    fire: 'impulsivity and sleep debt',
+    earth: 'over-responsibility and stagnation',
+    metal: 'rigidity and self-criticism',
+    water: 'indecision and emotional flooding',
+    mixed: 'context switching without closure'
+  }[dom];
+
+  const borrow = {
+    wood: 'Metal — add tidy endings and weekly pruning.',
+    fire: 'Water — slow down at night; hydrate and cool.',
+    earth: 'Wood — schedule novelty and learning blocks.',
+    metal: 'Water — soften edges; add open reflection time.',
+    water: 'Earth — anchor decisions with simple rules.',
+    mixed: 'Pick one anchor habit that creates closure.'
+  }[dom];
+
+  const micro = {
+    wood: 'End each day by pruning one task or saying “no” once.',
+    fire: 'Set a hard lights-out window; put phone outside the room.',
+    earth: 'Book one 60-min learning block this week.',
+    metal: 'Add a 10-min “free write” after lunch to loosen up.',
+    water: 'Use a 3-rule checklist to finalize decisions.',
+    mixed: 'Choose a 15-min daily close-down ritual.'
+  }[dom];
+
+  const timingHint = cur?.tenGod ? `Current luck decade ${decade} (${cur.tenGod}). Use its tailwind for starts; save heavy lifts for its quiet months.` : `Current luck decade ${decade}. Align launches to steadier months; draft during noisy seasons.`;
+
+  return [
+    `Strengths right now: ${strengths}.`,
+    `Watch-outs: ${watch}. Borrow from your weakest element (${weak}). ${borrow}`,
+    `Micro-habit: ${micro}`,
+    `Timing: ${timingHint}`
+  ].join('\n\n');
+}
+
 function adaptOldReading(old) {
   if (!old || Array.isArray(old)) return null;
   const out = {
@@ -275,9 +344,9 @@ const READING_META = [
   ['day_master','Day Master Traits','The element that represents “you”.'],
   ['five_elements','Element Balance','Where your energy leans — and what to watch.'],
   ['structure','Base Pattern (Structure)','Career vs. wealth vs. learning—your natural emphasis.'],
-  ['yongshin','Helpful Focus (Yongshin)','Pick one supportive theme and make it a weekly non‑negotiable.'],
+  ['yongshin','Helpful Focus (Yongshin)','Pick one supportive theme and make it a weekly non-negotiable.'],
   ['life_flow','Decade Cycle','Big tailwinds & timing—not a rigid fate.'],
-  ['summary','Daily Compass','Strengths, watch‑outs, and one tiny habit to start this week.']
+  ['summary','Daily Compass','Strengths, watch-outs, and one tiny habit to start this week.']
 ];
 function renderReading7(sectionsIn){
   const root=Q('#reading'); root.innerHTML='';
@@ -293,7 +362,11 @@ function renderReading7(sectionsIn){
     return;
   }
   READING_META.forEach(([key,title,subtitle])=>{
-    const text = model[key] || '';
+    let text = model[key] || '';
+    // Daily Compass가 비거나 비슷한 placeholder일 때 안전 합성
+    if (key==='summary' && (!text || String(text).trim().length===0 || /no content|empty/i.test(String(text)))) {
+      text = buildDailyCompass(window.__chartCtx||{});
+    }
     const empty = !(text && String(text).trim().length>0);
     const div=document.createElement('div'); div.className='block';
     div.innerHTML = `
@@ -341,8 +414,7 @@ async function fetchReading({pillars,elements,tenGods,interactions,luck}){
 </script>
 
 <script>
-/* ---------- Specific Fortunes ---------- */
-/* 6개 카테고리 */
+/* ---------- Specific Fortunes (변경 없음) ---------- */
 const TOPICS = [
   {key:'personality', icon:'🧭', name:'Personality & Traits', hint:'Strengths, blind spots, fit.'},
   {key:'career_status', icon:'🎯', name:'Career, Reputation & Influence', hint:'Talents, roles, visibility.'},
@@ -351,18 +423,14 @@ const TOPICS = [
   {key:'health', icon:'🌿', name:'Health & Longevity', hint:'Body signals, balance, care.'},
   {key:'timing', icon:'⏱️', name:'Life Cycle & Timing', hint:'This year & next decade.'},
 ];
-
-/* 토픽별 고유 렌즈 + 중복 방지 가드레일 */
 const TOPIC_GUIDES = {
-  personality: `Focus strictly on: decision‑making style, social energy, boundaries, recharge pattern, blind spots. Do NOT give money, job, or medical advice.`,
+  personality: `Focus strictly on: decision-making style, social energy, boundaries, recharge pattern, blind spots. Do NOT give money, job, or medical advice.`,
   career_status: `Focus strictly on: role fit (builder/crafter/leader), org context, visibility levers, reputation arcs by current decade. Avoid money budgeting/investing tips.`,
   wealth: `Focus strictly on: earning modes (salary vs. variable), cashflow seasonality, saving/investing rules and risk posture by elements. Avoid job role/visibility advice.`,
   relationship: `Focus strictly on: partner dynamics, attachment boundaries, timing for dating/commitment. Avoid money or job tactics.`,
   health: `Focus strictly on: body systems by elements, stress/sleep rhythm, recovery practices. Avoid financial or job/role advice.`,
   timing: `Focus strictly on: this year and current/next decade windows, months/seasons best for launch vs draft, one action to delay. Avoid career/finance/medical prescriptions.`
 };
-
-/* 제네릭 문구 필터(토픽과 맞지 않으면 삭제) */
 const GENERIC_FILTER = {
   personality: [/Set clear financial goals/i,/budget/i,/invest/i,/retirement/i],
   career_status: [/budget/i,/financial plan/i,/invest/i,/retirement/i],
@@ -372,7 +440,6 @@ const GENERIC_FILTER = {
   timing: []
 };
 
-/* Fortune 카드 마운트 */
 function mountFortuneGrid(){
   const g=Q('#fgrid'); if(!g) return;
   g.innerHTML='';
@@ -397,8 +464,6 @@ function mountFortuneGrid(){
     btn.addEventListener('click',()=>expandTopic(btn.closest('.ftile')));
   });
 }
-
-/* 차트 → 앵커 텍스트 */
 function chartAnchors(ctx){
   const pillars=ctx?.pillars||{};
   const em={wood:0,fire:0,earth:0,metal:0,water:0};
@@ -409,8 +474,6 @@ function chartAnchors(ctx){
   const decade = cur ? `${cur.startAge}–${cur.startAge+9} ${cur.stem||''}${cur.branch||''}` : 'N/A';
   return `Dominant element: ${dom}. Current luck decade: ${decade}.`;
 }
-
-/* API 호출: guide 동봉 */
 async function callFortuneAPI(frontKey){
   const ctx = window.__chartCtx || null;
   const guide = `${TOPIC_GUIDES[frontKey]||''}\nGround to chart: ${chartAnchors(ctx)}\nWrite specific, non-generic, with short paragraphs & bullet lists.\nDo not repeat sentences within the answer.`;
@@ -427,8 +490,6 @@ async function callFortuneAPI(frontKey){
   }
   return {ok:false};
 }
-
-/* 텍스트 정규화 & 중복 제거 */
 function normalizeKey(s){
   return s.toLowerCase()
     .replace(/[.,;:!?"'’”“\)\(]/g,' ')
@@ -441,7 +502,6 @@ function dedupeLines(lines, topicKey){
   for(const raw of lines){
     const line = raw.trim();
     if(!line) continue;
-    // 토픽과 맞지 않는 문구 제거
     if (filters.some(rx=>rx.test(line))) continue;
     const key = normalizeKey(line);
     if(key && !seen.has(key)){
@@ -452,18 +512,14 @@ function dedupeLines(lines, topicKey){
   return out;
 }
 function explodeToLines(text){
-  // 문단 → 줄 → 불릿 분해
   return text.split(/\n{2,}/)
     .flatMap(p=>p.split(/\n/))
     .flatMap(l=>{
-      // "A,B,C"처럼 콤마로 붙은 열거 분리는 하지 않음(이미 앞단에서 개행 처리)
       if (/^(?:•|-)\s*/.test(l)) return l.replace(/^(?:•|-)\s*/,'').trim();
       return l.trim();
     })
     .filter(Boolean);
 }
-
-/* 응답 → 단일 기사(중복/제네릭 제거) */
 function toSingleArticle(topicKey, apiOut){
   const primary = (apiOut?.article || apiOut?.content || apiOut?.body || apiOut?.markdown || apiOut?.text || '').toString().trim();
   let base = primary;
@@ -479,24 +535,16 @@ function toSingleArticle(topicKey, apiOut){
     if (Array.isArray(apiOut?.cards)) apiOut.cards.forEach(c=>push(c?.body||c?.text||c));
     base = parts.join('\n\n');
   }
-
-  // 문장/불릿 라인으로 분해 후 중복/불일치 제거
   const lines = explodeToLines(base);
   const uniq = dedupeLines(lines, topicKey);
-
-  // 다시 문단으로 묶기: 불릿 후보/일반문장 분리
   const bullets=[]; const prose=[];
   uniq.forEach(l=>{
     if (/^(In your \d0s|Avoid |Be |Set |Invest |Review |Save |Network |Seek |Stay )/i.test(l) || l.length<=120) bullets.push(l); else prose.push(l);
   });
-
   const proseText = prose.join('\n\n');
   const bulletText = bullets.length ? '\n\n' + bullets.map(x=>'• '+x).join('\n') : '';
-
   return (proseText + bulletText).trim();
 }
-
-/* 차트 기반 합성(백업) */
 function synthesizeArticle(topicKey, ctx){
   const anchors = chartAnchors(ctx);
   switch(topicKey){
@@ -512,11 +560,9 @@ function synthesizeArticle(topicKey, ctx){
       return `Body signals & recovery.\n\n${anchors}\n\n• Systems needing support.\n• Work/rest rhythm.\n• Two anchor habits.`;
     case 'timing':
     default:
-      return `Windows & pivots.\n\n${anchors}\n\n• Good weeks for launch vs draft.\n• One thing to delay.\n• 90‑day focus.`;
+      return `Windows & pivots.\n\n${anchors}\n\n• Good weeks for launch vs draft.\n• One thing to delay.\n• 90-day focus.`;
   }
 }
-
-/* 렌더 */
 function renderFortuneArticle(container, bodyHtml){
   container.innerHTML = `
     <div class="block f-article">
@@ -529,8 +575,6 @@ function renderFortuneArticle(container, bodyHtml){
   const btn = container.closest('.ftile').querySelector('.see');
   if (cbtn) cbtn.addEventListener('click',()=>{container.style.display='none'; if(btn) btn.style.display='inline-block';});
 }
-
-/* 확장 */
 async function expandTopic(card){
   if (!card || card.dataset.loading === '1') return;
   card.dataset.loading = '1';
@@ -538,7 +582,6 @@ async function expandTopic(card){
   const btn=card.querySelector('.see');
   const content=card.querySelector('.fcontent');
   if (btn) { btn.disabled=true; btn.textContent='Loading…'; }
-
   try{
     const api = await callFortuneAPI(key);
     let article = '';
@@ -564,7 +607,6 @@ async function expandTopic(card){
     delete card.dataset.loading;
   }
 }
-
 if (document.querySelector('#fgrid')) { mountFortuneGrid(); }
 </script>
 
