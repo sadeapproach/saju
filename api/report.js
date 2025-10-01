@@ -1,214 +1,277 @@
 // /api/report.js
-// Vercel Serverless Function (Node/Edge 아님)
-// Day Master(천간) 기반의 간단한 규칙형 리포트 응답
-// - 입력: { pillars?, calc? } (app에서 그대로 넘겨주면 됨)
-// - 출력: { ok: true, data: { dayMaster: {label, traits[], explain} } }
+// Vercel Serverless Function (Node 런타임)
+// Day Master(일간) 기반 간단 리포트 · 톤 일원화(파일 추가 없이 report.js 내에 내장)
+//
+// 요청: { pillars?, calc?, tone?("coach" | "plain") }
+// 응답: { ok: true, data: { dayMaster: { label, traits[], explain } } }
 
 function get(o, path) {
   if (!o) return undefined;
   return path.split(".").reduce((a, k) => (a == null ? a : a[k]), o);
 }
-function firstOf(root, paths, dflt) {
+
+function firstOf(root, paths, dft) {
   for (const p of paths) {
     const v = get(root, p);
     if (v !== undefined && v !== null && v !== "") return v;
   }
-  return dflt;
+  return dft;
 }
 
-// 천간 → 음양/오행 정규화
-const STEM_CN_TO_YINYANG_ELEM = {
-  "甲": ["Yang", "Wood"],
-  "乙": ["Yin", "Wood"],
-  "丙": ["Yang", "Fire"],
-  "丁": ["Yin", "Fire"],
-  "戊": ["Yang", "Earth"],
-  "己": ["Yin", "Earth"],
-  "庚": ["Yang", "Metal"],
-  "辛": ["Yin", "Metal"],
-  "壬": ["Yang", "Water"],
-  "癸": ["Yin", "Water"],
+/* ─────────────────────────────────────────
+ * 1) 일간(천간) → 음/양 + 오행 매핑
+ *    - CN(甲乙…癸), EN("Yang Fire"), pinyin 모두 허용
+ * ───────────────────────────────────────── */
+const STEM_TO_YINYANG_ELEM = {
+  // CN
+  "甲": ["yang", "wood"],
+  "乙": ["yin", "wood"],
+  "丙": ["yang", "fire"],
+  "丁": ["yin", "fire"],
+  "戊": ["yang", "earth"],
+  "己": ["yin", "earth"],
+  "庚": ["yang", "metal"],
+  "辛": ["yin", "metal"],
+  "壬": ["yang", "water"],
+  "癸": ["yin", "water"],
+  // pinyin-ish
+  "jia": ["yang", "wood"],
+  "yi": ["yin", "wood"],
+  "bing": ["yang", "fire"],
+  "ding": ["yin", "fire"],
+  "wu": ["yang", "earth"],
+  "ji": ["yin", "earth"],
+  "geng": ["yang", "metal"],
+  "xin": ["yin", "metal"],
+  "ren": ["yang", "water"],
+  "gui": ["yin", "water"],
 };
 
 function normalizeDayMaster(stemAny) {
   if (!stemAny) return null;
-
   const s = String(stemAny).trim();
-  // CN 단일 한자
-  if (STEM_CN_TO_YINYANG_ELEM[s]) {
-    const [yy, el] = STEM_CN_TO_YINYANG_ELEM[s];
-    return { key: `${yy.toLowerCase()} ${el.toLowerCase()}`, label: `${yy} ${el}` };
-  }
 
-  // "Yang Wood", "Yin Fire" 등 영문
-  const m = s.match(/(yang|yin)\s+(wood|fire|earth|metal|water)/i);
+  // 1) 정확 매핑(CN/pinyin)
+  if (STEM_TO_YINYANG_ELEM[s]) {
+    const [yy, el] = STEM_TO_YINYANG_ELEM[s];
+    return { yinYang: yy, elem: el, key: `${yy}_${el}` };
+  }
+  const low = s.toLowerCase();
+
+  // 2) "Yang Fire" / "yin water" 같은 영문
+  const m = low.match(/\b(yang|yin)\s*(wood|fire|earth|metal|water)\b/);
   if (m) {
-    const yy = m[1][0].toUpperCase() + m[1].slice(1).toLowerCase();
-    const el = m[2][0].toUpperCase() + m[2].slice(1).toLowerCase();
-    return { key: `${yy.toLowerCase()} ${el.toLowerCase()}`, label: `${yy} ${el}` };
+    const yy = m[1];
+    const el = m[2];
+    return { yinYang: yy, elem: el, key: `${yy}_${el}` };
   }
 
-  // pinyin 일부(선택적)
-  const PINYIN_TO_CN = {
-    jia: "甲", yi: "乙", bing: "丙", ding: "丁",
-    wu: "戊", ji: "己", geng: "庚", xin: "辛",
-    ren: "壬", gui: "癸",
-  };
-  const pin = s.toLowerCase().trim();
-  if (PINYIN_TO_CN[pin]) {
-    const [yy, el] = STEM_CN_TO_YINYANG_ELEM[PINYIN_TO_CN[pin]];
-    return { key: `${yy.toLowerCase()} ${el.toLowerCase()}`, label: `${yy} ${el}` };
+  // 3) "Wood/Fire…"만 들어온 경우(양/음 미상 → 기본 yin로 가정)
+  const elOnly = low.match(/\b(wood|fire|earth|metal|water)\b/);
+  if (elOnly) {
+    const el = elOnly[1];
+    return { yinYang: "yin", elem: el, key: `yin_${el}` };
   }
 
   return null;
 }
 
-// 10천간(음/양 × 5행) 기본 성향 템플릿
-const DM_TRAITS = {
-  "yang wood": {
-    traits: [
-      "Builds momentum steadily once started",
-      "Prefers structure over chaos",
-      "Loyal and consistent in commitments",
-    ],
-    explain:
-      "Yang Wood tends to grow with stable routines and repeatable processes. You do best when goals are clear and tracked visibly.",
-  },
-  "yin wood": {
-    traits: [
-      "Adaptive and relationship-oriented",
-      "Finds creative paths around blockers",
-      "Values gentle, sustainable progress",
-    ],
-    explain:
-      "Yin Wood thrives on flexibility and supportive environments. Light constraints and friendly accountability keep you engaged.",
-  },
-  "yang fire": {
-    traits: [
-      "Quick to initiate and mobilize others",
-      "Works best with short sprints",
-      "Motivates through passion and vision",
-    ],
-    explain:
-      "Yang Fire moves fast and shines when sharing energy. Use focused bursts and clear cooldowns to prevent burnout.",
-  },
-  "yin fire": {
-    traits: [
-      "Intuitive and empathetic communicator",
-      "Strong in polishing and storytelling",
-      "Benefits from calm, consistent pacing",
-    ],
-    explain:
-      "Yin Fire influences through warmth and nuance. Set gentle rhythms and reflection time to keep clarity high.",
-  },
-  "yang earth": {
-    traits: [
-      "Dependable and grounded under pressure",
-      "Prefers clear roles and ownership",
-      "Builds durable systems over time",
-    ],
-    explain:
-      "Yang Earth stabilizes teams and plans. Define boundaries and milestones; steady progress compounds for you.",
-  },
-  "yin earth": {
-    traits: [
-      "Supportive, patient, detail-aware",
-      "Good at integration and hand-offs",
-      "Needs periodic re-prioritization",
-    ],
-    explain:
-      "Yin Earth excels at care and maintenance. Regularly zoom out to prevent over-serving and to keep scope tidy.",
-  },
-  "yang metal": {
-    traits: [
-      "Clear standards and sharp judgment",
-      "Efficient once criteria are set",
-      "Naturally good at cutting noise",
-    ],
-    explain:
-      "Yang Metal performs best with defined quality bars. Decide the ‘done’ criteria early and protect deep-work blocks.",
-  },
-  "yin metal": {
-    traits: [
-      "Refines and perfects with precision",
-      "Strong at reviews and quality control",
-      "Benefits from small-batch delivery",
-    ],
-    explain:
-      "Yin Metal improves outcomes through careful iteration. Ship in small increments to keep feedback loops tight.",
-  },
-  "yang water": {
-    traits: [
-      "Explores widely and connects patterns",
-      "Comfortable with ambiguity",
-      "Energized by movement and variety",
-    ],
-    explain:
-      "Yang Water learns by flowing through contexts. Rotate focus intentionally to avoid diffusion and to sustain depth.",
-  },
-  "yin water": {
-    traits: [
-      "Observant, strategic, sensitive to timing",
-      "Excellent at research and synthesis",
-      "Needs quiet to crystallize insight",
-    ],
-    explain:
-      "Yin Water excels when you protect solitude for sense-making. Set gentle deadlines so insights become decisions.",
-  },
+/* ─────────────────────────────────────────
+ * 2) 톤 프로필(파일 분리 없이 report.js 안에 내장)
+ *    - coach: 코치 톤(구체적, 실행 중심, 쉬운 영어)
+ *    - plain: 더 중립/간결
+ * ───────────────────────────────────────── */
+const POLARITY_LABEL = { yin: "Quiet", yang: "Active" };
+const ELEMENT_LABEL = { wood: "Wood", fire: "Fire", earth: "Earth", metal: "Metal", water: "Water" };
+
+// 코치 톤: 요소별 4~5개 불릿
+const COACH_TRAITS = {
+  yin_water: [
+    "Observant—reads the room quickly.",
+    "Thinks deeply before deciding; clarity follows quiet.",
+    "Works best in calm, uninterrupted blocks.",
+    "Keeps plans flexible and adapts smoothly.",
+  ],
+  yang_water: [
+    "Curious connector—shares and gathers info fast.",
+    "Quick to switch lanes; weekly priorities keep you steady.",
+    "Energized by new inputs and conversations.",
+    "Benefits from short review checkpoints.",
+  ],
+  yin_wood: [
+    "Patient builder—prefers steady, ethical progress.",
+    "Focus grows with consistent routines.",
+    "Values alignment and long-term growth over quick wins.",
+    "Thrives with clear steps and gentle accountability.",
+  ],
+  yang_wood: [
+    "Initiator—pushes growth and momentum.",
+    "Great at starting; finishing improves with structure.",
+    "Energized by movement and clear direction.",
+    "Benefits from a visible plan and weekly finish lines.",
+  ],
+  yin_fire: [
+    "Warm motivator—excellent in small groups.",
+    "Ideas spark after conversations or at night.",
+    "Needs boundaries to avoid burn-out.",
+    "Recharge with quiet time and paced commitments.",
+  ],
+  yang_fire: [
+    "Fast starter—decisive under pressure.",
+    "Rallies people with enthusiasm.",
+    "Sustains results with cooling breaks and review loops.",
+    "Best with short sprints and clear win criteria.",
+  ],
+  yin_earth: [
+    "Grounded and reliable—keeps teams steady.",
+    "Prefers familiar tools and proven methods.",
+    "Protects energy with simple, repeatable routines.",
+    "Benefits from clear scope and realistic timelines.",
+  ],
+  yang_earth: [
+    "Organizer—turns ideas into workable plans.",
+    "Balances people and tasks with calm authority.",
+    "Shines when setting boundaries and priorities.",
+    "Avoids overload by delegating early.",
+  ],
+  yin_metal: [
+    "Precise and discerning—spots weak points quickly.",
+    "Focus deepens with clear standards.",
+    "Simplifies complexity into clean systems.",
+    "Benefits from defined ‘done’ checklists.",
+  ],
+  yang_metal: [
+    "Decisive editor—cuts noise, keeps the signal.",
+    "Leads best with clear rules and deadlines.",
+    "Builds efficient systems others can follow.",
+    "Protects energy by saying no early.",
+  ],
 };
 
+// plain 톤(더 간결)
+const PLAIN_TRAITS = {
+  yin_water: [
+    "Quiet, adaptive, observant.",
+    "Clear thinking needs calm time.",
+    "Prefers flexible plans over rigid schedules.",
+  ],
+  yang_water: [
+    "Curious, fast-moving, social.",
+    "Weekly priorities prevent scatter.",
+    "Energized by new inputs.",
+  ],
+  yin_wood: [
+    "Patient, steady growth.",
+    "Strong values; prefers long-term progress.",
+    "Routines support focus.",
+  ],
+  yang_wood: [
+    "Initiates growth quickly.",
+    "Best with clear direction and structure.",
+    "Sprint → review works well.",
+  ],
+  yin_fire: [
+    "Warm, insightful, people-attuned.",
+    "Needs boundaries to avoid burn-out.",
+    "Quiet recharge keeps clarity.",
+  ],
+  yang_fire: [
+    "Bold starter; motivates others.",
+    "Short sprints + cool-down reviews.",
+    "Clear goals maintain momentum.",
+  ],
+  yin_earth: [
+    "Reliable, practical, consistent.",
+    "Works best with familiar systems.",
+    "Clear scope prevents overload.",
+  ],
+  yang_earth: [
+    "Organizer; turns ideas into plans.",
+    "Prioritizes well; sets boundaries.",
+    "Delegation keeps pace sustainable.",
+  ],
+  yin_metal: [
+    "Precise, quality-driven.",
+    "Clear standards sharpen focus.",
+    "Enjoys clean systems.",
+  ],
+  yang_metal: [
+    "Decisive editor; removes noise.",
+    "Leads with rules and deadlines.",
+    "Efficient, no-nonsense execution.",
+  ],
+};
+
+function writeDayMaster(normalized, srcStemText, tone = "coach") {
+  const key = normalized.key; // e.g., "yin_water"
+  const label =
+    `${POLARITY_LABEL[normalized.yinYang]} ${ELEMENT_LABEL[normalized.elem]}` +
+    (srcStemText ? ` (${String(srcStemText)})` : "");
+
+  const bank = tone === "plain" ? PLAIN_TRAITS : COACH_TRAITS;
+  const traits = bank[key] || ["Balanced, adaptable.", "Clarity grows with simple structure."];
+
+  const explain =
+    `In this system, your Day Stem describes how you start, decide, and recharge. ` +
+    `Yours leans **${POLARITY_LABEL[normalized.yinYang].toLowerCase()} ${ELEMENT_LABEL[normalized.elem].toLowerCase()}**—` +
+    `so you do best when your week matches that rhythm. Use the traits above as small, testable actions.`;
+
+  return { label, traits, explain, toneUsed: tone };
+}
+
+/* ─────────────────────────────────────────
+ * 3) 메인 핸들러
+ * ───────────────────────────────────────── */
 export default async function handler(req, res) {
-  // CORS (개발 편의)
+  // CORS (선택)
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.status(200).end();
 
   if (req.method !== "POST") {
-    return res.status(405).json({ ok: false, error: "Method Not Allowed" });
+    return res.status(405).json({ ok: false, error: "Use POST" });
   }
 
   try {
-    const body = req.body || {};
-    // 앱에서 보낸 calc/pillars 어느 쪽이든 받아서 day stem 찾기
-    const dayStem =
-      firstOf(body, [
-        "pillars.day.stem.en",
-        "pillars.day.stem.cn",
-        "pillars.day.stem",
-        "calc.pillars.day.stem.en",
-        "calc.pillars.day.stem.cn",
-        "calc.pillars.day.stem",
-        "result.calc.pillars.day.stem.en",
-        "result.calc.pillars.day.stem.cn",
-        "result.calc.pillars.day.stem",
-      ]) || null;
+    const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
+    const tone = (body.tone === "plain" ? "plain" : "coach"); // 기본 coach
 
-    const dm = normalizeDayMaster(dayStem);
+    // 1) 일간 후보(앱에서 넘어오는 다양한 위치 대비)
+    const dayStemAny = firstOf(body, [
+      "pillars.day.stem.en",
+      "pillars.day.stem.pinyin",
+      "pillars.day.stem.cn",
+      "pillars.day.stem.han",
+      "pillars.day.stem.kr",
+      "calc.pillars.day.stem.en",
+      "calc.pillars.day.stem.cn",
+      "result.calc.pillars.day.stem.en",
+    ], null);
 
-    // 기본 응답
-    const data = { dayMaster: { label: null, traits: [], explain: "" } };
-
-    if (dm && DM_TRAITS[dm.key]) {
-      data.dayMaster.label = dm.label;
-      data.dayMaster.traits = DM_TRAITS[dm.key].traits;
-      data.dayMaster.explain = DM_TRAITS[dm.key].explain;
-    } else {
-      // 안전한 폴백(입력이 빈약할 때)
-      data.dayMaster.traits = [
-        "We’re missing a reliable Day Master value.",
-        "Re-try with precise birth time if possible.",
-      ];
-      data.dayMaster.explain =
-        "Once we confirm your Day Master (heavenly stem of the Day), we’ll tailor traits and timing for you.";
+    const norm = normalizeDayMaster(dayStemAny);
+    if (!norm) {
+      return res.status(200).json({
+        ok: true,
+        data: {
+          dayMaster: {
+            label: "Day Master: Unknown",
+            traits: ["We couldn’t read your Day Stem.", "Please re-generate the chart."],
+            explain: "Send the pillars/day stem again; we’ll translate it automatically.",
+            toneUsed: tone,
+          },
+        },
+      });
     }
 
-    return res.status(200).json({ ok: true, data });
+    const dayMaster = writeDayMaster(norm, dayStemAny, tone);
+
+    return res.status(200).json({
+      ok: true,
+      data: { dayMaster },
+    });
   } catch (e) {
     console.error("[report] error:", e);
-    return res.status(200).json({
-      ok: false,
-      error: e?.message || "Server error",
-    });
+    return res.status(200).json({ ok: false, error: String(e?.message || e) });
   }
 }
